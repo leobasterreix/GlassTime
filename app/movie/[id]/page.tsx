@@ -278,13 +278,13 @@ export default function MoviePage() {
           className={reviewsTab === "site" ? "active" : ""}
           onClick={() => setReviewsTab("site")}
         >
-          Avis GlassTime · {displayedSiteReviews.length}
+          Avis GlassTime ({displayedSiteReviews.length})
         </button>
         <button
           className={reviewsTab === "tmdb" ? "active" : ""}
           onClick={() => setReviewsTab("tmdb")}
         >
-          Avis TMDB · {tmdbLoading ? "..." : tmdbReviews.length}
+          Avis TMDB ({tmdbLoading ? "..." : tmdbReviews.length})
         </button>
       </div>
 
