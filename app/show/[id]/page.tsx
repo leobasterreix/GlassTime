@@ -20,12 +20,19 @@ export default function ShowPage() {
   const router = useRouter();
   const id = Number(params.id);
   const mounted = useMounted();
-  const { followed, watched, showCache, cacheShow, setEpisode, setEpisodes } =
+  const { followed, watched, showCache, cacheShow, setEpisode, setEpisodes, localReviews, setLocalReview } =
     useTrack();
 
   const [fetched, setFetched] = useState<Show | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [siteReviews, setSiteReviews] = useState<Review[]>([]);
+  const [tmdbReviews, setTmdbReviews] = useState<Review[]>([]);
+  const [reviewsTab, setReviewsTab] = useState<"site" | "tmdb">("site");
+
+  const [formRating, setFormRating] = useState<number>(10);
+  const [formContent, setFormContent] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -37,16 +44,71 @@ export default function ShowPage() {
           useTrack.getState().cacheShow(data);
       } else setNotFound(true);
     });
-    apiGet<Review[]>(`/api/show/${id}/reviews`).then((data) => {
+    apiGet<{ site: Review[]; tmdb: Review[] }>(`/api/reviews/show/${id}`).then((data) => {
       if (cancelled) return;
-      if (data) setReviews(data);
+      if (data) {
+        setSiteReviews(data.site ?? []);
+        setTmdbReviews(data.tmdb ?? []);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [id]);
 
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const response = await fetch(`/api/reviews/show/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: formRating, content: formContent }),
+      });
+
+      if (response.ok) {
+        const res = await apiGet<{ site: Review[]; tmdb: Review[] }>(`/api/reviews/show/${id}`);
+        if (res) {
+          setSiteReviews(res.site ?? []);
+        }
+        setFormContent("");
+      } else {
+        const errData = await response.json();
+        if (response.status === 401) {
+          // Si non connecté (401), on enregistre localement en Zustand!
+          setLocalReview("show", id, formRating, formContent);
+          setFormContent("");
+        } else {
+          setErrorMsg(errData.error || "Une erreur est survenue.");
+        }
+      }
+    } catch (err) {
+      // Échec réseau, on enregistre localement
+      setLocalReview("show", id, formRating, formContent);
+      setFormContent("");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const show = fetched ?? (mounted ? showCache[id] : undefined);
+
+  const myLocalReview = mounted ? localReviews[`show-${id}`] : null;
+  const hasLocalOnly = myLocalReview && !siteReviews.some((r) => r.id === "local-review");
+
+  const displayedSiteReviews = [...siteReviews];
+  if (hasLocalOnly && myLocalReview) {
+    displayedSiteReviews.unshift({
+      id: "local-review",
+      author: "Vous (Local)",
+      avatar: null,
+      rating: myLocalReview.rating,
+      content: myLocalReview.content,
+      createdAt: myLocalReview.createdAt,
+    });
+  }
 
   if (!show) {
     return (
@@ -245,13 +307,99 @@ export default function ShowPage() {
 
       {/* Avis */}
       <h2 className="section-title">Avis</h2>
-      {reviews.length === 0 ? (
+
+      {/* Formulaire de rédaction */}
+      <div className="glass card" style={{ padding: 18, marginBottom: 20 }}>
+        <h3 style={{ fontSize: 15.5, fontWeight: 700, marginBottom: 12 }}>Rédiger mon avis</h3>
+        <form onSubmit={handleReviewSubmit} className="stack" style={{ gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>
+              Note : {formRating} / 10
+            </label>
+            <div className="row" style={{ gap: 4 }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setFormRating(star)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    padding: 2,
+                    filter: star <= formRating ? "none" : "grayscale(100%) opacity(30%)",
+                    transition: "filter 0.15s",
+                  }}
+                >
+                  ⭐
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <textarea
+              placeholder="Ajoutez un commentaire à votre note (facultatif)..."
+              value={formContent}
+              onChange={(e) => setFormContent(e.target.value)}
+              rows={3}
+              style={{
+                width: "100%",
+                background: "var(--glass-bg-strong)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: 14,
+                padding: "10px 14px",
+                color: "var(--text)",
+                fontSize: 14,
+                outline: "none",
+                resize: "none",
+              }}
+            />
+          </div>
+          {errorMsg && (
+            <div style={{ color: "#ff6b6b", fontSize: 12.5, fontWeight: 600 }}>
+              {errorMsg}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn btn-primary pressable"
+            style={{ padding: "8px 16px", alignSelf: "flex-end", fontSize: 13.5, borderRadius: 999 }}
+          >
+            {submitting ? "Publication..." : "Publier l'avis"}
+          </button>
+        </form>
+      </div>
+
+      {/* Onglets des avis */}
+      <div className="glass segmented" style={{ marginBottom: 16 }}>
+        <button
+          className={reviewsTab === "site" ? "active" : ""}
+          onClick={() => setReviewsTab("site")}
+        >
+          Avis GlassTime · {displayedSiteReviews.length}
+        </button>
+        <button
+          className={reviewsTab === "tmdb" ? "active" : ""}
+          onClick={() => setReviewsTab("tmdb")}
+        >
+          Avis TMDB · {tmdbReviews.length}
+        </button>
+      </div>
+
+      {/* Liste des avis filtrée */}
+      {(reviewsTab === "site" ? displayedSiteReviews : tmdbReviews).length === 0 ? (
         <div className="glass empty" style={{ padding: "24px 16px" }}>
-          <p className="muted">Aucun avis rédigé pour le moment.</p>
+          <p className="muted">
+            {reviewsTab === "site"
+              ? "Aucun avis rédigé sur GlassTime pour le moment."
+              : "Aucun avis mondial disponible pour cette série."}
+          </p>
         </div>
       ) : (
         <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
-          {reviews.map((r) => (
+          {(reviewsTab === "site" ? displayedSiteReviews : tmdbReviews).map((r) => (
             <div key={r.id} className="glass card" style={{ padding: 18 }}>
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 8, alignItems: "flex-start" }}>
                 <div className="row" style={{ gap: 10 }}>
@@ -299,9 +447,11 @@ export default function ShowPage() {
                   </span>
                 )}
               </div>
-              <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, whiteSpace: "pre-line" }}>
-                {r.content.length > 350 ? `${r.content.slice(0, 350)}...` : r.content}
-              </p>
+              {r.content && (
+                <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                  {r.content.length > 350 ? `${r.content.slice(0, 350)}...` : r.content}
+                </p>
+              )}
             </div>
           ))}
         </div>

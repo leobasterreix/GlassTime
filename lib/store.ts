@@ -31,6 +31,8 @@ type TrackState = {
   clearAll: () => void;
   theme: "system" | "light" | "dark";
   toggleTheme: () => void;
+  localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
+  setLocalReview: (type: "movie" | "show", id: number, rating: number, content: string) => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -46,6 +48,7 @@ export const useTrack = create<TrackState>()(
       moviesWatched: [],
       showCache: {},
       movieCache: {},
+      localReviews: {},
       updatedAt: 0,
 
       toggleFollow: (id) =>
@@ -124,6 +127,19 @@ export const useTrack = create<TrackState>()(
           };
         }),
 
+      setLocalReview: (type, id, rating, content) =>
+        set((st) => ({
+          localReviews: {
+            ...st.localReviews,
+            [`${type}-${id}`]: {
+              rating,
+              content,
+              createdAt: new Date().toISOString(),
+            },
+          },
+          updatedAt: Date.now(),
+        })),
+
       clearAll: () =>
         set({
           followed: [],
@@ -132,6 +148,7 @@ export const useTrack = create<TrackState>()(
           moviesWatched: [],
           showCache: {},
           movieCache: {},
+          localReviews: {},
           updatedAt: Date.now(),
         }),
     }),
