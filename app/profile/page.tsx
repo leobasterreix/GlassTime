@@ -1,20 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, useHydrateLibrary } from "@/lib/client";
+import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { airedEpisodes, minutesHuman, watchedCount } from "@/lib/utils";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ProfilePage() {
   const mounted = useMounted();
   const { followed, watched, moviesWatched, showCache, movieCache, clearAll } =
     useTrack();
   useHydrateLibrary();
+
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar?: string } | null>(null);
   const [syncOn, setSyncOn] = useState<boolean | null>(null);
+
   useEffect(() => {
-    apiGet<{ configured: boolean }>("/api/sync").then((d) =>
-      setSyncOn(d?.configured ?? false)
-    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata;
+        setUserInfo({
+          name: meta?.full_name ?? "Mon espace",
+          email: session.user.email ?? "",
+          avatar: meta?.avatar_url ?? meta?.picture ?? undefined,
+        });
+        setSyncOn(true);
+      } else {
+        setSyncOn(false);
+      }
+    });
   }, []);
 
   if (!mounted) {
@@ -94,27 +108,41 @@ export default function ProfilePage() {
         className="glass card row"
         style={{ marginBottom: 20, gap: 16, padding: 20 }}
       >
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 30,
-            background:
-              "linear-gradient(135deg, rgba(10,132,255,.5), rgba(191,90,242,.5))",
-            border: "1px solid rgba(255,255,255,.25)",
-          }}
-        >
-          🍿
-        </div>
+        {userInfo?.avatar ? (
+          <img
+            src={userInfo.avatar}
+            alt="Avatar"
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,.25)",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 30,
+              background:
+                "linear-gradient(135deg, rgba(10,132,255,.5), rgba(191,90,242,.5))",
+              border: "1px solid rgba(255,255,255,.25)",
+            }}
+          >
+            🍿
+          </div>
+        )}
         <div>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>Mon espace</div>
-          <div className="muted">
-            {minutesHuman(showMinutes + movieMinutes) || "0 min"} de
-            visionnage au total
+          <div style={{ fontWeight: 800, fontSize: 18 }}>{userInfo?.name ?? "Mon espace"}</div>
+          <div className="muted" style={{ fontSize: 13 }}>
+            {userInfo?.email ? `${userInfo.email} · ` : ""}
+            {minutesHuman(showMinutes + movieMinutes) || "0 min"} au total
           </div>
         </div>
       </div>
@@ -175,8 +203,8 @@ export default function ProfilePage() {
               {syncOn === null
                 ? "Vérification…"
                 : syncOn
-                  ? "Active — vos données suivent votre compte"
-                  : "Non configurée — données sur cet appareil uniquement"}
+                  ? "Active — vos données sont synchronisées via Supabase"
+                  : "Inactive — données locales uniquement"}
             </div>
           </div>
         </div>
@@ -184,11 +212,11 @@ export default function ProfilePage() {
           className="glass card pressable"
           style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
           onClick={async () => {
-            await fetch("/api/login", { method: "DELETE" });
+            await supabase.auth.signOut();
             window.location.href = "/login";
           }}
         >
-          🔒 Verrouiller l'appli
+          🔒 Se déconnecter
         </button>
         <button
           className="glass card pressable"
