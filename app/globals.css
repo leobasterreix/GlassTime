@@ -11,19 +11,43 @@
   --glass-bg: rgba(255, 255, 255, 0.065);
   --glass-bg-strong: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.13);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --track: rgba(255, 255, 255, 0.09);
+  --pill-bg: rgba(255, 255, 255, 0.1);
+  --tab-bg: rgba(18, 20, 30, 0.55);
+  --hero-veil-1: rgba(6, 7, 13, 0.25);
+  --hero-veil-2: rgba(6, 7, 13, 0.85);
+  --aurora-opacity: 1;
   --radius: 24px;
   --radius-sm: 16px;
   --tab-h: 84px;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #eef0f7;
+  --text: rgba(18, 22, 38, 0.95);
+  --text-2: rgba(18, 22, 38, 0.6);
+  --text-3: rgba(18, 22, 38, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(18, 22, 38, 0.1);
+  --glass-shadow: 0 12px 32px rgba(30, 38, 66, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --track: rgba(18, 22, 38, 0.1);
+  --pill-bg: rgba(18, 22, 38, 0.06);
+  --tab-bg: rgba(255, 255, 255, 0.62);
+  --hero-veil-1: rgba(238, 240, 247, 0.6);
+  --hero-veil-2: rgba(238, 240, 247, 0.94);
+  --aurora-opacity: 0.55;
+  color-scheme: light;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-html {
-  color-scheme: dark;
 }
 
 body {
