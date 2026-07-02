@@ -1,0 +1,17 @@
+{
+  "name": "GlassTime — Suivi séries & films",
+  "short_name": "GlassTime",
+  "description": "Suivez vos séries et films : épisodes vus, agenda des diffusions, statistiques.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06070d",
+  "theme_color": "#06070d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
