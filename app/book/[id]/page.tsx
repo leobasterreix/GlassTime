@@ -19,12 +19,14 @@ export default function BookDetailPage({
   const {
     booksWatchlist,
     booksRead,
+    booksReadDates,
     bookCache,
     booksProgress,
     cacheBook,
     toggleBookWatchlist,
     toggleBookRead,
     setBookProgress,
+    setBookReadDate,
     localReviews,
     setLocalReview,
   } = useTrack();
@@ -272,6 +274,30 @@ export default function BookDetailPage({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Date de lecture (si lu) */}
+      {isRead && (
+        <div className="glass card" style={{ padding: 20, marginBottom: 20 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Informations de lecture</h3>
+          <div className="row" style={{ gap: 12, alignItems: "center" }}>
+            <span className="muted" style={{ fontSize: 14 }}>Date de lecture :</span>
+            <input
+              type="date"
+              value={booksReadDates[book.id] ?? ""}
+              onChange={(e) => setBookReadDate(book.id, e.target.value || null)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1.5px solid var(--glass-border)",
+                background: "var(--glass-bg-strong)",
+                color: "var(--text)",
+                fontWeight: 600,
+                outline: "none",
+              }}
+            />
+          </div>
         </div>
       )}
 

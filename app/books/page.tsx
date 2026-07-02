@@ -11,12 +11,29 @@ import type { Book } from "@/lib/types";
 
 type Tab = "watchlist" | "watched" | "discover";
 
+function formatDateRead(dateStr?: string): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    const months = [
+      "janvier", "février", "mars", "avril", "mai", "juin",
+      "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+    ];
+    const monthName = months[Number(m) - 1] ?? "";
+    const dayDisplay = Number(d) === 1 ? "1er" : Number(d);
+    return `Lu le ${dayDisplay} ${monthName} ${y}`;
+  }
+  return `Lu en ${dateStr}`;
+}
+
 export default function BooksPage() {
   const router = useRouter();
   const mounted = useMounted();
   const {
     booksWatchlist,
     booksRead,
+    booksReadDates,
     bookCache,
     booksProgress,
     cacheBook,
@@ -81,7 +98,14 @@ export default function BooksPage() {
 
   const lists: Record<Tab, Book[]> = {
     watchlist: booksWatchlist.map((id) => bookCache[id]).filter(Boolean),
-    watched: booksRead.map((id) => bookCache[id]).filter(Boolean),
+    watched: booksRead
+      .map((id) => bookCache[id])
+      .filter(Boolean)
+      .sort((a, b) => {
+        const dA = booksReadDates[a.id] ?? "";
+        const dB = booksReadDates[b.id] ?? "";
+        return dB.localeCompare(dA); // Descending (plus récent en premier)
+      }),
     discover: (discovered ?? []).filter(
       (b) => !booksWatchlist.includes(b.id) && !booksRead.includes(b.id)
     ),
@@ -197,6 +221,13 @@ export default function BooksPage() {
                   {b.genres.length > 0 && (
                     <div className="tiny" style={{ marginTop: 2 }}>
                       {b.genres.slice(0, 3).join(" · ")}
+                    </div>
+                  )}
+
+                  {seen && booksReadDates[b.id] && (
+                    <div className="tiny" style={{ marginTop: 6, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>📅</span>
+                      <span>{formatDateRead(booksReadDates[b.id])}</span>
                     </div>
                   )}
 

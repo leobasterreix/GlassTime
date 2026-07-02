@@ -36,6 +36,8 @@ type TrackState = {
   toggleBookWatchlist: (id: string) => void;
   toggleBookRead: (id: string) => void;
   setBookProgress: (id: string, pages: number) => void;
+  booksReadDates: Record<string, string>;
+  setBookReadDate: (id: string, date: string | null) => void;
   clearAll: () => void;
   theme: "system" | "light" | "dark";
   toggleTheme: () => void;
@@ -61,6 +63,7 @@ export const useTrack = create<TrackState>()(
       moviesWatched: [],
       booksWatchlist: [],
       booksRead: [],
+      booksReadDates: {},
       showCache: {},
       movieCache: {},
       bookCache: {},
@@ -146,11 +149,25 @@ export const useTrack = create<TrackState>()(
         })),
 
       toggleBookRead: (id) =>
-        set((st) => ({
-          booksRead: toggleInStr(st.booksRead, id),
-          booksWatchlist: st.booksWatchlist.filter((x) => x !== id),
-          updatedAt: Date.now(),
-        })),
+        set((st) => {
+          const nextRead = toggleInStr(st.booksRead, id);
+          const nextDates = { ...st.booksReadDates };
+          if (nextRead.includes(id)) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            nextDates[id] = `${yyyy}-${mm}-${dd}`;
+          } else {
+            delete nextDates[id];
+          }
+          return {
+            booksRead: nextRead,
+            booksReadDates: nextDates,
+            booksWatchlist: st.booksWatchlist.filter((x) => x !== id),
+            updatedAt: Date.now(),
+          };
+        }),
 
       setBookProgress: (id, pages) =>
         set((st) => ({
@@ -160,6 +177,20 @@ export const useTrack = create<TrackState>()(
           },
           updatedAt: Date.now(),
         })),
+
+      setBookReadDate: (id, dateStr) =>
+        set((st) => {
+          const nextDates = { ...st.booksReadDates };
+          if (dateStr) {
+            nextDates[id] = dateStr;
+          } else {
+            delete nextDates[id];
+          }
+          return {
+            booksReadDates: nextDates,
+            updatedAt: Date.now(),
+          };
+        }),
 
       theme: "system",
 
@@ -295,6 +326,7 @@ export const useTrack = create<TrackState>()(
           moviesWatched: [],
           booksWatchlist: [],
           booksRead: [],
+          booksReadDates: {},
           showCache: {},
           movieCache: {},
           bookCache: {},
