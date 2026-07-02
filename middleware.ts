@@ -10,20 +10,23 @@ const PUBLIC_PATHS = [
   "/favicon.ico",
 ];
 
-export async function middleware(req: NextRequest) {
+export async function middleware(request: NextRequest) {
   // BYPASS TEMPORAIRE : Permet de tester l'application en local pendant la panne de Supabase
   const BYPASS_AUTH = true; 
   if (BYPASS_AUTH) return NextResponse.next();
 
   let response = NextResponse.next({
     request: {
-      headers: req.headers,
+      headers: request.headers,
     },
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
