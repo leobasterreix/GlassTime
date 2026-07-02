@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
-import { useHydrateLibrary } from "@/lib/client";
+import { useHydrateLibrary, apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/lib/notifications";
 import { airedEpisodes, DAY, minutesHuman, watchedCount } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
+import type { Book, Movie, Show } from "@/lib/types";
 
 const SYNC_KEYS = [
   "followed",
@@ -33,6 +34,33 @@ const SYNC_KEYS = [
   "localReviews",
   "updatedAt",
 ] as const;
+
+function cleanTitle(title: string): { name: string; year?: number } {
+  const match = title.match(/^(.*?)\s*\((\d{4})\)$/);
+  if (match) {
+    return { name: match[1].trim(), year: parseInt(match[2], 10) };
+  }
+  return { name: title.trim() };
+}
+
+function parseCSVLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result.map(val => val.replace(/^["']|["']$/g, "").trim());
+}
 
 function formatDateRead(dateStr?: string): string {
   if (!dateStr) return "";
@@ -78,6 +106,9 @@ export default function ProfilePage() {
   const [syncOn, setSyncOn] = useState<boolean | null>(null);
   const [notifsOn, setNotifsOn] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState("");
 
   useEffect(() => {
     setNotifsOn(notificationsEnabled());
@@ -110,6 +141,201 @@ export default function ProfilePage() {
         toast("Fichier invalide — export GlassTime attendu", "⚠️");
       }
     });
+  }
+
+  async function handleCSVImport(file: File) {
+    setImporting(true);
+    setImportStatus("Lecture du fichier...");
+
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      if (lines.length < 2) {
+        throw new Error("Fichier CSV vide ou invalide");
+      }
+
+      const delimiter = lines[0].includes(";") ? ";" : ",";
+      const headers = parseCSVLine(lines[0], delimiter);
+      
+      const colIndex = (name: string) => headers.indexOf(name);
+      const idxType = colIndex("type");
+      const idxMediaType = colIndex("media_type");
+      const idxTmdbId = colIndex("tmdb_id");
+      const idxTitle = colIndex("title");
+      const idxSeason = colIndex("season");
+      const idxEpisode = colIndex("episode");
+      const idxWatchedAt = colIndex("watched_at");
+
+      if (idxType === -1 || idxMediaType === -1 || idxTitle === -1) {
+        throw new Error("Colonnes requises manquantes dans le CSV (type, media_type, title)");
+      }
+
+      // Group watch events
+      const tvShowsToImport = new Map<string, {
+        tmdbId?: string;
+        title: string;
+        episodes: { s: number; e: number; date?: string }[];
+      }>();
+
+      const moviesToImport = new Map<string, {
+        tmdbId?: string;
+        title: string;
+        date?: string;
+      }>();
+
+      for (let i = 1; i < lines.length; i++) {
+        const parts = parseCSVLine(lines[i], delimiter);
+        if (parts.length < headers.length) continue;
+
+        const rowType = parts[idxType];
+        if (rowType !== "watch") continue; // only import watched items
+
+        const mediaType = parts[idxMediaType];
+        const tmdbId = idxTmdbId !== -1 ? parts[idxTmdbId] : "";
+        const title = parts[idxTitle];
+        const seasonVal = idxSeason !== -1 ? parts[idxSeason] : "";
+        const episodeVal = idxEpisode !== -1 ? parts[idxEpisode] : "";
+        const watchedAt = idxWatchedAt !== -1 ? parts[idxWatchedAt] : "";
+
+        if (mediaType === "episode") {
+          const s = parseInt(seasonVal, 10);
+          const e = parseInt(episodeVal, 10);
+          if (isNaN(s) || isNaN(e)) continue;
+
+          const key = tmdbId ? `id:${tmdbId}` : `title:${title}`;
+          let show = tvShowsToImport.get(key);
+          if (!show) {
+            show = { tmdbId: tmdbId || undefined, title, episodes: [] };
+            tvShowsToImport.set(key, show);
+          }
+          show.episodes.push({ s, e, date: watchedAt });
+        } else if (mediaType === "movie") {
+          const key = tmdbId ? `id:${tmdbId}` : `title:${title}`;
+          if (!moviesToImport.has(key)) {
+            moviesToImport.set(key, { tmdbId: tmdbId || undefined, title, date: watchedAt });
+          }
+        }
+      }
+
+      const totalItems = tvShowsToImport.size + moviesToImport.size;
+      if (totalItems === 0) {
+        throw new Error("Aucun historique de visionnage trouvé dans le fichier.");
+      }
+
+      let importedShowsCount = 0;
+      let importedMoviesCount = 0;
+      let currentStep = 0;
+
+      // Temporary local copies of states to batch update at the end
+      const newFollowed = new Set([...useTrack.getState().followed]);
+      const newWatched = { ...useTrack.getState().watched };
+      const newMoviesWatched = new Set([...useTrack.getState().moviesWatched]);
+      const newShowCache = { ...useTrack.getState().showCache };
+      const newMovieCache = { ...useTrack.getState().movieCache };
+
+      // Process TV Shows
+      for (const [, item] of tvShowsToImport.entries()) {
+        currentStep++;
+        setImportStatus(`Importation des séries (${currentStep}/${totalItems}) : ${item.title}...`);
+
+        let tmdbIdNum: number | null = null;
+        if (item.tmdbId) {
+          tmdbIdNum = parseInt(item.tmdbId, 10);
+        }
+
+        // If no TMDB ID, look it up by title
+        if (!tmdbIdNum || isNaN(tmdbIdNum)) {
+          const { name, year } = cleanTitle(item.title);
+          try {
+            const results = await apiGet<Show[]>(`/api/shows?q=${encodeURIComponent(name)}`);
+            if (results && results.length > 0) {
+              let bestMatch = results[0];
+              if (year) {
+                const matchedYear = results.find(s => s.year === year);
+                if (matchedYear) bestMatch = matchedYear;
+              }
+              tmdbIdNum = bestMatch.id;
+            }
+          } catch (err) {
+            console.error(`Error searching show ${item.title}:`, err);
+          }
+        }
+
+        if (tmdbIdNum && !isNaN(tmdbIdNum)) {
+          try {
+            // Fetch complete show details to get seasons structure
+            const showDetails = await apiGet<Show>(`/api/show/${tmdbIdNum}`);
+            if (showDetails) {
+              newShowCache[tmdbIdNum] = showDetails;
+              newFollowed.add(tmdbIdNum);
+              
+              if (!newWatched[tmdbIdNum]) {
+                newWatched[tmdbIdNum] = {};
+              }
+
+              for (const ep of item.episodes) {
+                newWatched[tmdbIdNum][`${ep.s}:${ep.e}`] = true;
+              }
+              importedShowsCount++;
+            }
+          } catch (err) {
+            console.error(`Error loading show ${tmdbIdNum}:`, err);
+          }
+        }
+      }
+
+      // Process Movies
+      for (const [, item] of moviesToImport.entries()) {
+        currentStep++;
+        setImportStatus(`Importation des films (${currentStep}/${totalItems}) : ${item.title}...`);
+
+        let tmdbIdNum: number | null = null;
+        if (item.tmdbId) {
+          tmdbIdNum = parseInt(item.tmdbId, 10);
+        }
+
+        if (!tmdbIdNum || isNaN(tmdbIdNum)) {
+          const { name } = cleanTitle(item.title);
+          try {
+            const results = await apiGet<Movie[]>(`/api/movies?q=${encodeURIComponent(name)}`);
+            if (results && results.length > 0) {
+              tmdbIdNum = results[0].id;
+            }
+          } catch (err) {
+            console.error(`Error searching movie ${item.title}:`, err);
+          }
+        }
+
+        if (tmdbIdNum && !isNaN(tmdbIdNum)) {
+          try {
+            const movieDetails = await apiGet<Movie>(`/api/movie/${tmdbIdNum}`);
+            if (movieDetails) {
+              newMovieCache[tmdbIdNum] = movieDetails;
+              newMoviesWatched.add(tmdbIdNum);
+              importedMoviesCount++;
+            }
+          } catch (err) {
+            console.error(`Error loading movie ${tmdbIdNum}:`, err);
+          }
+        }
+      }
+
+      // Batch update the Zustand store state
+      useTrack.setState({
+        followed: Array.from(newFollowed),
+        watched: newWatched,
+        moviesWatched: Array.from(newMoviesWatched),
+        showCache: newShowCache,
+        movieCache: newMovieCache,
+        updatedAt: Date.now(),
+      });
+
+      toast(`Importation réussie : ${importedShowsCount} séries et ${importedMoviesCount} films importés !`, "🎉");
+    } catch (err: any) {
+      toast(err.message || "Erreur lors de l'importation du CSV", "⚠️");
+    } finally {
+      setImporting(false);
+    }
   }
 
   useEffect(() => {
@@ -609,6 +835,24 @@ export default function ProfilePage() {
         <button
           className="glass card pressable"
           style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+          onClick={() => csvInputRef.current?.click()}
+        >
+          📊 Importer un CSV TV Time
+        </button>
+        <input
+          ref={csvInputRef}
+          type="file"
+          accept=".csv"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleCSVImport(f);
+            e.target.value = "";
+          }}
+        />
+        <button
+          className="glass card pressable"
+          style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
           onClick={async () => {
             await supabase.auth.signOut();
             window.location.href = "/login";
@@ -628,6 +872,29 @@ export default function ProfilePage() {
           Effacer mes données
         </button>
       </div>
+
+      {importing && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.85)",
+          backdropFilter: "blur(12px)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: 24,
+          textAlign: "center"
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: "#fff" }}>Importation de vos données TV Time</h2>
+          <p className="muted" style={{ fontSize: 14, maxWidth: 400, lineHeight: 1.5 }}>{importStatus}</p>
+        </div>
+      )}
     </main>
   );
 }
