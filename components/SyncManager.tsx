@@ -50,6 +50,10 @@ export default function SyncManager() {
   }, [theme]);
 
   useEffect(() => {
+    useTrack.getState().migrateDemoIds();
+  }, []);
+
+  useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let unsubStore = () => {};
     let applying = false;

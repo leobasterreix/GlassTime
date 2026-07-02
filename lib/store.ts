@@ -33,6 +33,7 @@ type TrackState = {
   toggleTheme: () => void;
   localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
   setLocalReview: (type: "movie" | "show", id: number, rating: number, content: string) => void;
+  migrateDemoIds: () => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -139,6 +140,105 @@ export const useTrack = create<TrackState>()(
           },
           updatedAt: Date.now(),
         })),
+
+      migrateDemoIds: () =>
+        set((st) => {
+          const TV_MAPPING: Record<string, string> = {
+            "1": "1396", "2": "66732", "3": "60625", "4": "1399", "5": "1668",
+            "6": "1416", "7": "87108", "8": "57243", "9": "100088", "10": "76331",
+            "11": "76479", "12": "60735", "13": "94605", "14": "97546", "15": "94997", "16": "116901"
+          };
+          const MOVIE_MAPPING: Record<string, string> = {
+            "101": "27205", "102": "157336", "103": "496243", "104": "693134", "105": "872585",
+            "106": "313369", "107": "129", "108": "155", "109": "680", "110": "194",
+            "111": "703478", "112": "244786"
+          };
+
+          let changed = false;
+
+          // Migrate followed TV shows
+          const nextFollowed = st.followed.map((id) => {
+            const mapped = TV_MAPPING[String(id)];
+            if (mapped) { changed = true; return Number(mapped); }
+            return id;
+          });
+
+          // Migrate watched series episode markers
+          const nextWatched: Record<number, Record<string, true>> = {};
+          for (const [key, value] of Object.entries(st.watched)) {
+            const mapped = TV_MAPPING[key];
+            if (mapped) {
+              changed = true;
+              nextWatched[Number(mapped)] = value;
+            } else {
+              nextWatched[Number(key)] = value;
+            }
+          }
+
+          // Migrate movieWatchlist
+          const nextMovieWatchlist = st.movieWatchlist.map((id) => {
+            const mapped = MOVIE_MAPPING[String(id)];
+            if (mapped) { changed = true; return Number(mapped); }
+            return id;
+          });
+
+          // Migrate moviesWatched
+          const nextMoviesWatched = st.moviesWatched.map((id) => {
+            const mapped = MOVIE_MAPPING[String(id)];
+            if (mapped) { changed = true; return Number(mapped); }
+            return id;
+          });
+
+          // Clean showCache and movieCache of old keys
+          const nextShowCache = { ...st.showCache };
+          for (const key of Object.keys(TV_MAPPING)) {
+            if (nextShowCache[Number(key)]) {
+              changed = true;
+              delete nextShowCache[Number(key)];
+            }
+          }
+          const nextMovieCache = { ...st.movieCache };
+          for (const key of Object.keys(MOVIE_MAPPING)) {
+            if (nextMovieCache[Number(key)]) {
+              changed = true;
+              delete nextMovieCache[Number(key)];
+            }
+          }
+
+          // Migrate localReviews keys
+          const nextLocalReviews: Record<string, { rating: number; content: string; createdAt: string }> = {};
+          for (const [key, value] of Object.entries(st.localReviews)) {
+            const parts = key.split("-");
+            if (parts.length === 2) {
+              const [type, id] = parts;
+              if (type === "show" && TV_MAPPING[id]) {
+                changed = true;
+                nextLocalReviews[`show-${TV_MAPPING[id]}`] = value;
+              } else if (type === "movie" && MOVIE_MAPPING[id]) {
+                changed = true;
+                nextLocalReviews[`movie-${MOVIE_MAPPING[id]}`] = value;
+              } else {
+                nextLocalReviews[key] = value;
+              }
+            } else {
+              nextLocalReviews[key] = value;
+            }
+          }
+
+          if (changed) {
+            return {
+              followed: nextFollowed,
+              watched: nextWatched,
+              movieWatchlist: nextMovieWatchlist,
+              moviesWatched: nextMoviesWatched,
+              showCache: nextShowCache,
+              movieCache: nextMovieCache,
+              localReviews: nextLocalReviews,
+              updatedAt: Date.now(),
+            };
+          }
+          return {};
+        }),
 
       clearAll: () =>
         set({
