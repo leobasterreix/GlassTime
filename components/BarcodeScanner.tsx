@@ -10,81 +10,108 @@ type Props = {
   onSuccess: (book: Book) => void;
 };
 
+/** ISBN-10 ou ISBN-13 (les EAN de livres commencent par 978/979). */
+function isIsbnLike(code: string): boolean {
+  const clean = code.replace(/[\s-]/g, "");
+  return /^(97[89]\d{10}|\d{9}[\dXx])$/.test(clean);
+}
+
 export default function BarcodeScanner({ onClose, onSuccess }: Props) {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cameraFailed, setCameraFailed] = useState(false);
+  const [manualIsbn, setManualIsbn] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const busyRef = useRef(false);
   const containerId = "barcode-scanner-container";
+
+  async function lookupIsbn(code: string, scanner?: Html5Qrcode | null) {
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const results = await apiGet<Book[]>(
+        `/api/books?isbn=${encodeURIComponent(code.replace(/[\s-]/g, ""))}`
+      );
+      if (results && results.length > 0) {
+        onSuccess(results[0]);
+        return;
+      }
+      setErrorMsg(`Livre non trouvé pour l'ISBN ${code}`);
+    } catch {
+      setErrorMsg("Erreur lors de la recherche du livre.");
+    } finally {
+      setLoading(false);
+    }
+    // Échec : on relance le scan après 2,5 s
+    setTimeout(() => {
+      setErrorMsg("");
+      busyRef.current = false;
+      try {
+        if (scanner?.isScanning) scanner.resume();
+      } catch {
+        /* déjà arrêté */
+      }
+    }, 2500);
+  }
 
   useEffect(() => {
     let activeScanner: Html5Qrcode | null = null;
-    
-    // Start scanner
+
     const startCamera = async () => {
       try {
-        const scanner = new Html5Qrcode(containerId);
+        // Formats des codes-barres de livres uniquement + détecteur natif
+        // du navigateur quand disponible (bien meilleur sur les codes 1D
+        // que le décodeur par défaut, pensé pour les QR).
+        const scanner = new Html5Qrcode(containerId, {
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+          ],
+          useBarCodeDetectorIfSupported: true,
+          verbose: false,
+        });
         activeScanner = scanner;
         scannerRef.current = scanner;
 
         await scanner.start(
           { facingMode: "environment" },
           {
-            fps: 15,
-            qrbox: (width, height) => {
-              // Custom barcode shape (wide rectangle)
-              const boxWidth = Math.min(width * 0.8, 300);
-              const boxHeight = Math.min(height * 0.35, 130);
-              return { width: boxWidth, height: boxHeight };
-            },
+            fps: 10,
+            qrbox: (width, height) => ({
+              width: Math.min(width * 0.85, 320),
+              height: Math.min(height * 0.4, 150),
+            }),
+            aspectRatio: 1.333,
           },
-          async (decodedText) => {
+          (decodedText) => {
+            if (busyRef.current) return;
+            // Un livre peut porter un 2e code (prix) : on ignore le reste
+            if (!isIsbnLike(decodedText)) return;
+            busyRef.current = true;
             try {
-              setLoading(true);
-              setErrorMsg("");
-              
-              // Stop scanning immediately to prevent multiple triggers
-              await scanner.pause(true);
-
-              const results = await apiGet<Book[]>(`/api/books?isbn=${decodedText}`);
-              if (results && results.length > 0) {
-                const book = results[0];
-                onSuccess(book);
-              } else {
-                setErrorMsg(`Livre non trouvé pour l'ISBN : ${decodedText}`);
-                // Resume after 3 seconds
-                setTimeout(() => {
-                  if (scanner.isScanning) {
-                    scanner.resume();
-                  }
-                  setErrorMsg("");
-                }, 3000);
-              }
-            } catch (err) {
-              console.error(err);
-              setErrorMsg("Erreur lors de la recherche du livre.");
-              setTimeout(() => {
-                if (scanner.isScanning) {
-                  scanner.resume();
-                }
-                setErrorMsg("");
-              }, 3000);
-            } finally {
-              setLoading(false);
+              scanner.pause(true);
+            } catch {
+              /* ignore */
             }
+            void lookupIsbn(decodedText, scanner);
           },
           () => {
-            // Silently ignore frame read failures (normal during scanning)
+            // Échecs de lecture image par image : normal pendant le scan
           }
         );
-      } catch (err: any) {
+      } catch (err) {
         console.error("Camera start error:", err);
-        setErrorMsg("Impossible d'accéder à la caméra. Veuillez vérifier les permissions.");
+        setCameraFailed(true);
+        setErrorMsg(
+          "Caméra inaccessible — vérifiez les permissions, ou saisissez l'ISBN ci-dessous."
+        );
       }
     };
 
-    // Wait a brief moment to ensure container element is mounted
     const timer = setTimeout(() => {
-      startCamera();
+      void startCamera();
     }, 100);
 
     return () => {
@@ -93,7 +120,8 @@ export default function BarcodeScanner({ onClose, onSuccess }: Props) {
         activeScanner.stop().catch(console.error);
       }
     };
-  }, [onSuccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="scanner-overlay">
@@ -106,9 +134,8 @@ export default function BarcodeScanner({ onClose, onSuccess }: Props) {
 
       <div className="scanner-viewport-container">
         <div id={containerId} className="scanner-view" />
-        
-        {/* Laser scanner animation overlay */}
-        {!loading && (
+
+        {!loading && !cameraFailed && (
           <div className="scanner-laser-container">
             <div className="scanner-laser" />
             <div className="scanner-target-box" />
@@ -130,7 +157,41 @@ export default function BarcodeScanner({ onClose, onSuccess }: Props) {
       )}
 
       <div className="scanner-footer">
-        <p className="muted" style={{ fontSize: 13 }}>Cadrez le code-barres situé au dos du livre</p>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
+          Cadrez le code-barres au dos du livre (il commence par 978 ou 979)
+        </p>
+        {/* Secours : saisie manuelle de l'ISBN */}
+        <form
+          className="row"
+          style={{ gap: 8, width: "100%", maxWidth: 360 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const code = manualIsbn.trim();
+            if (!isIsbnLike(code)) {
+              setErrorMsg("ISBN invalide — 10 ou 13 chiffres attendus.");
+              return;
+            }
+            busyRef.current = true;
+            void lookupIsbn(code, scannerRef.current);
+          }}
+        >
+          <div className="glass search" style={{ flex: 1, margin: 0, padding: "10px 16px" }}>
+            <input
+              inputMode="numeric"
+              placeholder="…ou tapez l'ISBN"
+              value={manualIsbn}
+              onChange={(e) => setManualIsbn(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary pressable"
+            style={{ padding: "10px 18px" }}
+            disabled={loading || !manualIsbn.trim()}
+          >
+            OK
+          </button>
+        </form>
       </div>
     </div>
   );
