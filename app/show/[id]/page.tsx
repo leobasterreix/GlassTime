@@ -29,6 +29,13 @@ export default function ShowPage() {
   const [tmdbReviews, setTmdbReviews] = useState<Review[]>([]);
   const [reviewsTab, setReviewsTab] = useState<"site" | "tmdb">("site");
 
+  // Auto-bascule sur l'onglet TMDB s'il n'y a pas encore d'avis sur GlassTime
+  useEffect(() => {
+    if (siteReviews.length === 0 && tmdbReviews.length > 0) {
+      setReviewsTab("tmdb");
+    }
+  }, [siteReviews, tmdbReviews]);
+
   const [formRating, setFormRating] = useState<number>(10);
   const [formContent, setFormContent] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
