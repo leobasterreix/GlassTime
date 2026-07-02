@@ -19,8 +19,8 @@ const TABS = [
     label: "Découvrir",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="7.5" />
-        <path d="m20.5 20.5-4-4" />
+        <circle cx="12" cy="12" r="9.5" />
+        <path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor" stroke="none" />
       </svg>
     ),
   },

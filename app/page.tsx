@@ -39,7 +39,7 @@ export default function AgendaPage() {
   const shows = mounted
     ? followed.map((id) => showCache[id]).filter(Boolean)
     : [];
-  // « abandonnée » disparaît de l'agenda ; « en pause » garde ses diffusions
+
   const activeShows = shows.filter(
     (s) => (showStatus[s.id] ?? "active") === "active"
   );
@@ -95,7 +95,6 @@ export default function AgendaPage() {
     byDay.set(day, [...(byDay.get(day) ?? []), entry]);
   }
 
-  // Pastille d'icône + notification des sorties du jour
   useEffect(() => {
     if (!mounted) return;
     updateAppBadge(pendingEpisodes);
@@ -162,80 +161,76 @@ export default function AgendaPage() {
             </div>
           </div>
 
-          {/* À rattraper */}
-          <h2 className="section-title">
-            À rattraper
-            {toCatchUp.length > 0 && <small>{toCatchUp.length}</small>}
-          </h2>
-          {toCatchUp.length === 0 ? (
-            <div className="glass card" style={{ textAlign: "center" }}>
-              <span className="muted">
-                ✓ Vous êtes à jour sur toutes vos séries !
-              </span>
-            </div>
-          ) : (
-            <div className="stack stack-wide">
-              {toCatchUp.map(({ show, next }) => {
-                const aired = airedEpisodes(show).length;
-                const seen = watchedCount(show, watched[show.id]);
-                return (
-                  <div
-                    key={show.id}
-                    className={`glass card${show.backdrop ? " card-backdrop" : ""}`}
-                    style={
-                      show.backdrop
-                        ? { backgroundImage: `url(${show.backdrop})` }
-                        : undefined
-                    }
-                  >
-                    <div className="row">
-                      <Link href={`/show/${show.id}`}>
-                        <Poster item={show} mini />
-                      </Link>
-                      <Link
-                        href={`/show/${show.id}`}
-                        style={{ flex: 1, minWidth: 0 }}
-                      >
-                        <div style={{ fontWeight: 700, fontSize: 16 }}>
-                          {show.title}
-                        </div>
-                        <div className="muted" style={{ marginTop: 2 }}>
-                          {epLabel(next)} — {next.title}
-                        </div>
-                        {next.airDate && (
-                          <div className="tiny" style={{ marginTop: 2 }}>
-                            diffusé {fmtRelativeOrDate(next.airDate)}
+          {/* À rattraper - only if there are episodes to catch up on */}
+          {toCatchUp.length > 0 && (
+            <>
+              <h2 className="section-title">
+                À rattraper
+                <small>{toCatchUp.length}</small>
+              </h2>
+              <div className="stack stack-wide" style={{ marginBottom: 20 }}>
+                {toCatchUp.map(({ show, next }) => {
+                  const aired = airedEpisodes(show).length;
+                  const seen = watchedCount(show, watched[show.id]);
+                  return (
+                    <div
+                      key={show.id}
+                      className={`glass card${show.backdrop ? " card-backdrop" : ""}`}
+                      style={
+                        show.backdrop
+                          ? { backgroundImage: `url(${show.backdrop})` }
+                          : undefined
+                      }
+                    >
+                      <div className="row">
+                        <Link href={`/show/${show.id}`}>
+                          <Poster item={show} mini />
+                        </Link>
+                        <Link
+                          href={`/show/${show.id}`}
+                          style={{ flex: 1, minWidth: 0 }}
+                        >
+                          <div style={{ fontWeight: 700, fontSize: 16 }}>
+                            {show.title}
                           </div>
-                        )}
-                      </Link>
-                      <button
-                        className="check"
-                        aria-label={`Marquer ${epLabel(next)} comme vu`}
-                        onClick={() => markEpisodeWatched(show, next)}
-                      >
-                        ✓
-                      </button>
-                    </div>
-                    <div className="row" style={{ marginTop: 12, gap: 10 }}>
-                      <div className="progress" style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            width: `${aired ? Math.round((seen / aired) * 100) : 0}%`,
-                          }}
-                        />
+                          <div className="muted" style={{ marginTop: 2 }}>
+                            {epLabel(next)} — {next.title}
+                          </div>
+                          {next.airDate && (
+                            <div className="tiny" style={{ marginTop: 2 }}>
+                              diffusé {fmtRelativeOrDate(next.airDate)}
+                            </div>
+                          )}
+                        </Link>
+                        <button
+                          className="check"
+                          aria-label={`Marquer ${epLabel(next)} comme vu`}
+                          onClick={() => markEpisodeWatched(show, next)}
+                        >
+                          ✓
+                        </button>
                       </div>
-                      <span className="tiny">
-                        {seen}/{aired}
-                      </span>
+                      <div className="row" style={{ marginTop: 12, gap: 10 }}>
+                        <div className="progress" style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              width: `${aired ? Math.round((seen / aired) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="tiny">
+                          {seen}/{aired}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {loadingCount > 0 && (
-            <div className="stack" style={{ marginTop: 12 }}>
+            <div className="stack" style={{ marginTop: 12, marginBottom: 20 }}>
               {Array.from({ length: Math.min(loadingCount, 3) }, (_, i) => (
                 <div key={i} className="skeleton" style={{ height: 90 }} />
               ))}
@@ -252,13 +247,13 @@ export default function AgendaPage() {
             </div>
           ) : (
             Array.from(byDay.entries()).map(([day, dayEntries]) => (
-              <div key={day}>
+              <div key={day} style={{ marginBottom: 16 }}>
                 <h3
                   className="section-title"
                   style={{ textTransform: "capitalize", fontSize: 16 }}
                 >
                   {fmtDateLong(day)}
-                  <small>{fmtRelative(day)}</small>
+                  <small style={{ marginLeft: 8, fontSize: 12, color: "var(--text-3)" }}>{fmtRelative(day)}</small>
                 </h3>
                 <div className="stack stack-wide">
                   {dayEntries.map((entry) =>

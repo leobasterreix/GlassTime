@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
+import { useMounted, useTrack } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import {
   disableNotifications,
   enableNotifications,
   notificationsEnabled,
   notificationsSupported,
 } from "@/lib/notifications";
-import { useMounted, useTrack } from "@/lib/store";
-import { toast } from "@/lib/toast";
 import { airedEpisodes, DAY, minutesHuman, watchedCount } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 

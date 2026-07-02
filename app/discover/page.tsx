@@ -13,12 +13,6 @@ import type { Book, Movie, Show } from "@/lib/types";
 
 type MediaType = "shows" | "movies" | "books";
 
-const PLACEHOLDERS: Record<MediaType, string> = {
-  shows: "Rechercher une série…",
-  movies: "Rechercher un film…",
-  books: "Rechercher un titre, un auteur, un ISBN…",
-};
-
 export default function DiscoverPage() {
   const router = useRouter();
   const mounted = useMounted();
@@ -51,7 +45,7 @@ export default function DiscoverPage() {
     apiGet<string[]>("/api/genres").then((g) => g && setGenres(g));
   }, []);
 
-  // « Pour vous » : recommandations basées sur les suivis (une fois par visite)
+  // Recommendations: based on followed items
   useEffect(() => {
     if (!mounted) return;
     const st = useTrack.getState();
@@ -137,8 +131,13 @@ export default function DiscoverPage() {
     router.push(`/book/${book.id}`);
   }
 
+  const handleTypeChange = (newType: MediaType) => {
+    setType(newType);
+    setQuery("");
+    setGenre(null);
+  };
+
   const searching = q.length > 0 || (type === "shows" && genre !== null);
-  const trending = (showResults ?? []).slice(0, 10);
 
   return (
     <main className="page">
@@ -165,56 +164,64 @@ export default function DiscoverPage() {
       <div className="glass segmented" style={{ marginBottom: 16 }}>
         <button
           className={type === "shows" ? "active" : ""}
-          onClick={() => setType("shows")}
+          onClick={() => handleTypeChange("shows")}
         >
           Séries
         </button>
         <button
           className={type === "movies" ? "active" : ""}
-          onClick={() => setType("movies")}
+          onClick={() => handleTypeChange("movies")}
         >
           Films
         </button>
         <button
           className={type === "books" ? "active" : ""}
-          onClick={() => setType("books")}
+          onClick={() => handleTypeChange("books")}
         >
           Livres
         </button>
       </div>
 
-      <div className="glass search">
+      <div className="glass search" style={{ marginBottom: 16 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-3)" }}>
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-3.5-3.5" />
         </svg>
         <input
-          placeholder={PLACEHOLDERS[type]}
+          placeholder={
+            type === "shows"
+              ? "Rechercher une série…"
+              : type === "movies"
+                ? "Rechercher un film…"
+                : "Rechercher un titre, un auteur, un ISBN…"
+          }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
 
-      {/* ===== Séries ===== */}
+      {type === "shows" && genres.length > 0 && (
+        <div className="hscroll" style={{ paddingBottom: 8, marginBottom: 12 }}>
+          {genres.map((g) => (
+            <button
+              key={g}
+              className={`chip pressable${genre === g ? " active" : ""}`}
+              style={{ width: "auto", minWidth: "auto" }}
+              onClick={() => setGenre(genre === g ? null : g)}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 1. SÉRIES RESULTS */}
       {type === "shows" && (
         <>
-          <div className="hscroll" style={{ paddingBottom: 8 }}>
-            {genres.map((g) => (
-              <button
-                key={g}
-                className={`chip pressable${genre === g ? " active" : ""}`}
-                style={{ width: "auto", minWidth: "auto" }}
-                onClick={() => setGenre(genre === g ? null : g)}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-
           {!searching && showRecs.length > 0 && (
             <>
               <h2 className="section-title">✨ Pour vous</h2>
-              <div className="hscroll">
+              <div className="hscroll" style={{ marginBottom: 20 }}>
                 {showRecs.map((s) => (
                   <Link key={s.id} href={`/show/${s.id}`} className="pressable">
                     <Poster item={s} />
@@ -224,11 +231,11 @@ export default function DiscoverPage() {
             </>
           )}
 
-          {!searching && trending.length > 0 && (
+          {!searching && showResults && showResults.length > 0 && (
             <>
               <h2 className="section-title">🔥 Tendances</h2>
-              <div className="hscroll">
-                {trending.map((s) => (
+              <div className="hscroll" style={{ marginBottom: 20 }}>
+                {showResults.slice(0, 10).map((s) => (
                   <Link key={s.id} href={`/show/${s.id}`} className="pressable">
                     <Poster item={s} />
                   </Link>
@@ -251,9 +258,7 @@ export default function DiscoverPage() {
           ) : showResults.length === 0 ? (
             <div className="glass empty">
               <div className="big">🔍</div>
-              <p className="muted">
-                Aucune série ne correspond à votre recherche.
-              </p>
+              <p className="muted">Aucune série ne correspond à votre recherche.</p>
             </div>
           ) : (
             <div className="grid-posters">
@@ -261,11 +266,7 @@ export default function DiscoverPage() {
                 const isFollowed = mounted && followed.includes(s.id);
                 return (
                   <div key={s.id} style={{ position: "relative" }}>
-                    <Link
-                      href={`/show/${s.id}`}
-                      className="pressable"
-                      style={{ display: "block" }}
-                    >
+                    <Link href={`/show/${s.id}`} className="pressable" style={{ display: "block" }}>
                       <Poster item={s} />
                     </Link>
                     <button
@@ -284,13 +285,13 @@ export default function DiscoverPage() {
         </>
       )}
 
-      {/* ===== Films ===== */}
+      {/* 2. FILMS RESULTS */}
       {type === "movies" && (
         <>
           {!searching && movieRecs.length > 0 && (
             <>
               <h2 className="section-title">✨ Pour vous</h2>
-              <div className="hscroll">
+              <div className="hscroll" style={{ marginBottom: 20 }}>
                 {movieRecs.map((m) => (
                   <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
                     <Poster item={m} />
@@ -314,9 +315,7 @@ export default function DiscoverPage() {
           ) : movieResults.length === 0 ? (
             <div className="glass empty">
               <div className="big">🎬</div>
-              <p className="muted">
-                Aucun film ne correspond à votre recherche.
-              </p>
+              <p className="muted">Aucun film ne correspond à votre recherche.</p>
             </div>
           ) : (
             <div className="stack stack-wide">
@@ -386,7 +385,7 @@ export default function DiscoverPage() {
         </>
       )}
 
-      {/* ===== Livres ===== */}
+      {/* 3. LIVRES RESULTS */}
       {type === "books" && (
         <>
           <h2 className="section-title">
@@ -405,9 +404,7 @@ export default function DiscoverPage() {
           ) : bookResults.length === 0 ? (
             <div className="glass empty">
               <div className="big">🔍</div>
-              <p className="muted">
-                Aucun livre ne correspond à votre recherche.
-              </p>
+              <p className="muted">Aucun livre ne correspond à votre recherche.</p>
             </div>
           ) : (
             <div className="stack stack-wide">
