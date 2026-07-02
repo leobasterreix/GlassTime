@@ -46,6 +46,15 @@ const TABS = [
     ),
   },
   {
+    href: "/books",
+    label: "Livres",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5V3.5A2.5 2.5 0 0 1 6.5 1H20v16H6.5a2.5 2.5 0 0 0-2.5 2.5z" />
+      </svg>
+    ),
+  },
+  {
     href: "/profile",
     label: "Profil",
     icon: (

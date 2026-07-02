@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useEffect, useState } from "react";
-import type { Movie, Show } from "./types";
+import type { Movie, Show, Book } from "./types";
 import { epKey } from "./utils";
 
 type TrackState = {
@@ -11,15 +11,20 @@ type TrackState = {
   watched: Record<number, Record<string, true>>;
   movieWatchlist: number[];
   moviesWatched: number[];
+  booksWatchlist: string[];
+  booksRead: string[];
+  booksProgress: Record<string, number>;
   /** Horodatage de la dernière modification — sert d'arbitre à la synchronisation. */
   updatedAt: number;
   // Fiches conservées localement : l'accueil, l'agenda et le profil
   // fonctionnent sans rappeler l'API à chaque visite.
   showCache: Record<number, Show>;
   movieCache: Record<number, Movie>;
+  bookCache: Record<string, Book>;
   toggleFollow: (id: number) => void;
   cacheShow: (show: Show) => void;
   cacheMovie: (movie: Movie) => void;
+  cacheBook: (book: Book) => void;
   setEpisode: (showId: number, s: number, e: number, value: boolean) => void;
   setEpisodes: (
     showId: number,
@@ -28,15 +33,22 @@ type TrackState = {
   ) => void;
   toggleMovieWatchlist: (id: number) => void;
   toggleMovieWatched: (id: number) => void;
+  toggleBookWatchlist: (id: string) => void;
+  toggleBookRead: (id: string) => void;
+  setBookProgress: (id: string, pages: number) => void;
   clearAll: () => void;
   theme: "system" | "light" | "dark";
   toggleTheme: () => void;
   localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
-  setLocalReview: (type: "movie" | "show", id: number, rating: number, content: string) => void;
+  setLocalReview: (type: "movie" | "show" | "book", id: number | string, rating: number, content: string) => void;
   migrateDemoIds: () => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
+  return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+}
+
+function toggleInStr(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
@@ -47,8 +59,12 @@ export const useTrack = create<TrackState>()(
       watched: {},
       movieWatchlist: [],
       moviesWatched: [],
+      booksWatchlist: [],
+      booksRead: [],
       showCache: {},
       movieCache: {},
+      bookCache: {},
+      booksProgress: {},
       localReviews: {},
       updatedAt: 0,
 
@@ -111,6 +127,37 @@ export const useTrack = create<TrackState>()(
         set((st) => ({
           moviesWatched: toggleIn(st.moviesWatched, id),
           movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
+          updatedAt: Date.now(),
+        })),
+
+      cacheBook: (book) =>
+        set((st) => ({
+          bookCache: {
+            ...st.bookCache,
+            [book.id]: { ...st.bookCache[book.id], ...book },
+          },
+          updatedAt: Date.now(),
+        })),
+
+      toggleBookWatchlist: (id) =>
+        set((st) => ({
+          booksWatchlist: toggleInStr(st.booksWatchlist, id),
+          updatedAt: Date.now(),
+        })),
+
+      toggleBookRead: (id) =>
+        set((st) => ({
+          booksRead: toggleInStr(st.booksRead, id),
+          booksWatchlist: st.booksWatchlist.filter((x) => x !== id),
+          updatedAt: Date.now(),
+        })),
+
+      setBookProgress: (id, pages) =>
+        set((st) => ({
+          booksProgress: {
+            ...st.booksProgress,
+            [id]: pages,
+          },
           updatedAt: Date.now(),
         })),
 
@@ -246,8 +293,12 @@ export const useTrack = create<TrackState>()(
           watched: {},
           movieWatchlist: [],
           moviesWatched: [],
+          booksWatchlist: [],
+          booksRead: [],
           showCache: {},
           movieCache: {},
+          bookCache: {},
+          booksProgress: {},
           localReviews: {},
           updatedAt: Date.now(),
         }),

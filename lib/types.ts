@@ -48,3 +48,15 @@ export type Review = {
   content: string;
   createdAt: string;
 };
+
+export type Book = {
+  id: string; // Work ID (ex: OL82563W) ou ISBN
+  title: string;
+  author: string;
+  year: number;
+  genres: string[];
+  overview: string;
+  poster?: string | null; // Cover URL
+  pages?: number; // total pages
+  rating?: number;
+};

@@ -644,3 +644,168 @@ details.season[open] .chevron {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ===== Barcode Scanner ===== */
+
+.scanner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: rgba(10, 10, 12, 0.96);
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scanner-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.scanner-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.scanner-viewport-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-view {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scanner-view video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.scanner-laser-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-target-box {
+  width: 300px;
+  height: 130px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65); /* Dim area outside target box */
+  position: relative;
+}
+
+/* Corner indicators */
+.scanner-target-box::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 3px solid #0084ff;
+  border-radius: 12px;
+  clip-path: polygon(
+    0 0, 24px 0, 24px 24px, 0 24px, 0 0,
+    100% 0, 100% 24px, calc(100% - 24px) 24px, calc(100% - 24px) 0, 100% 0,
+    100% 100%, calc(100% - 24px) 100%, calc(100% - 24px) calc(100% - 24px), 100% calc(100% - 24px), 100% 100%,
+    0 100%, 0 calc(100% - 24px), 24px calc(100% - 24px), 24px 100%, 0 100%
+  );
+}
+
+.scanner-laser {
+  position: absolute;
+  width: 280px;
+  height: 2px;
+  background: #ff3b30;
+  box-shadow: 0 0 8px #ff3b30, 0 0 14px #ff3b30;
+  animation: laser-scan 2.5s infinite linear;
+  z-index: 10;
+}
+
+@keyframes laser-scan {
+  0% {
+    transform: translateY(-55px);
+  }
+  50% {
+    transform: translateY(55px);
+  }
+  100% {
+    transform: translateY(-55px);
+  }
+}
+
+.scanner-loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-error {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 59, 48, 0.92);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+  z-index: 20;
+  max-width: 90%;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(-50%); }
+  25% { transform: translateX(calc(-50% - 6px)); }
+  75% { transform: translateX(calc(-50% + 6px)); }
+}
+
+.scanner-footer {
+  padding: 24px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 12, 0.8);
+}
