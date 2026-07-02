@@ -87,7 +87,7 @@ export default function CalendarPage() {
           {recent.length > 0 && (
             <>
               <h2 className="section-title">Cette semaine</h2>
-              <div className="stack">
+              <div className="stack stack-wide">
                 {recent.map(({ show, ep }) => (
                   <EntryRow key={`${show.id}-${ep.s}:${ep.e}`} show={show} ep={ep} />
                 ))}
@@ -100,7 +100,7 @@ export default function CalendarPage() {
                 {fmtDateLong(day)}
                 <small>{fmtRelative(day)}</small>
               </h2>
-              <div className="stack">
+              <div className="stack stack-wide">
                 {dayEntries.map(({ show, ep }) => (
                   <EntryRow key={`${show.id}-${ep.s}:${ep.e}`} show={show} ep={ep} />
                 ))}

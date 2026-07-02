@@ -66,6 +66,11 @@ button {
   border: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+a {
+  touch-action: manipulation;
 }
 
 input {
@@ -339,6 +344,18 @@ input {
   gap: 12px;
 }
 
+/* Liste qui passe en grille sur tablette/desktop (accueil, agenda, films) */
+.stack-wide {
+  align-items: stretch;
+}
+
+/* Grilles de statistiques et badges (profil) */
+.grid-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -491,8 +508,107 @@ details.season[open] .chevron {
   transform: rotate(90deg);
 }
 
-@media (min-width: 720px) {
+/* ===== Fiche série : en-tête ===== */
+
+.show-hero {
+  padding: 24px;
+  text-align: center;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.show-hero .hero-poster {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.show-hero .hero-body {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ===== Tablette (iPad portrait, grands téléphones en paysage) ===== */
+
+@media (min-width: 700px) {
+  .page {
+    max-width: 780px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .page-title {
+    font-size: 38px;
+  }
+
   .grid-posters {
     grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .hscroll > * {
+    min-width: 148px;
+    width: 148px;
+  }
+
+  .stack-wide {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+  }
+
+  .grid-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .show-hero {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: 26px;
+    padding: 28px;
+  }
+
+  .show-hero .hero-poster {
+    width: 170px;
+  }
+
+  .show-hero .hero-body {
+    flex: 1;
+  }
+
+  .tabbar {
+    width: min(560px, calc(100% - 28px));
+  }
+
+  .tabbar a {
+    padding: 8px 22px;
+  }
+}
+
+/* ===== iPad Pro / paysage / desktop ===== */
+
+@media (min-width: 1024px) {
+  .page {
+    max-width: 1060px;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  .grid-posters {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .stack-wide {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-stats {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .grid-stats.badges {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

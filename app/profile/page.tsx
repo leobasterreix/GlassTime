@@ -1,6 +1,7 @@
 "use client";
 
-import { useHydrateLibrary } from "@/lib/client";
+import { useEffect, useState } from "react";
+import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { airedEpisodes, minutesHuman, watchedCount } from "@/lib/utils";
 
@@ -9,6 +10,12 @@ export default function ProfilePage() {
   const { followed, watched, moviesWatched, showCache, movieCache, clearAll } =
     useTrack();
   useHydrateLibrary();
+  const [syncOn, setSyncOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    apiGet<{ configured: boolean }>("/api/sync").then((d) =>
+      setSyncOn(d?.configured ?? false)
+    );
+  }, []);
 
   if (!mounted) {
     return (
@@ -112,13 +119,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-        }}
-      >
+      <div className="grid-stats">
         {stats.map((s) => (
           <div key={s.label} className="glass card" style={{ textAlign: "center" }}>
             <div style={{ fontSize: 21, fontWeight: 800 }}>{s.value}</div>
@@ -146,9 +147,7 @@ export default function ProfilePage() {
       )}
 
       <h2 className="section-title">Badges</h2>
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-      >
+      <div className="grid-stats badges">
         {badges.map((b) => (
           <div
             key={b.label}
@@ -166,6 +165,21 @@ export default function ProfilePage() {
 
       <h2 className="section-title">Données</h2>
       <div className="stack">
+        <div className="glass card row" style={{ gap: 10 }}>
+          <span style={{ fontSize: 20 }}>☁️</span>
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}>
+              Synchronisation multi-appareils
+            </div>
+            <div className="tiny">
+              {syncOn === null
+                ? "Vérification…"
+                : syncOn
+                  ? "Active — vos données suivent votre compte"
+                  : "Non configurée — données sur cet appareil uniquement"}
+            </div>
+          </div>
+        </div>
         <button
           className="glass card pressable"
           style={{ width: "100%", textAlign: "center", fontWeight: 700 }}

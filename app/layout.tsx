@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import SyncManager from "@/components/SyncManager";
 import TabBar from "@/components/TabBar";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="fr">
       <body>
         <div className="aurora" />
+        <SyncManager />
         {children}
         <TabBar />
       </body>

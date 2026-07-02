@@ -84,7 +84,7 @@ export default function WatchlistPage() {
           </Link>
         </div>
       ) : (
-        <div className="stack">
+        <div className="stack stack-wide">
           {withNext.map(({ show, next }) => {
             const aired = airedEpisodes(show).length;
             const seen = watchedCount(show, watched[show.id]);

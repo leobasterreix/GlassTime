@@ -42,7 +42,7 @@ export default function LoginPage() {
       <form
         onSubmit={submit}
         className="glass"
-        style={{ padding: 28, width: "100%", textAlign: "center" }}
+        style={{ padding: 28, width: "100%", maxWidth: 420, margin: "0 auto", textAlign: "center" }}
       >
         <div style={{ fontSize: 52, filter: "drop-shadow(0 8px 20px rgba(0,0,0,.5))" }}>
           🔒

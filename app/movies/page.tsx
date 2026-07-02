@@ -132,7 +132,7 @@ export default function MoviesPage() {
           <p className="muted">{emptyText[tab]}</p>
         </div>
       ) : (
-        <div className="stack">
+        <div className="stack stack-wide">
           {current.map((m) => {
             const inList = movieWatchlist.includes(m.id);
             const seen = moviesWatched.includes(m.id);

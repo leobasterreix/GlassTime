@@ -30,6 +30,18 @@ d'environnement `APP_PASSWORD` (en local dans `.env.local`, sur Vercel dans
 protégées par un cookie de session d'un an ; le bouton « 🔒 Verrouiller l'appli »
 du profil ferme la session. Sans cette variable, l'application est ouverte.
 
+## Synchronisation multi-appareils (optionnel)
+
+Par défaut, les données restent dans le navigateur (localStorage). Pour les
+retrouver sur tous vos appareils, connectez une base Redis :
+
+1. Sur Vercel : **Storage → Create Database → Upstash (Redis)**, plan gratuit,
+   puis liez-la au projet — les variables `KV_REST_API_URL` et
+   `KV_REST_API_TOKEN` sont ajoutées automatiquement
+2. Redéployez : la synchronisation s'active toute seule (visible dans Profil →
+   Données). Le plus récent gagne ; chaque modification est poussée après
+   1,5 s d'inactivité.
+
 ## Développement
 
 ```bash

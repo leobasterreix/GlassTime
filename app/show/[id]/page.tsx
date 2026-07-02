@@ -85,19 +85,15 @@ export default function ShowPage() {
 
       {/* En-tête */}
       <div
-        className="glass"
+        className="glass show-hero"
         style={{
-          padding: 24,
-          textAlign: "center",
           background: heroBg ? `${heroBg}, var(--glass-bg)` : undefined,
-          overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <div style={{ width: 110 }}>
-            <Poster item={show} />
-          </div>
+        <div className="hero-poster">
+          <Poster item={show} />
         </div>
+        <div className="hero-body">
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 14 }}>
           {show.title}
         </h1>
@@ -148,6 +144,7 @@ export default function ShowPage() {
           <span className="tiny">
             {seen}/{aired.length} · {pct}%
           </span>
+        </div>
         </div>
       </div>
 

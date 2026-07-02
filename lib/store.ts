@@ -11,6 +11,8 @@ type TrackState = {
   watched: Record<number, Record<string, true>>;
   movieWatchlist: number[];
   moviesWatched: number[];
+  /** Horodatage de la dernière modification — sert d'arbitre à la synchronisation. */
+  updatedAt: number;
   // Fiches conservées localement : l'accueil, l'agenda et le profil
   // fonctionnent sans rappeler l'API à chaque visite.
   showCache: Record<number, Show>;
@@ -42,9 +44,13 @@ export const useTrack = create<TrackState>()(
       moviesWatched: [],
       showCache: {},
       movieCache: {},
+      updatedAt: 0,
 
       toggleFollow: (id) =>
-        set((st) => ({ followed: toggleIn(st.followed, id) })),
+        set((st) => ({
+          followed: toggleIn(st.followed, id),
+          updatedAt: Date.now(),
+        })),
 
       cacheShow: (show) =>
         set((st) => ({
@@ -53,6 +59,7 @@ export const useTrack = create<TrackState>()(
             // Fusion : un résumé (sans saisons) ne doit pas écraser une fiche complète
             [show.id]: { ...st.showCache[show.id], ...show },
           },
+          updatedAt: Date.now(),
         })),
 
       cacheMovie: (movie) =>
@@ -61,6 +68,7 @@ export const useTrack = create<TrackState>()(
             ...st.movieCache,
             [movie.id]: { ...st.movieCache[movie.id], ...movie },
           },
+          updatedAt: Date.now(),
         })),
 
       setEpisode: (showId, s, e, value) =>
@@ -68,7 +76,10 @@ export const useTrack = create<TrackState>()(
           const map = { ...(st.watched[showId] ?? {}) };
           if (value) map[epKey(s, e)] = true;
           else delete map[epKey(s, e)];
-          return { watched: { ...st.watched, [showId]: map } };
+          return {
+            watched: { ...st.watched, [showId]: map },
+            updatedAt: Date.now(),
+          };
         }),
 
       setEpisodes: (showId, eps, value) =>
@@ -78,16 +89,23 @@ export const useTrack = create<TrackState>()(
             if (value) map[epKey(s, e)] = true;
             else delete map[epKey(s, e)];
           }
-          return { watched: { ...st.watched, [showId]: map } };
+          return {
+            watched: { ...st.watched, [showId]: map },
+            updatedAt: Date.now(),
+          };
         }),
 
       toggleMovieWatchlist: (id) =>
-        set((st) => ({ movieWatchlist: toggleIn(st.movieWatchlist, id) })),
+        set((st) => ({
+          movieWatchlist: toggleIn(st.movieWatchlist, id),
+          updatedAt: Date.now(),
+        })),
 
       toggleMovieWatched: (id) =>
         set((st) => ({
           moviesWatched: toggleIn(st.moviesWatched, id),
           movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
+          updatedAt: Date.now(),
         })),
 
       clearAll: () =>
@@ -98,6 +116,7 @@ export const useTrack = create<TrackState>()(
           moviesWatched: [],
           showCache: {},
           movieCache: {},
+          updatedAt: Date.now(),
         }),
     }),
     { name: "glasstime-store" }
