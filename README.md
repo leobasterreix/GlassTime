@@ -22,6 +22,14 @@ Webapp mobile-first de suivi de séries et films (inspirée de TV Time), avec un
 
 La clé v3 (« API Key ») et le jeton v4 (« API Read Access Token ») fonctionnent tous les deux. En cas d'absence de clé ou d'erreur TMDB, l'application retombe automatiquement sur le catalogue de démonstration.
 
+## Accès privé (mot de passe)
+
+L'application peut être verrouillée par un mot de passe unique : définir la variable
+d'environnement `APP_PASSWORD` (en local dans `.env.local`, sur Vercel dans
+**Settings → Environment Variables**). Toutes les pages et routes API sont alors
+protégées par un cookie de session d'un an ; le bouton « 🔒 Verrouiller l'appli »
+du profil ferme la session. Sans cette variable, l'application est ouverte.
+
 ## Développement
 
 ```bash

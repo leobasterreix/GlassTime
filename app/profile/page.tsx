@@ -165,17 +165,29 @@ export default function ProfilePage() {
       </div>
 
       <h2 className="section-title">Données</h2>
-      <button
-        className="glass card pressable"
-        style={{ width: "100%", textAlign: "center", color: "#ff6b6b", fontWeight: 700 }}
-        onClick={() => {
-          if (confirm("Effacer toutes vos données de suivi ? Cette action est irréversible.")) {
-            clearAll();
-          }
-        }}
-      >
-        Effacer mes données
-      </button>
+      <div className="stack">
+        <button
+          className="glass card pressable"
+          style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+          onClick={async () => {
+            await fetch("/api/login", { method: "DELETE" });
+            window.location.href = "/login";
+          }}
+        >
+          🔒 Verrouiller l'appli
+        </button>
+        <button
+          className="glass card pressable"
+          style={{ width: "100%", textAlign: "center", color: "#ff6b6b", fontWeight: 700 }}
+          onClick={() => {
+            if (confirm("Effacer toutes vos données de suivi ? Cette action est irréversible.")) {
+              clearAll();
+            }
+          }}
+        >
+          Effacer mes données
+        </button>
+      </div>
     </main>
   );
 }

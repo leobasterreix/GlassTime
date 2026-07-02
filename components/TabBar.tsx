@@ -59,6 +59,7 @@ const TABS = [
 
 export default function TabBar() {
   const pathname = usePathname();
+  if (pathname === "/login") return null;
   return (
     <nav className="tabbar">
       {TABS.map((t) => {
