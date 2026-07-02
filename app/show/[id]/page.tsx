@@ -226,6 +226,31 @@ export default function ShowPage() {
         </div>
       </div>
 
+      {/* Bande-annonce */}
+      {show.trailerKey && (
+        <>
+          <h2 className="section-title">Bande-annonce</h2>
+          <div className="glass card" style={{ padding: 0, overflow: "hidden", marginBottom: 20, borderRadius: 16 }}>
+            <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${show.trailerKey}?rel=0&modestbranding=1`}
+                title={`Bande-annonce de ${show.title}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Saisons */}
       <h2 className="section-title">Saisons</h2>
       {!hasSeasons ? (

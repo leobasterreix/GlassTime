@@ -25,6 +25,7 @@ export type Show = {
   status?: "En cours" | "Terminée";
   runtime?: number; // minutes par épisode
   seasons?: Season[]; // absent sur les résumés (recherche/tendances)
+  trailerKey?: string; // YouTube video key
 };
 
 export type Movie = {
@@ -38,6 +39,7 @@ export type Movie = {
   colors?: [string, string];
   runtime?: number;
   rating?: number;
+  trailerKey?: string; // YouTube video key
 };
 
 export type Review = {

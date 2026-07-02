@@ -144,13 +144,34 @@ export async function listShows(q?: string, genre?: string): Promise<Show[]> {
 export async function getShowDetail(id: number): Promise<Show | null> {
   if (!hasTmdb()) return null;
   try {
-    const d = await tmdb(`/tv/${id}`);
+    const [d, videosData] = await Promise.all([
+      tmdb(`/tv/${id}`),
+      tmdb(`/tv/${id}/videos`, { language: "fr-FR" }).catch(() => ({ results: [] })),
+    ]);
     const nums: number[] = (d.seasons ?? [])
       .filter((s: { season_number: number }) => s.season_number > 0)
       .map((s: { season_number: number }) => s.season_number);
     const seasonData = await Promise.all(
       nums.map((n) => tmdb(`/tv/${id}/season/${n}`).catch(() => null))
     );
+
+    // Pick best trailer: prefer FR, fallback to EN
+    let trailerKey: string | undefined;
+    const vids: any[] = videosData.results ?? [];
+    const trailer = vids.find((v: any) => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "fr")
+      ?? vids.find((v: any) => v.site === "YouTube" && v.type === "Trailer")
+      ?? vids.find((v: any) => v.site === "YouTube" && v.type === "Teaser");
+    if (trailer) trailerKey = trailer.key;
+    // If no FR trailers found, try EN endpoint
+    if (!trailerKey) {
+      try {
+        const enVids = await tmdb(`/tv/${id}/videos`, { language: "en-US" });
+        const enTrailer = (enVids.results ?? []).find((v: any) => v.site === "YouTube" && v.type === "Trailer")
+          ?? (enVids.results ?? []).find((v: any) => v.site === "YouTube" && v.type === "Teaser");
+        if (enTrailer) trailerKey = enTrailer.key;
+      } catch { /* ignore */ }
+    }
+
     return {
       id: d.id,
       title: d.name,
@@ -165,6 +186,7 @@ export async function getShowDetail(id: number): Promise<Show | null> {
         : "En cours",
       runtime:
         d.episode_run_time?.[0] ?? d.last_episode_to_air?.runtime ?? 40,
+      trailerKey,
       seasons: seasonData
         .filter(Boolean)
         .map((sd) => ({
@@ -207,7 +229,28 @@ export async function listMovies(q?: string): Promise<Movie[]> {
 export async function getMovieDetail(id: number): Promise<Movie | null> {
   if (!hasTmdb()) return null;
   try {
-    const d = await tmdb(`/movie/${id}`);
+    const [d, videosData] = await Promise.all([
+      tmdb(`/movie/${id}`),
+      tmdb(`/movie/${id}/videos`, { language: "fr-FR" }).catch(() => ({ results: [] })),
+    ]);
+
+    // Pick best trailer: prefer FR, fallback to EN
+    let trailerKey: string | undefined;
+    const vids: any[] = videosData.results ?? [];
+    const trailer = vids.find((v: any) => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "fr")
+      ?? vids.find((v: any) => v.site === "YouTube" && v.type === "Trailer")
+      ?? vids.find((v: any) => v.site === "YouTube" && v.type === "Teaser");
+    if (trailer) trailerKey = trailer.key;
+    // If no FR trailers found, try EN endpoint
+    if (!trailerKey) {
+      try {
+        const enVids = await tmdb(`/movie/${id}/videos`, { language: "en-US" });
+        const enTrailer = (enVids.results ?? []).find((v: any) => v.site === "YouTube" && v.type === "Trailer")
+          ?? (enVids.results ?? []).find((v: any) => v.site === "YouTube" && v.type === "Teaser");
+        if (enTrailer) trailerKey = enTrailer.key;
+      } catch { /* ignore */ }
+    }
+
     return {
       id: d.id,
       title: d.title,
@@ -217,6 +260,7 @@ export async function getMovieDetail(id: number): Promise<Movie | null> {
       poster: d.poster_path ? `${IMG}w342${d.poster_path}` : null,
       runtime: d.runtime || undefined,
       rating: d.vote_average || undefined,
+      trailerKey,
     };
   } catch (err) {
     console.error("TMDB error getMovieDetail:", err);
