@@ -29,6 +29,8 @@ type TrackState = {
   toggleMovieWatchlist: (id: number) => void;
   toggleMovieWatched: (id: number) => void;
   clearAll: () => void;
+  theme: "dark" | "light";
+  toggleTheme: () => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -106,6 +108,13 @@ export const useTrack = create<TrackState>()(
           moviesWatched: toggleIn(st.moviesWatched, id),
           movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
           updatedAt: Date.now(),
+        })),
+
+      theme: "dark",
+
+      toggleTheme: () =>
+        set((st) => ({
+          theme: st.theme === "light" ? "dark" : "light",
         })),
 
       clearAll: () =>

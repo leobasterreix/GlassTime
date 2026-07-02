@@ -26,6 +26,12 @@ function snapshot(): SyncState {
 }
 
 export default function SyncManager() {
+  const theme = useTrack((st) => st.theme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme || "dark");
+  }, [theme]);
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let unsubStore = () => {};

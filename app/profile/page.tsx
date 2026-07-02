@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 export default function ProfilePage() {
   const mounted = useMounted();
-  const { followed, watched, moviesWatched, showCache, movieCache, clearAll } =
+  const { followed, watched, moviesWatched, showCache, movieCache, clearAll, theme, toggleTheme } =
     useTrack();
   useHydrateLibrary();
 
@@ -189,6 +189,25 @@ export default function ProfilePage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <h2 className="section-title">Préférences</h2>
+      <div className="stack" style={{ marginBottom: 20 }}>
+        <button
+          className="glass card pressable"
+          style={{
+            width: "100%",
+            textAlign: "center",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+          onClick={toggleTheme}
+        >
+          {theme === "light" ? "🌙 Mode Sombre" : "☀️ Mode Clair"}
+        </button>
       </div>
 
       <h2 className="section-title">Données</h2>
