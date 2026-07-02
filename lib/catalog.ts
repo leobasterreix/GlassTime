@@ -7,6 +7,58 @@ import type { Movie, Show, Review } from "./types";
 
 const IMG = "https://image.tmdb.org/t/p/";
 
+const TV_MAPPING: Record<string, string> = {
+  "1": "1396", // Breaking Bad
+  "2": "66732", // Stranger Things
+  "3": "60625", // Rick and Morty
+  "4": "1399", // Game of Thrones
+  "5": "1668", // Friends
+  "6": "1416", // The Office
+  "7": "87108", // Chernobyl
+  "8": "57243", // Attack on Titan
+  "9": "100088", // The Last of Us
+  "10": "76331", // Succession
+  "11": "76479", // The Boys
+  "12": "60735", // Peaky Blinders
+  "13": "94605", // Arcane
+  "14": "97546", // Ted Lasso
+  "15": "94997", // House of the Dragon
+  "16": "116901", // Lupin
+};
+
+const MOVIE_MAPPING: Record<string, string> = {
+  "101": "27205", // Inception
+  "102": "157336", // Interstellar
+  "103": "496243", // Parasite
+  "104": "693134", // Dune: Part Two
+  "105": "872585", // Oppenheimer
+  "106": "313369", // La La Land
+  "107": "129", // Le Voyage de Chihiro
+  "108": "155", // The Dark Knight
+  "109": "680", // Pulp Fiction
+  "110": "194", // Amélie Poulain
+  "111": "703478", // Everything Everywhere All at Once
+  "112": "244786", // Whiplash
+};
+
+function mapPath(path: string): string {
+  const tvMatch = path.match(/^\/tv\/(\d+)(.*)$/);
+  if (tvMatch) {
+    const id = tvMatch[1];
+    if (TV_MAPPING[id]) {
+      return `/tv/${TV_MAPPING[id]}${tvMatch[2]}`;
+    }
+  }
+  const movieMatch = path.match(/^\/movie\/(\d+)(.*)$/);
+  if (movieMatch) {
+    const id = movieMatch[1];
+    if (MOVIE_MAPPING[id]) {
+      return `/movie/${MOVIE_MAPPING[id]}${movieMatch[2]}`;
+    }
+  }
+  return path;
+}
+
 const TV_GENRES: Record<number, string> = {
   10759: "Action & Aventure",
   16: "Animation",
@@ -73,9 +125,10 @@ function hasTmdb() {
 }
 
 async function tmdb(path: string, params: Record<string, string> = {}) {
+  const mappedPath = mapPath(path);
   const key = process.env.TMDB_API_KEY!;
-  const url = new URL(`https://api.themoviedb.org/3${path}`);
-  if (!path.endsWith("/reviews")) {
+  const url = new URL(`https://api.themoviedb.org/3${mappedPath}`);
+  if (!mappedPath.endsWith("/reviews")) {
     url.searchParams.set("language", "fr-FR");
   }
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
