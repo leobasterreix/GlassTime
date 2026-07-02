@@ -4,24 +4,35 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import { apiGet, followShow } from "@/lib/client";
-import { useMounted, useTrack } from "@/lib/store";
-import type { Show, Review } from "@/lib/types";
+import { useMounted, useTrack, type ShowFollowStatus } from "@/lib/store";
+import { toast } from "@/lib/toast";
+import { markEpisodeWatched, markWatchedUpTo } from "@/lib/watch";
+import type { Episode, Show, Review } from "@/lib/types";
 import {
   airedEpisodes,
   epKey,
+  epLabel,
   fmtDate,
   fmtRelative,
   isAired,
   watchedCount,
 } from "@/lib/utils";
 
+const STATUS_LABELS: { value: ShowFollowStatus; label: string }[] = [
+  { value: "active", label: "En cours" },
+  { value: "paused", label: "En pause" },
+  { value: "dropped", label: "Abandonnée" },
+];
+
 export default function ShowPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params.id);
   const mounted = useMounted();
-  const { followed, watched, showCache, cacheShow, setEpisode, setEpisodes, localReviews, setLocalReview } =
+  const { followed, watched, showCache, cacheShow, setEpisode, setEpisodes, localReviews, setLocalReview, showStatus, setShowStatus } =
     useTrack();
+  // Proposition de rattrapage après avoir coché un épisode « en avance »
+  const [catchUp, setCatchUp] = useState<{ ep: Episode; count: number } | null>(null);
 
   const [fetched, setFetched] = useState<Show | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -127,12 +138,22 @@ export default function ShowPage() {
         <button className="chip pressable" onClick={() => router.back()} style={{ marginBottom: 16 }}>
           ← Retour
         </button>
-        <div className="glass empty">
-          <div className="big">{notFound ? "🫥" : "⏳"}</div>
-          <p className="muted">
-            {notFound ? "Série introuvable." : "Chargement…"}
-          </p>
-        </div>
+        {notFound ? (
+          <div className="glass empty">
+            <div className="big">🫥</div>
+            <p className="muted">Série introuvable.</p>
+          </div>
+        ) : (
+          <>
+            <div className="skeleton" style={{ height: 230, borderRadius: 24, marginBottom: 20 }} />
+            <div className="skeleton skeleton-line" style={{ width: "45%" }} />
+            <div className="stack" style={{ marginTop: 16 }}>
+              <div className="skeleton" style={{ height: 56 }} />
+              <div className="skeleton" style={{ height: 56 }} />
+              <div className="skeleton" style={{ height: 56 }} />
+            </div>
+          </>
+        )}
       </main>
     );
   }
@@ -146,10 +167,24 @@ export default function ShowPage() {
   const hasSeasons = (show.seasons ?? []).length > 0;
 
   const heroBg = show.backdrop
-    ? `linear-gradient(180deg, rgba(6,7,13,.25), rgba(6,7,13,.85)), url(${show.backdrop}) center/cover`
+    ? `linear-gradient(180deg, var(--hero-veil-1), var(--hero-veil-2)), url(${show.backdrop}) center/cover`
     : show.colors
       ? `linear-gradient(170deg, ${show.colors[1]}55, ${show.colors[0]}33)`
       : undefined;
+
+  const currentStatus: ShowFollowStatus = showStatus[show.id] ?? "active";
+
+  function onEpisodeCheck(ep: Episode, seen_: boolean) {
+    if (!show) return;
+    if (seen_) {
+      setEpisode(show.id, ep.s, ep.e, false);
+      setCatchUp(null);
+      return;
+    }
+    const unseenBefore = markEpisodeWatched(show, ep);
+    if (unseenBefore > 0) setCatchUp({ ep, count: unseenBefore });
+    else setCatchUp(null);
+  }
 
   return (
     <main className="page">
@@ -203,17 +238,63 @@ export default function ShowPage() {
             className="btn pressable"
             style={{ flex: 1 }}
             disabled={!hasSeasons}
-            onClick={() =>
+            onClick={() => {
               setEpisodes(
                 show.id,
                 aired.map(({ s, e }) => ({ s, e })),
                 !allSeen
-              )
-            }
+              );
+              toast(
+                allSeen
+                  ? "Série marquée non vue"
+                  : `${show.title} entièrement vue !`,
+                allSeen ? "↩️" : "🏆"
+              );
+            }}
           >
             {allSeen ? "Tout marquer non vu" : "Tout marquer vu"}
           </button>
         </div>
+
+        {isFollowed && (
+          <div className="glass segmented" style={{ marginTop: 12 }}>
+            {STATUS_LABELS.map((s) => (
+              <button
+                key={s.value}
+                className={currentStatus === s.value ? "active" : ""}
+                onClick={() => {
+                  setShowStatus(show.id, s.value);
+                  toast(
+                    s.value === "active"
+                      ? "Série reprise dans l'agenda"
+                      : s.value === "paused"
+                        ? "Série mise en pause"
+                        : "Série abandonnée — retirée de l'agenda",
+                    s.value === "active" ? "▶️" : s.value === "paused" ? "⏸️" : "🗑️"
+                  );
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(show.providers?.length ?? 0) > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div className="tiny" style={{ marginBottom: 8, fontWeight: 700 }}>
+              OÙ REGARDER
+            </div>
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              {show.providers!.map((p) => (
+                <span key={p.name} className="provider-pill">
+                  {p.logo && <img src={p.logo} alt="" />}
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="row" style={{ marginTop: 16, gap: 10 }}>
           <div className="progress" style={{ flex: 1 }}>
@@ -225,6 +306,26 @@ export default function ShowPage() {
         </div>
         </div>
       </div>
+
+      {/* Casting */}
+      {(show.cast?.length ?? 0) > 0 && (
+        <>
+          <h2 className="section-title">Casting</h2>
+          <div className="cast-row">
+            {show.cast!.map((c) => (
+              <div key={c.id} className="cast-member">
+                {c.photo ? (
+                  <img className="cast-photo" src={c.photo} alt={c.name} loading="lazy" />
+                ) : (
+                  <div className="cast-photo">🎭</div>
+                )}
+                <div className="name">{c.name}</div>
+                {c.character && <div className="role">{c.character}</div>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Bande-annonce */}
       {show.trailerKey && (
@@ -325,9 +426,7 @@ export default function ShowPage() {
                           className={`check small${seen_ ? " checked" : ""}`}
                           disabled={!aired_}
                           aria-label={`Épisode ${ep.e} ${seen_ ? "vu" : "non vu"}`}
-                          onClick={() =>
-                            setEpisode(show.id, ep.s, ep.e, !seen_)
-                          }
+                          onClick={() => onEpisodeCheck(ep, seen_)}
                         >
                           ✓
                         </button>
@@ -495,6 +594,39 @@ export default function ShowPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Proposition de rattrapage « marquer vu jusqu'ici » */}
+      {catchUp && (
+        <div className="toaster" style={{ pointerEvents: "auto" }}>
+          <div
+            className="toast glass glass-strong"
+            style={{ borderRadius: 20, flexWrap: "wrap", justifyContent: "center" }}
+          >
+            <span>
+              ⏩ Marquer aussi les {catchUp.count} épisode
+              {catchUp.count > 1 ? "s" : ""} précédent
+              {catchUp.count > 1 ? "s" : ""} ?
+            </span>
+            <span className="row" style={{ gap: 8 }}>
+              <button
+                className="chip pressable active"
+                onClick={() => {
+                  markWatchedUpTo(show, catchUp.ep);
+                  setCatchUp(null);
+                }}
+              >
+                Oui, tout vu jusqu'à {epLabel(catchUp.ep)}
+              </button>
+              <button
+                className="chip pressable"
+                onClick={() => setCatchUp(null)}
+              >
+                Non
+              </button>
+            </span>
+          </div>
         </div>
       )}
     </main>

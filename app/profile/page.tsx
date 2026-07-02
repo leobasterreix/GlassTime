@@ -1,12 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
+import {
+  disableNotifications,
+  enableNotifications,
+  notificationsEnabled,
+  notificationsSupported,
+} from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
-import { airedEpisodes, minutesHuman, watchedCount } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { airedEpisodes, DAY, minutesHuman, watchedCount } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
+
+const SYNC_KEYS = [
+  "followed",
+  "watched",
+  "movieWatchlist",
+  "moviesWatched",
+  "moviesWatchedDates",
+  "booksWatchlist",
+  "booksRead",
+  "booksReadDates",
+  "showCache",
+  "movieCache",
+  "bookCache",
+  "booksProgress",
+  "showStatus",
+  "watchedLog",
+  "localReviews",
+  "updatedAt",
+] as const;
 
 function formatDateRead(dateStr?: string): string {
   if (!dateStr) return "";
@@ -33,12 +59,15 @@ export default function ProfilePage() {
     watched,
     movieWatchlist,
     moviesWatched,
+    moviesWatchedDates,
     booksWatchlist,
     booksRead,
     booksReadDates,
     showCache,
     movieCache,
     bookCache,
+    watchedLog,
+    importState,
     clearAll,
     theme,
     toggleTheme,
@@ -47,6 +76,41 @@ export default function ProfilePage() {
 
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar?: string } | null>(null);
   const [syncOn, setSyncOn] = useState<boolean | null>(null);
+  const [notifsOn, setNotifsOn] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setNotifsOn(notificationsEnabled());
+  }, []);
+
+  function exportData() {
+    const st = useTrack.getState() as unknown as Record<string, unknown>;
+    const data = Object.fromEntries(SYNC_KEYS.map((k) => [k, st[k]]));
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `glasstime-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Sauvegarde téléchargée", "💾");
+  }
+
+  function importData(file: File) {
+    file.text().then((text) => {
+      try {
+        const data = JSON.parse(text);
+        if (!data || typeof data !== "object" || !Array.isArray(data.followed))
+          throw new Error("format");
+        importState(data);
+        toast("Données importées !", "📥");
+      } catch {
+        toast("Fichier invalide — export GlassTime attendu", "⚠️");
+      }
+    });
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -135,6 +199,11 @@ export default function ProfilePage() {
       (booksReadDates[b.id] ?? "").localeCompare(booksReadDates[a.id] ?? "")
     );
 
+  const pagesRead = booksRead.reduce(
+    (acc, id) => acc + (bookCache[id]?.pages ?? 0),
+    0
+  );
+
   const stats = [
     { value: String(episodesSeen), label: "épisodes vus" },
     { value: minutesHuman(showMinutes) || "0 min", label: "devant les séries" },
@@ -142,7 +211,38 @@ export default function ProfilePage() {
     { value: String(completed), label: "séries terminées" },
     { value: String(moviesWatched.length), label: "films vus" },
     { value: minutesHuman(movieMinutes) || "0 min", label: "devant les films" },
+    { value: String(booksRead.length), label: "livres lus" },
+    { value: String(pagesRead), label: "pages lues" },
   ];
+
+  // Records
+  const mostWatched = Object.entries(watched)
+    .map(([showId, map]) => ({
+      show: showCache[Number(showId)],
+      n: Object.keys(map).length,
+    }))
+    .filter((x) => x.show && x.n > 0)
+    .sort((a, b) => b.n - a.n)[0];
+  const bestDay = Object.entries(watchedLog).sort((a, b) => b[1] - a[1])[0];
+
+  // Activité des 8 dernières semaines (journal de marquage)
+  const weeks: { label: string; n: number }[] = [];
+  const nowT = Date.now();
+  for (let w = 7; w >= 0; w--) {
+    const start = nowT - (w + 1) * 7 * DAY;
+    const end = nowT - w * 7 * DAY;
+    let n = 0;
+    for (const [day, count] of Object.entries(watchedLog)) {
+      const t = new Date(day).getTime();
+      if (t > start && t <= end) n += count;
+    }
+    weeks.push({
+      label: new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(end)),
+      n,
+    });
+  }
+  const maxWeek = Math.max(1, ...weeks.map((w) => w.n));
+  const hasActivity = weeks.some((w) => w.n > 0);
 
   return (
     <main className="page">
@@ -161,7 +261,7 @@ export default function ProfilePage() {
               width: 64,
               height: 64,
               borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,.25)",
+              border: "1px solid var(--glass-border)",
               objectFit: "cover",
             }}
           />
@@ -177,7 +277,7 @@ export default function ProfilePage() {
               fontSize: 30,
               background:
                 "linear-gradient(135deg, rgba(10,132,255,.5), rgba(191,90,242,.5))",
-              border: "1px solid rgba(255,255,255,.25)",
+              border: "1px solid var(--glass-border)",
             }}
           >
             🍿
@@ -201,14 +301,85 @@ export default function ProfilePage() {
         ))}
       </div>
 
+      {/* Activité récente */}
+      {hasActivity && (
+        <>
+          <h2 className="section-title">Activité · 8 semaines</h2>
+          <div className="glass card">
+            <div className="row" style={{ alignItems: "flex-end", gap: 8, height: 90 }}>
+              {weeks.map((w, i) => (
+                <div key={i} style={{ flex: 1, textAlign: "center" }}>
+                  <div
+                    style={{
+                      height: Math.max(4, Math.round((w.n / maxWeek) * 62)),
+                      borderRadius: 6,
+                      background:
+                        w.n > 0
+                          ? "linear-gradient(180deg, var(--accent), var(--accent-2))"
+                          : "var(--track)",
+                    }}
+                    title={`${w.n} marquage${w.n > 1 ? "s" : ""}`}
+                  />
+                  <div className="tiny" style={{ marginTop: 5, fontSize: 9.5 }}>
+                    {w.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Records */}
+      {(mostWatched || bestDay) && (
+        <>
+          <h2 className="section-title">Records</h2>
+          <div className="grid-stats badges">
+            {mostWatched && (
+              <div className="glass card row" style={{ gap: 10 }}>
+                <span style={{ fontSize: 24 }}>👑</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    {mostWatched.show.title}
+                  </div>
+                  <div className="tiny">
+                    série la plus vue · {mostWatched.n} épisodes
+                  </div>
+                </div>
+              </div>
+            )}
+            {bestDay && (
+              <div className="glass card row" style={{ gap: 10 }}>
+                <span style={{ fontSize: 24 }}>⚡</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    {bestDay[1]} marquages en un jour
+                  </div>
+                  <div className="tiny">
+                    le{" "}
+                    {new Date(bestDay[0]).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Mes séries */}
       {myShows.length > 0 && (
         <>
           <h2 className="section-title">
-            📺 Mes séries <small>{myShows.length}</small>
+            📺 Mes séries{" "}
+            <Link href="/collection/shows" className="tiny" style={{ fontWeight: 700 }}>
+              Voir tout · {myShows.length} →
+            </Link>
           </h2>
           <div className="hscroll">
-            {myShows.map((s) => (
+            {myShows.slice(0, 12).map((s) => (
               <Link key={s.id} href={`/show/${s.id}`} className="pressable">
                 <Poster item={s} />
               </Link>
@@ -220,14 +391,19 @@ export default function ProfilePage() {
       {/* Mes films */}
       {(moviesToWatch.length > 0 || moviesSeen.length > 0) && (
         <>
-          <h2 className="section-title">🎬 Mes films</h2>
+          <h2 className="section-title">
+            🎬 Mes films{" "}
+            <Link href="/collection/movies" className="tiny" style={{ fontWeight: 700 }}>
+              Voir tout · {moviesToWatch.length + moviesSeen.length} →
+            </Link>
+          </h2>
           {moviesToWatch.length > 0 && (
             <>
               <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
                 À voir · {moviesToWatch.length}
               </h3>
               <div className="hscroll">
-                {moviesToWatch.map((m) => (
+                {moviesToWatch.slice(0, 12).map((m) => (
                   <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
                     <Poster item={m} />
                   </Link>
@@ -241,9 +417,14 @@ export default function ProfilePage() {
                 Vus · {moviesSeen.length}
               </h3>
               <div className="hscroll">
-                {moviesSeen.map((m) => (
+                {moviesSeen.slice(0, 12).map((m) => (
                   <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
                     <Poster item={m} />
+                    {moviesWatchedDates[m.id] && (
+                      <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
+                        📅 {formatDateRead(moviesWatchedDates[m.id])}
+                      </div>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -255,14 +436,19 @@ export default function ProfilePage() {
       {/* Mes livres */}
       {(booksToRead.length > 0 || booksDone.length > 0) && (
         <>
-          <h2 className="section-title">📚 Mes livres</h2>
+          <h2 className="section-title">
+            📚 Mes livres{" "}
+            <Link href="/collection/books" className="tiny" style={{ fontWeight: 700 }}>
+              Voir tout · {booksToRead.length + booksDone.length} →
+            </Link>
+          </h2>
           {booksToRead.length > 0 && (
             <>
               <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
                 À lire · {booksToRead.length}
               </h3>
               <div className="hscroll">
-                {booksToRead.map((b) => (
+                {booksToRead.slice(0, 12).map((b) => (
                   <Link key={b.id} href={`/book/${b.id}`} className="pressable">
                     <Poster item={b} />
                   </Link>
@@ -276,7 +462,7 @@ export default function ProfilePage() {
                 Lus · {booksDone.length}
               </h3>
               <div className="hscroll">
-                {booksDone.map((b) => (
+                {booksDone.slice(0, 12).map((b) => (
                   <Link key={b.id} href={`/book/${b.id}`} className="pressable">
                     <Poster item={b} />
                     {booksReadDates[b.id] && (
@@ -348,6 +534,32 @@ export default function ProfilePage() {
               ? "☀️ Thème : Clair"
               : "🌙 Thème : Sombre"}
         </button>
+        {notificationsSupported() && (
+          <button
+            className="glass card pressable"
+            style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+            onClick={async () => {
+              if (notifsOn) {
+                disableNotifications();
+                setNotifsOn(false);
+                toast("Notifications désactivées", "🔕");
+              } else {
+                const ok = await enableNotifications();
+                setNotifsOn(ok);
+                toast(
+                  ok
+                    ? "Vous serez notifié des sorties du jour"
+                    : "Autorisation refusée par le navigateur",
+                  ok ? "🔔" : "⚠️"
+                );
+              }
+            }}
+          >
+            {notifsOn
+              ? "🔔 Notifications de sortie : activées"
+              : "🔕 Notifications de sortie : désactivées"}
+          </button>
+        )}
       </div>
 
       <h2 className="section-title">Données</h2>
@@ -366,6 +578,33 @@ export default function ProfilePage() {
                   : "Inactive — données locales uniquement"}
             </div>
           </div>
+        </div>
+        <div className="row">
+          <button
+            className="glass card pressable"
+            style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
+            onClick={exportData}
+          >
+            💾 Exporter
+          </button>
+          <button
+            className="glass card pressable"
+            style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
+            onClick={() => importInputRef.current?.click()}
+          >
+            📥 Importer
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importData(f);
+              e.target.value = "";
+            }}
+          />
         </div>
         <button
           className="glass card pressable"

@@ -7,6 +7,7 @@ import Poster from "@/components/Poster";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import { minutesHuman } from "@/lib/utils";
 import type { Book, Movie, Show } from "@/lib/types";
 
@@ -42,11 +43,30 @@ export default function DiscoverPage() {
   const [showResults, setShowResults] = useState<Show[] | null>(null);
   const [movieResults, setMovieResults] = useState<Movie[] | null>(null);
   const [bookResults, setBookResults] = useState<Book[] | null>(null);
+  const [showRecs, setShowRecs] = useState<Show[]>([]);
+  const [movieRecs, setMovieRecs] = useState<Movie[]>([]);
   const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     apiGet<string[]>("/api/genres").then((g) => g && setGenres(g));
   }, []);
+
+  // « Pour vous » : recommandations basées sur les suivis (une fois par visite)
+  useEffect(() => {
+    if (!mounted) return;
+    const st = useTrack.getState();
+    if (st.followed.length > 0) {
+      apiGet<Show[]>(
+        `/api/recommendations?type=tv&ids=${st.followed.slice(-4).join(",")}`
+      ).then((r) => r && setShowRecs(r.filter((s) => !st.followed.includes(s.id))));
+    }
+    const movieSeeds = [...st.moviesWatched, ...st.movieWatchlist].slice(-4);
+    if (movieSeeds.length > 0) {
+      apiGet<Movie[]>(
+        `/api/recommendations?type=movie&ids=${movieSeeds.join(",")}`
+      ).then((r) => r && setMovieRecs(r));
+    }
+  }, [mounted]);
 
   const q = query.trim();
   useEffect(() => {
@@ -88,6 +108,7 @@ export default function DiscoverPage() {
     toggleMovieWatchlist(m.id);
     if (!m.runtime)
       apiGet<Movie>(`/api/movie/${m.id}`).then((d) => d && cacheMovie(d));
+    toast(`${m.title} ajouté à votre liste à voir`, "🔖");
   }
 
   function markMovieWatched(m: Movie) {
@@ -95,16 +116,19 @@ export default function DiscoverPage() {
     toggleMovieWatched(m.id);
     if (!m.runtime)
       apiGet<Movie>(`/api/movie/${m.id}`).then((d) => d && cacheMovie(d));
+    toast(`${m.title} vu !`, "🎬");
   }
 
   function addBookToWatchlist(b: Book) {
     cacheBook(b);
     toggleBookWatchlist(b.id);
+    toast(`${b.title} ajouté à votre liste à lire`, "📚");
   }
 
   function markBookRead(b: Book) {
     cacheBook(b);
     toggleBookRead(b.id);
+    toast(`${b.title} lu !`, "📖");
   }
 
   function handleScanSuccess(book: Book) {
@@ -187,6 +211,19 @@ export default function DiscoverPage() {
             ))}
           </div>
 
+          {!searching && showRecs.length > 0 && (
+            <>
+              <h2 className="section-title">✨ Pour vous</h2>
+              <div className="hscroll">
+                {showRecs.map((s) => (
+                  <Link key={s.id} href={`/show/${s.id}`} className="pressable">
+                    <Poster item={s} />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+
           {!searching && trending.length > 0 && (
             <>
               <h2 className="section-title">🔥 Tendances</h2>
@@ -206,9 +243,10 @@ export default function DiscoverPage() {
           </h2>
 
           {showResults === null ? (
-            <div className="glass empty">
-              <div className="big">⏳</div>
-              <p className="muted">Chargement…</p>
+            <div className="grid-posters">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="skeleton" style={{ aspectRatio: "2/3", borderRadius: 18 }} />
+              ))}
             </div>
           ) : showResults.length === 0 ? (
             <div className="glass empty">
@@ -249,15 +287,29 @@ export default function DiscoverPage() {
       {/* ===== Films ===== */}
       {type === "movies" && (
         <>
+          {!searching && movieRecs.length > 0 && (
+            <>
+              <h2 className="section-title">✨ Pour vous</h2>
+              <div className="hscroll">
+                {movieRecs.map((m) => (
+                  <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
+                    <Poster item={m} />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+
           <h2 className="section-title">
             {searching ? "Résultats" : "Films populaires"}
             {movieResults && <small>{movieResults.length}</small>}
           </h2>
 
           {movieResults === null ? (
-            <div className="glass empty">
-              <div className="big">⏳</div>
-              <p className="muted">Chargement…</p>
+            <div className="stack stack-wide">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="skeleton" style={{ height: 100 }} />
+              ))}
             </div>
           ) : movieResults.length === 0 ? (
             <div className="glass empty">

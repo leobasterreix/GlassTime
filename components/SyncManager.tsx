@@ -13,6 +13,7 @@ const SYNC_KEYS = [
   "watched",
   "movieWatchlist",
   "moviesWatched",
+  "moviesWatchedDates",
   "booksWatchlist",
   "booksRead",
   "booksReadDates",
@@ -20,6 +21,8 @@ const SYNC_KEYS = [
   "movieCache",
   "bookCache",
   "booksProgress",
+  "showStatus",
+  "watchedLog",
   "updatedAt",
 ] as const;
 

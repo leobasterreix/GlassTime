@@ -2,12 +2,17 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SyncManager from "@/components/SyncManager";
 import TabBar from "@/components/TabBar";
+import Toaster from "@/components/Toaster";
 
 export const metadata: Metadata = {
-  title: "GlassTime — Suivi séries & films",
+  title: "GlassTime — Suivi séries, films & livres",
   description:
-    "Suivez vos séries et films préférés : épisodes vus, agenda des diffusions, statistiques.",
+    "Suivez vos séries, films et livres préférés : épisodes vus, agenda des diffusions, statistiques.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -34,6 +39,7 @@ export default function RootLayout({
         <div className="aurora" />
         <SyncManager />
         {children}
+        <Toaster />
         <TabBar />
       </body>
     </html>

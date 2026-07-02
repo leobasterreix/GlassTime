@@ -26,6 +26,8 @@ export type Show = {
   runtime?: number; // minutes par épisode
   seasons?: Season[]; // absent sur les résumés (recherche/tendances)
   trailerKey?: string; // YouTube video key
+  cast?: CastMember[];
+  providers?: Provider[]; // plateformes de streaming (FR)
 };
 
 export type Movie = {
@@ -39,7 +41,22 @@ export type Movie = {
   colors?: [string, string];
   runtime?: number;
   rating?: number;
+  releaseDate?: string | null; // ISO — sert à l'agenda (sorties à venir)
   trailerKey?: string; // YouTube video key
+  cast?: CastMember[];
+  providers?: Provider[];
+};
+
+export type CastMember = {
+  id: number;
+  name: string;
+  character?: string;
+  photo?: string | null;
+};
+
+export type Provider = {
+  name: string;
+  logo?: string | null;
 };
 
 export type Review = {

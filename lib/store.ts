@@ -6,14 +6,22 @@ import { useEffect, useState } from "react";
 import type { Movie, Show, Book } from "./types";
 import { epKey } from "./utils";
 
+export type ShowFollowStatus = "active" | "paused" | "dropped";
+
 type TrackState = {
   followed: number[];
   watched: Record<number, Record<string, true>>;
   movieWatchlist: number[];
   moviesWatched: number[];
+  /** Date de visionnage des films (YYYY-MM-DD), comme booksReadDates. */
+  moviesWatchedDates: Record<number, string>;
   booksWatchlist: string[];
   booksRead: string[];
   booksProgress: Record<string, number>;
+  /** Statut de suivi par série : active (défaut), en pause, abandonnée. */
+  showStatus: Record<number, ShowFollowStatus>;
+  /** Journal d'activité : nombre d'éléments marqués par jour (YYYY-MM-DD). */
+  watchedLog: Record<string, number>;
   /** Horodatage de la dernière modification — sert d'arbitre à la synchronisation. */
   updatedAt: number;
   // Fiches conservées localement : l'accueil, l'agenda et le profil
@@ -33,6 +41,8 @@ type TrackState = {
   ) => void;
   toggleMovieWatchlist: (id: number) => void;
   toggleMovieWatched: (id: number) => void;
+  setShowStatus: (id: number, status: ShowFollowStatus) => void;
+  importState: (data: Record<string, unknown>) => void;
   toggleBookWatchlist: (id: string) => void;
   toggleBookRead: (id: string) => void;
   setBookProgress: (id: string, pages: number) => void;
@@ -54,6 +64,19 @@ function toggleInStr(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Incrémente le journal d'activité du jour de `n` éléments (n<0 pour décocher). */
+function bumpLog(log: Record<string, number>, n: number): Record<string, number> {
+  const day = todayISO();
+  const next = { ...log, [day]: Math.max(0, (log[day] ?? 0) + n) };
+  if (next[day] === 0) delete next[day];
+  return next;
+}
+
 export const useTrack = create<TrackState>()(
   persist(
     (set) => ({
@@ -61,6 +84,7 @@ export const useTrack = create<TrackState>()(
       watched: {},
       movieWatchlist: [],
       moviesWatched: [],
+      moviesWatchedDates: {},
       booksWatchlist: [],
       booksRead: [],
       booksReadDates: {},
@@ -68,6 +92,8 @@ export const useTrack = create<TrackState>()(
       movieCache: {},
       bookCache: {},
       booksProgress: {},
+      showStatus: {},
+      watchedLog: {},
       localReviews: {},
       updatedAt: 0,
 
@@ -99,10 +125,13 @@ export const useTrack = create<TrackState>()(
       setEpisode: (showId, s, e, value) =>
         set((st) => {
           const map = { ...(st.watched[showId] ?? {}) };
+          const had = !!map[epKey(s, e)];
           if (value) map[epKey(s, e)] = true;
           else delete map[epKey(s, e)];
+          const delta = value && !had ? 1 : !value && had ? -1 : 0;
           return {
             watched: { ...st.watched, [showId]: map },
+            watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),
           };
         }),
@@ -110,12 +139,20 @@ export const useTrack = create<TrackState>()(
       setEpisodes: (showId, eps, value) =>
         set((st) => {
           const map = { ...(st.watched[showId] ?? {}) };
+          let delta = 0;
           for (const { s, e } of eps) {
-            if (value) map[epKey(s, e)] = true;
-            else delete map[epKey(s, e)];
+            const had = !!map[epKey(s, e)];
+            if (value) {
+              map[epKey(s, e)] = true;
+              if (!had) delta++;
+            } else {
+              delete map[epKey(s, e)];
+              if (had) delta--;
+            }
           }
           return {
             watched: { ...st.watched, [showId]: map },
+            watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),
           };
         }),
@@ -127,9 +164,30 @@ export const useTrack = create<TrackState>()(
         })),
 
       toggleMovieWatched: (id) =>
+        set((st) => {
+          const nextWatched = toggleIn(st.moviesWatched, id);
+          const nowWatched = nextWatched.includes(id);
+          const nextDates = { ...st.moviesWatchedDates };
+          if (nowWatched) nextDates[id] = todayISO();
+          else delete nextDates[id];
+          return {
+            moviesWatched: nextWatched,
+            moviesWatchedDates: nextDates,
+            movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
+            watchedLog: bumpLog(st.watchedLog, nowWatched ? 1 : -1),
+            updatedAt: Date.now(),
+          };
+        }),
+
+      setShowStatus: (id, status) =>
         set((st) => ({
-          moviesWatched: toggleIn(st.moviesWatched, id),
-          movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
+          showStatus: { ...st.showStatus, [id]: status },
+          updatedAt: Date.now(),
+        })),
+
+      importState: (data) =>
+        set(() => ({
+          ...(data as Partial<TrackState>),
           updatedAt: Date.now(),
         })),
 
@@ -165,6 +223,7 @@ export const useTrack = create<TrackState>()(
             booksRead: nextRead,
             booksReadDates: nextDates,
             booksWatchlist: st.booksWatchlist.filter((x) => x !== id),
+            watchedLog: bumpLog(st.watchedLog, nextRead.includes(id) ? 1 : -1),
             updatedAt: Date.now(),
           };
         }),
@@ -324,6 +383,7 @@ export const useTrack = create<TrackState>()(
           watched: {},
           movieWatchlist: [],
           moviesWatched: [],
+          moviesWatchedDates: {},
           booksWatchlist: [],
           booksRead: [],
           booksReadDates: {},
@@ -331,6 +391,8 @@ export const useTrack = create<TrackState>()(
           movieCache: {},
           bookCache: {},
           booksProgress: {},
+          showStatus: {},
+          watchedLog: {},
           localReviews: {},
           updatedAt: Date.now(),
         }),

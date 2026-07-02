@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { Book, Movie, Show } from "./types";
 import { useMounted, useTrack } from "./store";
+import { toast } from "./toast";
 
 export async function apiGet<T>(url: string): Promise<T | null> {
   try {
@@ -26,6 +27,9 @@ export function followShow(summary: Show) {
         (d) => d && useTrack.getState().cacheShow(d)
       );
     }
+    toast(`${summary.title} ajoutée à vos séries`, "📺");
+  } else {
+    toast(`${summary.title} retirée de vos séries`, "↩️");
   }
 }
 

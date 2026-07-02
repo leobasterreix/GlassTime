@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import { apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { Movie, Review } from "@/lib/types";
 import { minutesHuman } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ export default function MoviePage() {
   const {
     movieWatchlist,
     moviesWatched,
+    moviesWatchedDates,
     movieCache,
     cacheMovie,
     toggleMovieWatchlist,
@@ -139,9 +141,10 @@ export default function MoviePage() {
 
   const inList = mounted && movieWatchlist.includes(movie.id);
   const seen = mounted && moviesWatched.includes(movie.id);
+  const seenDate = mounted ? moviesWatchedDates[movie.id] : undefined;
 
   const heroBg = movie.poster
-    ? `linear-gradient(180deg, rgba(6,7,13,.25), rgba(6,7,13,.85))`
+    ? `linear-gradient(180deg, var(--hero-veil-1), var(--hero-veil-2))`
     : undefined;
 
   return (
@@ -189,7 +192,13 @@ export default function MoviePage() {
               <button
                 className={`btn pressable ${inList ? "btn-success" : "btn-primary"}`}
                 style={{ flex: 1 }}
-                onClick={() => toggleMovieWatchlist(movie.id)}
+                onClick={() => {
+                  toggleMovieWatchlist(movie.id);
+                  toast(
+                    inList ? "Retiré de votre liste" : "Ajouté à votre liste à voir",
+                    inList ? "↩️" : "🔖"
+                  );
+                }}
               >
                 {inList ? "✓ À voir" : "+ À voir"}
               </button>
@@ -197,13 +206,66 @@ export default function MoviePage() {
             <button
               className={`btn pressable ${seen ? "btn-success" : "btn-primary"}`}
               style={{ flex: 1 }}
-              onClick={() => toggleMovieWatched(movie.id)}
+              onClick={() => {
+                toggleMovieWatched(movie.id);
+                toast(
+                  seen ? "Film marqué non vu" : `${movie.title} vu !`,
+                  seen ? "↩️" : "🎬"
+                );
+              }}
             >
               {seen ? "✓ Vu" : "👁 Vu"}
             </button>
           </div>
+
+          {seen && seenDate && (
+            <p className="tiny" style={{ marginTop: 10 }}>
+              📅 Vu le{" "}
+              {new Date(seenDate).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          )}
+
+          {(movie.providers?.length ?? 0) > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div className="tiny" style={{ marginBottom: 8, fontWeight: 700 }}>
+                OÙ REGARDER
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                {movie.providers!.map((p) => (
+                  <span key={p.name} className="provider-pill">
+                    {p.logo && <img src={p.logo} alt="" />}
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Casting */}
+      {(movie.cast?.length ?? 0) > 0 && (
+        <>
+          <h2 className="section-title">Casting</h2>
+          <div className="cast-row">
+            {movie.cast!.map((c) => (
+              <div key={c.id} className="cast-member">
+                {c.photo ? (
+                  <img className="cast-photo" src={c.photo} alt={c.name} loading="lazy" />
+                ) : (
+                  <div className="cast-photo">🎭</div>
+                )}
+                <div className="name">{c.name}</div>
+                {c.character && <div className="role">{c.character}</div>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Bande-annonce */}
       {movie.trailerKey && (

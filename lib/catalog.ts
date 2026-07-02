@@ -1,6 +1,6 @@
 // Couche catalogue : Requêtes vers TMDB si TMDB_API_KEY est définie.
 
-import type { Movie, Show, Review } from "./types";
+import type { CastMember, Movie, Provider, Review, Show } from "./types";
 
 const IMG = "https://image.tmdb.org/t/p/";
 
@@ -84,6 +84,45 @@ async function tmdb(path: string, params: Record<string, string> = {}) {
   return res.json();
 }
 
+/** Plateformes de streaming disponibles en France (données JustWatch via TMDB). */
+async function fetchProviders(type: "tv" | "movie", id: number): Promise<Provider[]> {
+  try {
+    const d = await tmdb(`/${type}/${id}/watch/providers`);
+    const fr = d.results?.FR;
+    if (!fr) return [];
+    const seen = new Set<number>();
+    const providers: Provider[] = [];
+    for (const p of [...(fr.flatrate ?? []), ...(fr.free ?? []), ...(fr.ads ?? [])]) {
+      if (seen.has(p.provider_id)) continue;
+      seen.add(p.provider_id);
+      providers.push({
+        name: p.provider_name,
+        logo: p.logo_path ? `${IMG}w92${p.logo_path}` : null,
+      });
+    }
+    return providers.slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+/** Têtes d'affiche (10 premiers rôles). */
+async function fetchCast(type: "tv" | "movie", id: number): Promise<CastMember[]> {
+  try {
+    const path =
+      type === "tv" ? `/tv/${id}/aggregate_credits` : `/movie/${id}/credits`;
+    const d = await tmdb(path);
+    return (d.cast ?? []).slice(0, 10).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      character: c.roles?.[0]?.character ?? c.character ?? undefined,
+      photo: c.profile_path ? `${IMG}w185${c.profile_path}` : null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function mapShowSummary(r: any): Show {
   return {
     id: r.id,
@@ -109,7 +148,47 @@ function mapMovieSummary(r: any): Movie {
     overview: r.overview ?? "",
     poster: r.poster_path ? `${IMG}w342${r.poster_path}` : null,
     rating: r.vote_average || undefined,
+    releaseDate: r.release_date || null,
   };
+}
+
+/**
+ * Recommandations personnalisées : fusion des suggestions TMDB
+ * pour un échantillon de fiches suivies, triées par popularité.
+ */
+export async function getRecommendations(
+  type: "tv" | "movie",
+  ids: number[]
+): Promise<(Show | Movie)[]> {
+  if (!hasTmdb() || ids.length === 0) return [];
+  try {
+    const sample = ids.slice(0, 4);
+    const responses = await Promise.all(
+      sample.map((id) =>
+        tmdb(`/${type}/${id}/recommendations`).catch(() => ({ results: [] }))
+      )
+    );
+    const seen = new Set<number>(ids);
+    const merged: { item: Show | Movie; popularity: number }[] = [];
+    for (const res of responses) {
+      for (const r of res.results ?? []) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        merged.push({
+          item: type === "tv" ? mapShowSummary(r) : mapMovieSummary(r),
+          popularity: r.popularity ?? 0,
+        });
+      }
+    }
+    return merged
+      .sort((a, b) => b.popularity - a.popularity)
+      .slice(0, 20)
+      .map((x) => x.item)
+      .filter((x) => x.title);
+  } catch (err) {
+    console.error("TMDB error getRecommendations:", err);
+    return [];
+  }
 }
 
 export async function listShows(q?: string, genre?: string): Promise<Show[]> {
@@ -144,9 +223,11 @@ export async function listShows(q?: string, genre?: string): Promise<Show[]> {
 export async function getShowDetail(id: number): Promise<Show | null> {
   if (!hasTmdb()) return null;
   try {
-    const [d, videosData] = await Promise.all([
+    const [d, videosData, providers, cast] = await Promise.all([
       tmdb(`/tv/${id}`),
       tmdb(`/tv/${id}/videos`, { language: "fr-FR" }).catch(() => ({ results: [] })),
+      fetchProviders("tv", id),
+      fetchCast("tv", id),
     ]);
     const nums: number[] = (d.seasons ?? [])
       .filter((s: { season_number: number }) => s.season_number > 0)
@@ -187,6 +268,8 @@ export async function getShowDetail(id: number): Promise<Show | null> {
       runtime:
         d.episode_run_time?.[0] ?? d.last_episode_to_air?.runtime ?? 40,
       trailerKey,
+      providers,
+      cast,
       seasons: seasonData
         .filter(Boolean)
         .map((sd) => ({
@@ -229,9 +312,11 @@ export async function listMovies(q?: string): Promise<Movie[]> {
 export async function getMovieDetail(id: number): Promise<Movie | null> {
   if (!hasTmdb()) return null;
   try {
-    const [d, videosData] = await Promise.all([
+    const [d, videosData, providers, cast] = await Promise.all([
       tmdb(`/movie/${id}`),
       tmdb(`/movie/${id}/videos`, { language: "fr-FR" }).catch(() => ({ results: [] })),
+      fetchProviders("movie", id),
+      fetchCast("movie", id),
     ]);
 
     // Pick best trailer: prefer FR, fallback to EN
@@ -260,7 +345,10 @@ export async function getMovieDetail(id: number): Promise<Movie | null> {
       poster: d.poster_path ? `${IMG}w342${d.poster_path}` : null,
       runtime: d.runtime || undefined,
       rating: d.vote_average || undefined,
+      releaseDate: d.release_date || null,
       trailerKey,
+      providers,
+      cast,
     };
   } catch (err) {
     console.error("TMDB error getMovieDetail:", err);
