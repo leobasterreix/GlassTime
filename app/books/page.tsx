@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Poster from "@/components/Poster";
@@ -14,15 +14,20 @@ type Tab = "watchlist" | "watched" | "discover";
 function formatDateRead(dateStr?: string): string {
   if (!dateStr) return "";
   const parts = dateStr.split("-");
+  const months = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+  ];
   if (parts.length === 3) {
     const [y, m, d] = parts;
-    const months = [
-      "janvier", "février", "mars", "avril", "mai", "juin",
-      "juillet", "août", "septembre", "octobre", "novembre", "décembre"
-    ];
     const monthName = months[Number(m) - 1] ?? "";
     const dayDisplay = Number(d) === 1 ? "1er" : Number(d);
     return `Lu le ${dayDisplay} ${monthName} ${y}`;
+  }
+  if (parts.length === 2) {
+    const [y, m] = parts;
+    const monthName = months[Number(m) - 1] ?? "";
+    return `Lu en ${monthName} ${y}`;
   }
   return `Lu en ${dateStr}`;
 }
@@ -69,6 +74,26 @@ export default function BooksPage() {
       clearTimeout(timer);
     };
   }, [tab, q]);
+
+  // Load missing books cache (use ref to avoid infinite loop)
+  const fetchedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!mounted) return;
+    const allIds = [...new Set([...booksWatchlist, ...booksRead])];
+    const missingIds = allIds.filter((id) => !bookCache[id] && !fetchedRef.current.has(id));
+    if (missingIds.length === 0) return;
+
+    missingIds.forEach((id) => fetchedRef.current.add(id));
+    missingIds.forEach(async (id) => {
+      try {
+        const book = await apiGet<Book>(`/api/book/${id}`);
+        if (book) cacheBook(book);
+      } catch (err) {
+        console.error("Error prefetching book cache:", err);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, booksWatchlist, booksRead]);
 
   if (!mounted) {
     return (

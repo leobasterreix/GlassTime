@@ -42,6 +42,45 @@ export default function BookDetailPage({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  const storedDate = booksReadDates[id] ?? "";
+  let initialPrecision: "date" | "month" | "year" = "date";
+  if (storedDate.length === 7) initialPrecision = "month";
+  else if (storedDate.length === 4) initialPrecision = "year";
+
+  const [precision, setPrecision] = useState<"date" | "month" | "year">(initialPrecision);
+
+  const handlePrecisionChange = (newPrec: "date" | "month" | "year") => {
+    setPrecision(newPrec);
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    if (newPrec === "date") {
+      if (storedDate.length === 7) {
+        setBookReadDate(id, `${storedDate}-01`);
+      } else if (storedDate.length === 4) {
+        setBookReadDate(id, `${storedDate}-01-01`);
+      } else {
+        setBookReadDate(id, `${yyyy}-${mm}-${dd}`);
+      }
+    } else if (newPrec === "month") {
+      if (storedDate.length === 10) {
+        setBookReadDate(id, storedDate.slice(0, 7));
+      } else if (storedDate.length === 4) {
+        setBookReadDate(id, `${storedDate}-01`);
+      } else {
+        setBookReadDate(id, `${yyyy}-${mm}`);
+      }
+    } else if (newPrec === "year") {
+      if (storedDate.length >= 7) {
+        setBookReadDate(id, storedDate.slice(0, 4));
+      } else {
+        setBookReadDate(id, String(yyyy));
+      }
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     
@@ -50,8 +89,9 @@ export default function BookDetailPage({
       if (cancelled) return;
       if (data) {
         setFetched(data);
-        if (useTrack.getState().booksWatchlist.includes(data.id)) {
-          useTrack.getState().cacheBook(data);
+        const state = useTrack.getState();
+        if (state.booksWatchlist.includes(data.id) || state.booksRead.includes(data.id)) {
+          state.cacheBook(data);
         }
       } else {
         setNotFound(true);
@@ -203,14 +243,20 @@ export default function BookDetailPage({
             <button
               className={`btn pressable ${isFollowed ? "btn-success" : "btn-primary"}`}
               style={{ flex: 1 }}
-              onClick={() => toggleBookWatchlist(book.id)}
+              onClick={() => {
+                cacheBook(book);
+                toggleBookWatchlist(book.id);
+              }}
             >
               {isFollowed ? "✓ Suivi" : "+ Suivre"}
             </button>
             <button
               className={`btn pressable ${isRead ? "btn-success" : "btn-outline"}`}
               style={{ flex: 1 }}
-              onClick={() => toggleBookRead(book.id)}
+              onClick={() => {
+                cacheBook(book);
+                toggleBookRead(book.id);
+              }}
             >
               {isRead ? "✓ Lu" : "Marquer comme lu"}
             </button>
@@ -280,23 +326,93 @@ export default function BookDetailPage({
       {/* Date de lecture (si lu) */}
       {isRead && (
         <div className="glass card" style={{ padding: 20, marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Informations de lecture</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>Informations de lecture</h3>
+          
+          <div className="segmented animate-fade-in" style={{ marginBottom: 16, background: "var(--glass-bg-strong)", padding: 3 }}>
+            <button
+              type="button"
+              className={precision === "date" ? "active" : ""}
+              onClick={() => handlePrecisionChange("date")}
+              style={{ padding: "6px 0", fontSize: 12.5 }}
+            >
+              Date exacte
+            </button>
+            <button
+              type="button"
+              className={precision === "month" ? "active" : ""}
+              onClick={() => handlePrecisionChange("month")}
+              style={{ padding: "6px 0", fontSize: 12.5 }}
+            >
+              Mois
+            </button>
+            <button
+              type="button"
+              className={precision === "year" ? "active" : ""}
+              onClick={() => handlePrecisionChange("year")}
+              style={{ padding: "6px 0", fontSize: 12.5 }}
+            >
+              Année
+            </button>
+          </div>
+
           <div className="row" style={{ gap: 12, alignItems: "center" }}>
             <span className="muted" style={{ fontSize: 14 }}>Date de lecture :</span>
-            <input
-              type="date"
-              value={booksReadDates[book.id] ?? ""}
-              onChange={(e) => setBookReadDate(book.id, e.target.value || null)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1.5px solid var(--glass-border)",
-                background: "var(--glass-bg-strong)",
-                color: "var(--text)",
-                fontWeight: 600,
-                outline: "none",
-              }}
-            />
+            
+            {precision === "date" && (
+              <input
+                type="date"
+                value={storedDate.length === 10 ? storedDate : ""}
+                onChange={(e) => setBookReadDate(book.id, e.target.value || null)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1.5px solid var(--glass-border)",
+                  background: "var(--glass-bg-strong)",
+                  color: "var(--text)",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              />
+            )}
+
+            {precision === "month" && (
+              <input
+                type="month"
+                value={storedDate.length === 7 ? storedDate : ""}
+                onChange={(e) => setBookReadDate(book.id, e.target.value || null)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1.5px solid var(--glass-border)",
+                  background: "var(--glass-bg-strong)",
+                  color: "var(--text)",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              />
+            )}
+
+            {precision === "year" && (
+              <input
+                type="number"
+                min="1900"
+                max="2100"
+                placeholder="Ex: 2026"
+                value={storedDate.length === 4 ? storedDate : ""}
+                onChange={(e) => setBookReadDate(book.id, e.target.value || null)}
+                style={{
+                  width: 100,
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1.5px solid var(--glass-border)",
+                  background: "var(--glass-bg-strong)",
+                  color: "var(--text)",
+                  fontWeight: 600,
+                  outline: "none",
+                  textAlign: "center",
+                }}
+              />
+            )}
           </div>
         </div>
       )}
