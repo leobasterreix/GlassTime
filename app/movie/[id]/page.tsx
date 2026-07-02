@@ -29,13 +29,14 @@ export default function MoviePage() {
   const [siteReviews, setSiteReviews] = useState<Review[]>([]);
   const [tmdbReviews, setTmdbReviews] = useState<Review[]>([]);
   const [reviewsTab, setReviewsTab] = useState<"site" | "tmdb">("site");
+  const [tmdbLoading, setTmdbLoading] = useState(true);
 
   // Auto-bascule sur l'onglet TMDB s'il n'y a pas encore d'avis sur GlassTime
   useEffect(() => {
-    if (siteReviews.length === 0 && tmdbReviews.length > 0) {
+    if (!tmdbLoading && siteReviews.length === 0 && tmdbReviews.length > 0) {
       setReviewsTab("tmdb");
     }
-  }, [siteReviews, tmdbReviews]);
+  }, [siteReviews, tmdbReviews, tmdbLoading]);
 
   const [formRating, setFormRating] = useState<number>(10);
   const [formContent, setFormContent] = useState<string>("");
@@ -51,12 +52,15 @@ export default function MoviePage() {
         useTrack.getState().cacheMovie(data);
       } else setNotFound(true);
     });
-    apiGet<{ site: Review[]; tmdb: Review[] }>(`/api/reviews/movie/${id}`).then((data) => {
+    apiGet<Review[]>(`/api/reviews/movie/${id}?source=site`).then((data) => {
       if (cancelled) return;
-      if (data) {
-        setSiteReviews(data.site ?? []);
-        setTmdbReviews(data.tmdb ?? []);
-      }
+      if (data) setSiteReviews(data);
+    });
+    setTmdbLoading(true);
+    apiGet<Review[]>(`/api/reviews/movie/${id}?source=tmdb`).then((data) => {
+      if (cancelled) return;
+      if (data) setTmdbReviews(data);
+      setTmdbLoading(false);
     });
     return () => {
       cancelled = true;
@@ -280,12 +284,17 @@ export default function MoviePage() {
           className={reviewsTab === "tmdb" ? "active" : ""}
           onClick={() => setReviewsTab("tmdb")}
         >
-          Avis TMDB · {tmdbReviews.length}
+          Avis TMDB · {tmdbLoading ? "..." : tmdbReviews.length}
         </button>
       </div>
 
       {/* Liste des avis filtrée */}
-      {(reviewsTab === "site" ? displayedSiteReviews : tmdbReviews).length === 0 ? (
+      {reviewsTab === "tmdb" && tmdbLoading ? (
+        <div className="glass empty" style={{ padding: "32px 16px" }}>
+          <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
+          <p className="muted">Chargement des avis mondiaux...</p>
+        </div>
+      ) : (reviewsTab === "site" ? displayedSiteReviews : tmdbReviews).length === 0 ? (
         <div className="glass empty" style={{ padding: "24px 16px" }}>
           <p className="muted">
             {reviewsTab === "site"

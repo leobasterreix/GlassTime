@@ -4,55 +4,76 @@ import { createClient } from "@/lib/supabaseServer";
 import type { Review } from "@/lib/types";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
   const { type, id } = await params;
   const itemId = Number(id);
+
+  const { searchParams } = new URL(req.url);
+  const source = searchParams.get("source"); // "site" | "tmdb" | null
 
   if (type !== "movie" && type !== "show") {
     return NextResponse.json({ error: "Type invalide" }, { status: 400 });
   }
 
   // 1. Récupérer les avis TMDB
-  let tmdbReviews: Review[] = [];
-  try {
-    if (type === "show") {
-      tmdbReviews = await getShowReviews(itemId);
-    } else {
-      tmdbReviews = await getMovieReviews(itemId);
+  const getTmdb = async (): Promise<Review[]> => {
+    if (source === "site") return [];
+    try {
+      if (type === "show") {
+        return await getShowReviews(itemId);
+      } else {
+        return await getMovieReviews(itemId);
+      }
+    } catch (err) {
+      console.error("Erreur de récupération des avis TMDB :", err);
+      return [];
     }
-  } catch (err) {
-    console.error("Erreur de récupération des avis TMDB :", err);
-  }
+  };
 
   // 2. Récupérer les avis de notre site dans Supabase
-  let siteReviews: any[] = [];
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("user_reviews")
-      .select("*")
-      .eq("item_id", itemId)
-      .eq("item_type", type)
-      .order("created_at", { ascending: false });
+  const getSite = async (): Promise<any[]> => {
+    if (source === "tmdb") return [];
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("user_reviews")
+        .select("*")
+        .eq("item_id", itemId)
+        .eq("item_type", type)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.warn("La table user_reviews n'est probablement pas encore créée :", error.message);
-    } else if (data) {
-      siteReviews = data.map((r: any) => ({
-        id: r.id,
-        author: r.author_name,
-        avatar: r.author_avatar,
-        rating: r.rating,
-        content: r.content,
-        createdAt: r.created_at,
-        userId: r.user_id,
-        isSiteReview: true,
-      }));
+      if (error) {
+        console.warn("La table user_reviews n'est probablement pas encore créée :", error.message);
+        return [];
+      } else if (data) {
+        return data.map((r: any) => ({
+          id: r.id,
+          author: r.author_name,
+          avatar: r.author_avatar,
+          rating: r.rating,
+          content: r.content,
+          createdAt: r.created_at,
+          userId: r.user_id,
+          isSiteReview: true,
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.error("Erreur de récupération des avis Supabase :", err);
+      return [];
     }
-  } catch (err) {
-    console.error("Erreur de récupération des avis Supabase :", err);
+  };
+
+  // Exécuter en parallèle
+  const [tmdbReviews, siteReviews] = await Promise.all([getTmdb(), getSite()]);
+
+  if (source === "site") {
+    return NextResponse.json(siteReviews);
+  }
+  if (source === "tmdb") {
+    return NextResponse.json(tmdbReviews);
   }
 
   return NextResponse.json({
