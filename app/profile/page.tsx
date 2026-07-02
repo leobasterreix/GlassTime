@@ -1,15 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { airedEpisodes, minutesHuman, watchedCount } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 
+function formatDateRead(dateStr?: string): string {
+  if (!dateStr) return "";
+  const months = [
+    "janv.", "févr.", "mars", "avril", "mai", "juin",
+    "juil.", "août", "sept.", "oct.", "nov.", "déc.",
+  ];
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    return `${Number(d) === 1 ? "1er" : Number(d)} ${months[Number(m) - 1] ?? ""} ${y}`;
+  }
+  if (parts.length === 2) {
+    const [y, m] = parts;
+    return `${months[Number(m) - 1] ?? ""} ${y}`;
+  }
+  return dateStr;
+}
+
 export default function ProfilePage() {
   const mounted = useMounted();
-  const { followed, watched, moviesWatched, showCache, movieCache, clearAll, theme, toggleTheme } =
-    useTrack();
+  const {
+    followed,
+    watched,
+    movieWatchlist,
+    moviesWatched,
+    booksWatchlist,
+    booksRead,
+    booksReadDates,
+    showCache,
+    movieCache,
+    bookCache,
+    clearAll,
+    theme,
+    toggleTheme,
+  } = useTrack();
   useHydrateLibrary();
 
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar?: string } | null>(null);
@@ -90,6 +123,18 @@ export default function ProfilePage() {
     { emoji: "⏰", label: "24 h de visionnage", done: showMinutes + movieMinutes >= 1440 },
   ];
 
+  // Collections (fiches disponibles dans le cache local)
+  const myShows = followed.map((id) => showCache[id]).filter(Boolean);
+  const moviesToWatch = movieWatchlist.map((id) => movieCache[id]).filter(Boolean);
+  const moviesSeen = moviesWatched.map((id) => movieCache[id]).filter(Boolean);
+  const booksToRead = booksWatchlist.map((id) => bookCache[id]).filter(Boolean);
+  const booksDone = booksRead
+    .map((id) => bookCache[id])
+    .filter(Boolean)
+    .sort((a, b) =>
+      (booksReadDates[b.id] ?? "").localeCompare(booksReadDates[a.id] ?? "")
+    );
+
   const stats = [
     { value: String(episodesSeen), label: "épisodes vus" },
     { value: minutesHuman(showMinutes) || "0 min", label: "devant les séries" },
@@ -155,6 +200,97 @@ export default function ProfilePage() {
           </div>
         ))}
       </div>
+
+      {/* Mes séries */}
+      {myShows.length > 0 && (
+        <>
+          <h2 className="section-title">
+            📺 Mes séries <small>{myShows.length}</small>
+          </h2>
+          <div className="hscroll">
+            {myShows.map((s) => (
+              <Link key={s.id} href={`/show/${s.id}`} className="pressable">
+                <Poster item={s} />
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Mes films */}
+      {(moviesToWatch.length > 0 || moviesSeen.length > 0) && (
+        <>
+          <h2 className="section-title">🎬 Mes films</h2>
+          {moviesToWatch.length > 0 && (
+            <>
+              <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
+                À voir · {moviesToWatch.length}
+              </h3>
+              <div className="hscroll">
+                {moviesToWatch.map((m) => (
+                  <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
+                    <Poster item={m} />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+          {moviesSeen.length > 0 && (
+            <>
+              <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
+                Vus · {moviesSeen.length}
+              </h3>
+              <div className="hscroll">
+                {moviesSeen.map((m) => (
+                  <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
+                    <Poster item={m} />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Mes livres */}
+      {(booksToRead.length > 0 || booksDone.length > 0) && (
+        <>
+          <h2 className="section-title">📚 Mes livres</h2>
+          {booksToRead.length > 0 && (
+            <>
+              <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
+                À lire · {booksToRead.length}
+              </h3>
+              <div className="hscroll">
+                {booksToRead.map((b) => (
+                  <Link key={b.id} href={`/book/${b.id}`} className="pressable">
+                    <Poster item={b} />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+          {booksDone.length > 0 && (
+            <>
+              <h3 className="muted" style={{ fontSize: 14, fontWeight: 700, margin: "4px 0 10px" }}>
+                Lus · {booksDone.length}
+              </h3>
+              <div className="hscroll">
+                {booksDone.map((b) => (
+                  <Link key={b.id} href={`/book/${b.id}`} className="pressable">
+                    <Poster item={b} />
+                    {booksReadDates[b.id] && (
+                      <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
+                        📅 {formatDateRead(booksReadDates[b.id])}
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
       {topGenres.length > 0 && (
         <>

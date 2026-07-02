@@ -6,27 +6,6 @@ import { usePathname } from "next/navigation";
 const TABS = [
   {
     href: "/",
-    label: "Suivi",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2.5" y="6" width="19" height="13" rx="3" />
-        <path d="m8 2.5 4 3.5 4-3.5" />
-        <path d="m10 10.5 4 2-4 2z" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  {
-    href: "/discover",
-    label: "Découvrir",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="9.5" />
-        <path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  {
-    href: "/calendar",
     label: "Agenda",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -36,21 +15,12 @@ const TABS = [
     ),
   },
   {
-    href: "/movies",
-    label: "Films",
+    href: "/discover",
+    label: "Découvrir",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="16" rx="3" />
-        <path d="M3 9h18M7.5 4.5 10 9M13 4.5 15.5 9" />
-      </svg>
-    ),
-  },
-  {
-    href: "/books",
-    label: "Livres",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5V3.5A2.5 2.5 0 0 1 6.5 1H20v16H6.5a2.5 2.5 0 0 0-2.5 2.5z" />
+        <circle cx="11" cy="11" r="7.5" />
+        <path d="m20.5 20.5-4-4" />
       </svg>
     ),
   },
