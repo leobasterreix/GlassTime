@@ -75,7 +75,9 @@ function hasTmdb() {
 async function tmdb(path: string, params: Record<string, string> = {}) {
   const key = process.env.TMDB_API_KEY!;
   const url = new URL(`https://api.themoviedb.org/3${path}`);
-  url.searchParams.set("language", "fr-FR");
+  if (!path.endsWith("/reviews")) {
+    url.searchParams.set("language", "fr-FR");
+  }
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const headers: Record<string, string> = {};
   // Jeton v4 (commence par "eyJ") en header, sinon clé v3 en paramètre
