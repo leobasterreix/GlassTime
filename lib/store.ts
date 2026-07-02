@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useEffect, useState } from "react";
+import type { Movie, Show } from "./types";
 import { epKey } from "./utils";
 
 type TrackState = {
@@ -10,7 +11,13 @@ type TrackState = {
   watched: Record<number, Record<string, true>>;
   movieWatchlist: number[];
   moviesWatched: number[];
+  // Fiches conservées localement : l'accueil, l'agenda et le profil
+  // fonctionnent sans rappeler l'API à chaque visite.
+  showCache: Record<number, Show>;
+  movieCache: Record<number, Movie>;
   toggleFollow: (id: number) => void;
+  cacheShow: (show: Show) => void;
+  cacheMovie: (movie: Movie) => void;
   setEpisode: (showId: number, s: number, e: number, value: boolean) => void;
   setEpisodes: (
     showId: number,
@@ -19,6 +26,7 @@ type TrackState = {
   ) => void;
   toggleMovieWatchlist: (id: number) => void;
   toggleMovieWatched: (id: number) => void;
+  clearAll: () => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -32,9 +40,28 @@ export const useTrack = create<TrackState>()(
       watched: {},
       movieWatchlist: [],
       moviesWatched: [],
+      showCache: {},
+      movieCache: {},
 
       toggleFollow: (id) =>
         set((st) => ({ followed: toggleIn(st.followed, id) })),
+
+      cacheShow: (show) =>
+        set((st) => ({
+          showCache: {
+            ...st.showCache,
+            // Fusion : un résumé (sans saisons) ne doit pas écraser une fiche complète
+            [show.id]: { ...st.showCache[show.id], ...show },
+          },
+        })),
+
+      cacheMovie: (movie) =>
+        set((st) => ({
+          movieCache: {
+            ...st.movieCache,
+            [movie.id]: { ...st.movieCache[movie.id], ...movie },
+          },
+        })),
 
       setEpisode: (showId, s, e, value) =>
         set((st) => {
@@ -62,6 +89,16 @@ export const useTrack = create<TrackState>()(
           moviesWatched: toggleIn(st.moviesWatched, id),
           movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
         })),
+
+      clearAll: () =>
+        set({
+          followed: [],
+          watched: {},
+          movieWatchlist: [],
+          moviesWatched: [],
+          showCache: {},
+          movieCache: {},
+        }),
     }),
     { name: "glasstime-store" }
   )

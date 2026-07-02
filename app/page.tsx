@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Poster from "@/components/Poster";
-import { SHOWS } from "@/lib/data";
+import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import {
   airedEpisodes,
@@ -17,7 +17,8 @@ import {
 
 export default function WatchlistPage() {
   const mounted = useMounted();
-  const { followed, watched, setEpisode } = useTrack();
+  const { followed, watched, showCache, setEpisode } = useTrack();
+  useHydrateLibrary();
 
   const today = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
@@ -34,14 +35,15 @@ export default function WatchlistPage() {
     );
   }
 
-  const shows = SHOWS.filter((s) => followed.includes(s.id));
+  const shows = followed.map((id) => showCache[id]).filter(Boolean);
+  const loadingCount = followed.length - shows.length;
   const withNext = shows
     .map((show) => ({ show, next: nextEpisode(show, watched[show.id]) }))
     .sort((a, b) => (a.next ? 0 : 1) - (b.next ? 0 : 1));
 
   const toWatch = withNext.filter((x) => x.next).length;
   const totalMin = shows.reduce(
-    (acc, s) => acc + watchedCount(s, watched[s.id]) * s.runtime,
+    (acc, s) => acc + watchedCount(s, watched[s.id]) * (s.runtime ?? 45),
     0
   );
 
@@ -50,14 +52,14 @@ export default function WatchlistPage() {
       <h1 className="page-title">À suivre</h1>
       <p className="page-sub">{today}</p>
 
-      {shows.length > 0 && (
+      {followed.length > 0 && (
         <div className="row" style={{ marginBottom: 20 }}>
-          <div className="glass card pressable" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+          <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
             <div style={{ fontSize: 22, fontWeight: 800 }}>{toWatch}</div>
             <div className="tiny">à rattraper</div>
           </div>
           <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>{shows.length}</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{followed.length}</div>
             <div className="tiny">séries suivies</div>
           </div>
           <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
@@ -69,7 +71,7 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {shows.length === 0 ? (
+      {followed.length === 0 ? (
         <div className="glass empty">
           <div className="big">📺</div>
           <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucune série suivie</h2>
@@ -91,7 +93,7 @@ export default function WatchlistPage() {
               <div key={show.id} className="glass card">
                 <div className="row">
                   <Link href={`/show/${show.id}`}>
-                    <Poster emoji={show.emoji} colors={show.colors} mini />
+                    <Poster item={show} mini />
                   </Link>
                   <Link href={`/show/${show.id}`} style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>
@@ -102,9 +104,11 @@ export default function WatchlistPage() {
                         <div className="muted" style={{ marginTop: 2 }}>
                           {epLabel(next)} — {next.title}
                         </div>
-                        <div className="tiny" style={{ marginTop: 2 }}>
-                          diffusé {fmtRelativeOrDate(next.airDate)}
-                        </div>
+                        {next.airDate && (
+                          <div className="tiny" style={{ marginTop: 2 }}>
+                            diffusé {fmtRelativeOrDate(next.airDate)}
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
@@ -112,7 +116,7 @@ export default function WatchlistPage() {
                           ✓ À jour
                         </div>
                         <div className="tiny" style={{ marginTop: 2 }}>
-                          {upcoming
+                          {upcoming?.airDate
                             ? `prochain épisode ${fmtRelative(upcoming.airDate)}`
                             : show.status === "Terminée"
                               ? "série terminée"
@@ -146,6 +150,13 @@ export default function WatchlistPage() {
               </div>
             );
           })}
+          {loadingCount > 0 && (
+            <div className="glass card" style={{ textAlign: "center" }}>
+              <span className="muted">
+                Chargement de {loadingCount} série{loadingCount > 1 ? "s" : ""}…
+              </span>
+            </div>
+          )}
         </div>
       )}
     </main>

@@ -12,6 +12,15 @@ Webapp mobile-first de suivi de séries et films (inspirée de TV Time), avec un
 - **Profil** : statistiques (épisodes vus, temps de visionnage, genres favoris) et badges
 - Données sauvegardées en local (localStorage) — aucune inscription nécessaire
 - Installable sur l'écran d'accueil (PWA manifest)
+- **Catalogue TMDB** : avec une clé API (gratuite), recherche mondiale, vraies affiches et épisodes à jour ; sans clé, catalogue de démonstration intégré
+
+## Catalogue TMDB (optionnel mais recommandé)
+
+1. Créer un compte gratuit sur [themoviedb.org](https://www.themoviedb.org/signup), puis générer une clé dans **Paramètres → API**
+2. En local : `cp .env.example .env.local` et renseigner `TMDB_API_KEY=…`
+3. Sur Vercel : **Settings → Environment Variables** → ajouter `TMDB_API_KEY`, puis redéployer
+
+La clé v3 (« API Key ») et le jeton v4 (« API Read Access Token ») fonctionnent tous les deux. En cas d'absence de clé ou d'erreur TMDB, l'application retombe automatiquement sur le catalogue de démonstration.
 
 ## Développement
 

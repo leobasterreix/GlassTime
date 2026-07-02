@@ -7,10 +7,11 @@ export function epKey(s: number, e: number) {
 }
 
 export function allEpisodes(show: Show): Episode[] {
-  return show.seasons.flatMap((se) => se.episodes);
+  return (show.seasons ?? []).flatMap((se) => se.episodes);
 }
 
 export function isAired(ep: Episode, now = Date.now()) {
+  if (!ep.airDate) return false;
   return new Date(ep.airDate).getTime() <= now;
 }
 
@@ -39,11 +40,11 @@ export function nextEpisode(
   return null;
 }
 
-/** Prochain épisode à venir (non diffusé). */
+/** Prochain épisode à venir (non diffusé, date connue). */
 export function nextUpcoming(show: Show): Episode | null {
   const now = Date.now();
   for (const ep of allEpisodes(show)) {
-    if (!isAired(ep, now)) return ep;
+    if (ep.airDate && !isAired(ep, now)) return ep;
   }
   return null;
 }

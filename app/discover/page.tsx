@@ -1,25 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
-import { GENRES, SHOWS } from "@/lib/data";
+import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import type { Show } from "@/lib/types";
 
 export default function DiscoverPage() {
   const mounted = useMounted();
-  const { followed, toggleFollow } = useTrack();
+  const followed = useTrack((st) => st.followed);
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState<string | null>(null);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [results, setResults] = useState<Show[] | null>(null);
 
-  const q = query.trim().toLowerCase();
-  const results = SHOWS.filter(
-    (s) =>
-      (!q || s.title.toLowerCase().includes(q)) &&
-      (!genre || s.genres.includes(genre))
-  );
-  const trending = SHOWS.filter((s) => s.trending);
+  useEffect(() => {
+    apiGet<string[]>("/api/genres").then((g) => g && setGenres(g));
+  }, []);
+
+  const q = query.trim();
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(
+      async () => {
+        const params = new URLSearchParams();
+        if (q) params.set("q", q);
+        if (genre) params.set("genre", genre);
+        const data = await apiGet<Show[]>(`/api/shows?${params}`);
+        if (!cancelled) setResults(data ?? []);
+      },
+      q ? 350 : 0
+    );
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [q, genre]);
+
   const searching = q.length > 0 || genre !== null;
+  const trending = (results ?? []).slice(0, 10);
 
   return (
     <main className="page">
@@ -39,7 +59,7 @@ export default function DiscoverPage() {
       </div>
 
       <div className="hscroll" style={{ paddingBottom: 8 }}>
-        {GENRES.map((g) => (
+        {genres.map((g) => (
           <button
             key={g}
             className={`chip pressable${genre === g ? " active" : ""}`}
@@ -51,13 +71,13 @@ export default function DiscoverPage() {
         ))}
       </div>
 
-      {!searching && (
+      {!searching && trending.length > 0 && (
         <>
           <h2 className="section-title">🔥 Tendances</h2>
           <div className="hscroll">
             {trending.map((s) => (
               <Link key={s.id} href={`/show/${s.id}`} className="pressable">
-                <Poster emoji={s.emoji} colors={s.colors} title={s.title} />
+                <Poster item={s} />
               </Link>
             ))}
           </div>
@@ -65,11 +85,16 @@ export default function DiscoverPage() {
       )}
 
       <h2 className="section-title">
-        {searching ? "Résultats" : "Toutes les séries"}
-        <small>{results.length}</small>
+        {searching ? "Résultats" : "Séries populaires"}
+        {results && <small>{results.length}</small>}
       </h2>
 
-      {results.length === 0 ? (
+      {results === null ? (
+        <div className="glass empty">
+          <div className="big">⏳</div>
+          <p className="muted">Chargement…</p>
+        </div>
+      ) : results.length === 0 ? (
         <div className="glass empty">
           <div className="big">🔍</div>
           <p className="muted">Aucune série ne correspond à votre recherche.</p>
@@ -81,13 +106,13 @@ export default function DiscoverPage() {
             return (
               <div key={s.id} style={{ position: "relative" }}>
                 <Link href={`/show/${s.id}`} className="pressable" style={{ display: "block" }}>
-                  <Poster emoji={s.emoji} colors={s.colors} title={s.title} />
+                  <Poster item={s} />
                 </Link>
                 <button
                   className={`check small${isFollowed ? " checked" : ""}`}
                   style={{ position: "absolute", top: 8, right: 8 }}
                   aria-label={isFollowed ? "Ne plus suivre" : "Suivre"}
-                  onClick={() => toggleFollow(s.id)}
+                  onClick={() => followShow(s)}
                 >
                   {isFollowed ? "✓" : "+"}
                 </button>

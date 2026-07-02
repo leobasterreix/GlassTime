@@ -2,7 +2,7 @@ export type Episode = {
   s: number;
   e: number;
   title: string;
-  airDate: string; // ISO
+  airDate: string | null; // ISO, null si date inconnue
 };
 
 export type Season = {
@@ -15,23 +15,27 @@ export type Show = {
   title: string;
   year: number;
   genres: string[];
-  status: "En cours" | "Terminée";
-  runtime: number; // minutes par épisode
-  emoji: string;
-  colors: [string, string];
   overview: string;
+  poster?: string | null; // URL TMDB, sinon affiche générée
+  backdrop?: string | null;
+  emoji?: string;
+  colors?: [string, string];
+  rating?: number;
   trending?: boolean;
-  seasons: Season[];
+  status?: "En cours" | "Terminée";
+  runtime?: number; // minutes par épisode
+  seasons?: Season[]; // absent sur les résumés (recherche/tendances)
 };
 
 export type Movie = {
   id: number;
   title: string;
   year: number;
-  runtime: number;
   genres: string[];
-  emoji: string;
-  colors: [string, string];
   overview: string;
-  rating: number; // sur 10
+  poster?: string | null;
+  emoji?: string;
+  colors?: [string, string];
+  runtime?: number;
+  rating?: number;
 };

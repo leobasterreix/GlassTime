@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Poster from "@/components/Poster";
-import { SHOWS } from "@/lib/data";
+import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { allEpisodes, DAY, epLabel, fmtDateLong, fmtRelative } from "@/lib/utils";
 import type { Episode, Show } from "@/lib/types";
@@ -11,7 +11,8 @@ type Entry = { show: Show; ep: Episode };
 
 export default function CalendarPage() {
   const mounted = useMounted();
-  const { followed } = useTrack();
+  const { followed, showCache } = useTrack();
+  useHydrateLibrary();
 
   if (!mounted) {
     return (
@@ -22,65 +23,59 @@ export default function CalendarPage() {
     );
   }
 
-  const source =
-    followed.length > 0
-      ? SHOWS.filter((s) => followed.includes(s.id))
-      : SHOWS;
+  const source = followed.map((id) => showCache[id]).filter(Boolean);
   const now = Date.now();
   const horizon = now + 45 * DAY;
 
-  const upcoming: Entry[] = source
-    .flatMap((show) =>
-      allEpisodes(show).map((ep) => ({ show, ep }))
-    )
+  const entries: Entry[] = source.flatMap((show) =>
+    allEpisodes(show)
+      .filter((ep) => ep.airDate)
+      .map((ep) => ({ show, ep }))
+  );
+
+  const upcoming = entries
     .filter(({ ep }) => {
-      const t = new Date(ep.airDate).getTime();
+      const t = new Date(ep.airDate!).getTime();
       return t > now && t <= horizon;
     })
     .sort(
       (a, b) =>
-        new Date(a.ep.airDate).getTime() - new Date(b.ep.airDate).getTime()
+        new Date(a.ep.airDate!).getTime() - new Date(b.ep.airDate!).getTime()
     );
 
-  const recent: Entry[] = source
-    .flatMap((show) => allEpisodes(show).map((ep) => ({ show, ep })))
+  const recent = entries
     .filter(({ ep }) => {
-      const t = new Date(ep.airDate).getTime();
+      const t = new Date(ep.airDate!).getTime();
       return t <= now && t > now - 7 * DAY;
     })
     .sort(
       (a, b) =>
-        new Date(b.ep.airDate).getTime() - new Date(a.ep.airDate).getTime()
+        new Date(b.ep.airDate!).getTime() - new Date(a.ep.airDate!).getTime()
     );
 
   // Regroupement par jour
   const byDay = new Map<string, Entry[]>();
   for (const entry of upcoming) {
-    const day = entry.ep.airDate.slice(0, 10);
+    const day = entry.ep.airDate!.slice(0, 10);
     byDay.set(day, [...(byDay.get(day) ?? []), entry]);
   }
 
   return (
     <main className="page">
       <h1 className="page-title">Agenda</h1>
-      <p className="page-sub">
-        {followed.length > 0
-          ? "Diffusions de vos séries suivies"
-          : "Toutes les prochaines diffusions"}
-      </p>
+      <p className="page-sub">Diffusions de vos séries suivies</p>
 
-      {recent.length > 0 && (
-        <>
-          <h2 className="section-title">Cette semaine</h2>
-          <div className="stack">
-            {recent.map(({ show, ep }) => (
-              <EntryRow key={`${show.id}-${epKeyOf(ep)}`} show={show} ep={ep} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {byDay.size === 0 && recent.length === 0 ? (
+      {followed.length === 0 ? (
+        <div className="glass empty">
+          <div className="big">🗓️</div>
+          <p className="muted" style={{ marginBottom: 18 }}>
+            Suivez des séries pour voir leurs prochaines diffusions ici.
+          </p>
+          <Link href="/discover" className="btn btn-primary pressable">
+            Découvrir des séries
+          </Link>
+        </div>
+      ) : byDay.size === 0 && recent.length === 0 ? (
         <div className="glass empty">
           <div className="big">🗓️</div>
           <p className="muted">
@@ -88,39 +83,47 @@ export default function CalendarPage() {
           </p>
         </div>
       ) : (
-        Array.from(byDay.entries()).map(([day, entries]) => (
-          <div key={day}>
-            <h2 className="section-title" style={{ textTransform: "capitalize" }}>
-              {fmtDateLong(day)}
-              <small>{fmtRelative(day)}</small>
-            </h2>
-            <div className="stack">
-              {entries.map(({ show, ep }) => (
-                <EntryRow key={`${show.id}-${epKeyOf(ep)}`} show={show} ep={ep} />
-              ))}
+        <>
+          {recent.length > 0 && (
+            <>
+              <h2 className="section-title">Cette semaine</h2>
+              <div className="stack">
+                {recent.map(({ show, ep }) => (
+                  <EntryRow key={`${show.id}-${ep.s}:${ep.e}`} show={show} ep={ep} />
+                ))}
+              </div>
+            </>
+          )}
+          {Array.from(byDay.entries()).map(([day, dayEntries]) => (
+            <div key={day}>
+              <h2 className="section-title" style={{ textTransform: "capitalize" }}>
+                {fmtDateLong(day)}
+                <small>{fmtRelative(day)}</small>
+              </h2>
+              <div className="stack">
+                {dayEntries.map(({ show, ep }) => (
+                  <EntryRow key={`${show.id}-${ep.s}:${ep.e}`} show={show} ep={ep} />
+                ))}
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+        </>
       )}
     </main>
   );
 }
 
-function epKeyOf(ep: Episode) {
-  return `${ep.s}:${ep.e}`;
-}
-
 function EntryRow({ show, ep }: Entry) {
   return (
     <Link href={`/show/${show.id}`} className="glass card pressable row">
-      <Poster emoji={show.emoji} colors={show.colors} mini />
+      <Poster item={show} mini />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
         <div className="muted" style={{ marginTop: 2 }}>
           {epLabel(ep)} — {ep.title}
         </div>
       </div>
-      <span className="badge-pill">{fmtRelative(ep.airDate)}</span>
+      <span className="badge-pill">{fmtRelative(ep.airDate!)}</span>
     </Link>
   );
 }
