@@ -39,10 +39,6 @@
     <path d="M142 126 h228 a56 56 0 0 1 56 56 v14 c-90 34 -250 34 -340 0 v-14 a56 56 0 0 1 56 -56 z" fill="url(#sheen)"/>
   </g>
 
-  <!-- Play -->
-  <path d="M219 200 L318 256 L219 312 Z" fill="#ffffff" opacity="0.35" filter="url(#soft)"/>
-  <path d="M219 196 L322 256 L219 316 Z" fill="#ffffff"/>
-
   <!-- Pied lumineux -->
   <rect x="196" y="404" width="120" height="16" rx="8" fill="#ffffff" opacity="0.65"/>
 </svg>
