@@ -29,7 +29,7 @@ type TrackState = {
   toggleMovieWatchlist: (id: number) => void;
   toggleMovieWatched: (id: number) => void;
   clearAll: () => void;
-  theme: "dark" | "light";
+  theme: "system" | "light" | "dark";
   toggleTheme: () => void;
 };
 
@@ -110,12 +110,19 @@ export const useTrack = create<TrackState>()(
           updatedAt: Date.now(),
         })),
 
-      theme: "dark",
+      theme: "system",
 
       toggleTheme: () =>
-        set((st) => ({
-          theme: st.theme === "light" ? "dark" : "light",
-        })),
+        set((st) => {
+          const next: Record<string, string> = {
+            system: "light",
+            light: "dark",
+            dark: "system",
+          };
+          return {
+            theme: (next[st.theme] ?? "system") as "system" | "light" | "dark",
+          };
+        }),
 
       clearAll: () =>
         set({

@@ -206,7 +206,11 @@ export default function ProfilePage() {
           }}
           onClick={toggleTheme}
         >
-          {theme === "light" ? "🌙 Mode Sombre" : "☀️ Mode Clair"}
+          {theme === "system"
+            ? "⚙️ Thème : Système"
+            : theme === "light"
+              ? "☀️ Thème : Clair"
+              : "🌙 Thème : Sombre"}
         </button>
       </div>
 

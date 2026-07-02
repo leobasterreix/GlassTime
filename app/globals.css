@@ -15,7 +15,12 @@
   --glass-highlight: rgba(255, 255, 255, 0.12);
   --track: rgba(255, 255, 255, 0.09);
   --pill-bg: rgba(255, 255, 255, 0.1);
-  --tab-bg: rgba(18, 20, 30, 0.55);
+  --tab-bg: rgba(18, 20, 30, 0.6);
+  --tab-border: rgba(255, 255, 255, 0.12);
+  --tab-shadow: 0 16px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --tab-active-bg: rgba(255, 255, 255, 0.09);
+  --tab-active-color: var(--text);
+  --tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --hero-veil-1: rgba(6, 7, 13, 0.25);
   --hero-veil-2: rgba(6, 7, 13, 0.85);
   --aurora-opacity: 1;
@@ -37,7 +42,12 @@
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --track: rgba(18, 22, 38, 0.1);
   --pill-bg: rgba(18, 22, 38, 0.06);
-  --tab-bg: rgba(255, 255, 255, 0.62);
+  --tab-bg: rgba(255, 255, 255, 0.65);
+  --tab-border: rgba(18, 22, 38, 0.06);
+  --tab-shadow: 0 12px 40px rgba(30, 38, 66, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --tab-active-bg: rgba(18, 22, 38, 0.06);
+  --tab-active-color: var(--text);
+  --tab-active-shadow: inset 0 1px 0 rgba(18, 22, 38, 0.03);
   --hero-veil-1: rgba(238, 240, 247, 0.6);
   --hero-veil-2: rgba(238, 240, 247, 0.94);
   --aurora-opacity: 0.55;
@@ -447,13 +457,11 @@ input {
   padding: 8px 6px;
   border-radius: 32px;
   z-index: 50;
-  background: rgba(18, 20, 30, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--tab-bg);
+  border: 1px solid var(--tab-border);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  box-shadow:
-    0 16px 50px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  box-shadow: var(--tab-shadow);
 }
 
 .tabbar a {
@@ -475,9 +483,9 @@ input {
 }
 
 .tabbar a.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.35), rgba(191, 90, 242, 0.3));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 18px rgba(10, 132, 255, 0.25);
+  color: var(--tab-active-color);
+  background: var(--tab-active-bg);
+  box-shadow: var(--tab-active-shadow);
 }
 
 /* ===== Divers ===== */

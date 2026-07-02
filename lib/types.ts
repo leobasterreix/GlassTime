@@ -39,3 +39,12 @@ export type Movie = {
   runtime?: number;
   rating?: number;
 };
+
+export type Review = {
+  id: string;
+  author: string;
+  avatar?: string | null;
+  rating?: number | null;
+  content: string;
+  createdAt: string;
+};

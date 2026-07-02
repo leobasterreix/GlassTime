@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Poster from "@/components/Poster";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
@@ -145,11 +146,15 @@ export default function MoviesPage() {
               .join(" · ");
             return (
               <div key={m.id} className="glass card row">
-                <Poster item={m} mini />
+                <Link href={`/movie/${m.id}`} style={{ display: "flex", flexShrink: 0 }}>
+                  <Poster item={m} mini />
+                </Link>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>
-                    {m.title}
-                  </div>
+                  <Link href={`/movie/${m.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                    <div style={{ fontWeight: 700, fontSize: 15.5 }}>
+                      {m.title}
+                    </div>
+                  </Link>
                   {meta && (
                     <div className="muted" style={{ marginTop: 2 }}>
                       {meta}

@@ -3,7 +3,7 @@
 // En cas d'erreur TMDB (clé invalide, réseau), on retombe aussi sur la démo.
 
 import { GENRES, MOVIES, SHOWS, getMovie, getShow } from "./data";
-import type { Movie, Show } from "./types";
+import type { Movie, Show, Review } from "./types";
 
 const IMG = "https://image.tmdb.org/t/p/";
 
@@ -243,4 +243,58 @@ export async function getMovieDetail(id: number): Promise<Movie | null> {
 export async function listGenres(): Promise<string[]> {
   if (hasTmdb()) return TV_GENRE_FILTERS;
   return GENRES;
+}
+
+export async function getShowReviews(id: number): Promise<Review[]> {
+  if (hasTmdb()) {
+    try {
+      const data = await tmdb(`/tv/${id}/reviews`);
+      return (data.results ?? []).map((r: any) => ({
+        id: r.id,
+        author: r.author_details?.name || r.author_details?.username || r.author,
+        avatar: r.author_details?.avatar_path ? (r.author_details.avatar_path.startsWith("http") ? r.author_details.avatar_path : `${IMG}w185${r.author_details.avatar_path}`) : null,
+        rating: r.author_details?.rating ?? null,
+        content: r.content,
+        createdAt: r.created_at,
+      }));
+    } catch (err) {
+      console.error("TMDB reviews error for show :", err);
+    }
+  }
+  return [
+    {
+      id: "demo-show-1",
+      author: "Julien R.",
+      rating: 9,
+      content: "Une réalisation incroyable avec une direction artistique sublime. L'intrigue nous tient en haleine du début à la fin ! (Avis de démonstration)",
+      createdAt: new Date().toISOString(),
+    }
+  ];
+}
+
+export async function getMovieReviews(id: number): Promise<Review[]> {
+  if (hasTmdb()) {
+    try {
+      const data = await tmdb(`/movie/${id}/reviews`);
+      return (data.results ?? []).map((r: any) => ({
+        id: r.id,
+        author: r.author_details?.name || r.author_details?.username || r.author,
+        avatar: r.author_details?.avatar_path ? (r.author_details.avatar_path.startsWith("http") ? r.author_details.avatar_path : `${IMG}w185${r.author_details.avatar_path}`) : null,
+        rating: r.author_details?.rating ?? null,
+        content: r.content,
+        createdAt: r.created_at,
+      }));
+    } catch (err) {
+      console.error("TMDB reviews error for movie :", err);
+    }
+  }
+  return [
+    {
+      id: "demo-movie-1",
+      author: "Sophie L.",
+      rating: 8,
+      content: "Un excellent moment cinématographique. Les acteurs sont très convaincants et le rythme est parfait. (Avis de démonstration)",
+      createdAt: new Date().toISOString(),
+    }
+  ];
 }

@@ -29,7 +29,24 @@ export default function SyncManager() {
   const theme = useTrack((st) => st.theme);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme || "dark");
+    function applyTheme() {
+      let resolved: "light" | "dark" = "dark";
+      if (theme === "system") {
+        resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      } else {
+        resolved = theme;
+      }
+      document.documentElement.setAttribute("data-theme", resolved);
+    }
+
+    applyTheme();
+
+    if (theme === "system") {
+      const media = window.matchMedia("(prefers-color-scheme: dark)");
+      const listener = () => applyTheme();
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
+    }
   }, [theme]);
 
   useEffect(() => {

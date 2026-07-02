@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
-import type { Show } from "@/lib/types";
+import type { Show, Review } from "@/lib/types";
 import {
   airedEpisodes,
   epKey,
@@ -25,6 +25,7 @@ export default function ShowPage() {
 
   const [fetched, setFetched] = useState<Show | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +36,10 @@ export default function ShowPage() {
         if (useTrack.getState().followed.includes(data.id))
           useTrack.getState().cacheShow(data);
       } else setNotFound(true);
+    });
+    apiGet<Review[]>(`/api/show/${id}/reviews`).then((data) => {
+      if (cancelled) return;
+      if (data) setReviews(data);
     });
     return () => {
       cancelled = true;
@@ -235,6 +240,70 @@ export default function ShowPage() {
               </details>
             );
           })}
+        </div>
+      )}
+
+      {/* Avis */}
+      <h2 className="section-title">Avis</h2>
+      {reviews.length === 0 ? (
+        <div className="glass empty" style={{ padding: "24px 16px" }}>
+          <p className="muted">Aucun avis rédigé pour le moment.</p>
+        </div>
+      ) : (
+        <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
+          {reviews.map((r) => (
+            <div key={r.id} className="glass card" style={{ padding: 18 }}>
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 8, alignItems: "flex-start" }}>
+                <div className="row" style={{ gap: 10 }}>
+                  {r.avatar ? (
+                    <img
+                      src={r.avatar}
+                      alt={r.author}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "1.5px solid var(--glass-border)",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: "var(--glass-bg-strong)",
+                        border: "1.5px solid var(--glass-border)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      {r.author[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: 14.5, fontWeight: 700 }}>{r.author}</div>
+                    <div className="tiny" style={{ fontSize: 11 }}>
+                      {r.createdAt ? new Date(r.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : ""}
+                    </div>
+                  </div>
+                </div>
+                {r.rating && (
+                  <span className="badge-pill" style={{ fontSize: 12 }}>
+                    ★ {r.rating.toFixed(0)}/10
+                  </span>
+                )}
+              </div>
+              <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                {r.content.length > 350 ? `${r.content.slice(0, 350)}...` : r.content}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </main>
