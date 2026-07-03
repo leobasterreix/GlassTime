@@ -598,39 +598,30 @@ input {
   color: var(--text-2);
 }
 
-/* Variante posée en médaillon sur un poster (listes/grilles) plutôt qu'en
-   ligne de texte : coin haut-gauche, le cœur/le check occupent déjà le
-   coin haut-droit ailleurs dans l'app. Contrairement à .badge-pill (pensé
-   pour une surface papier), celle-ci doit rester lisible par-dessus
-   n'importe quelle affiche : fond sombre opaque fixe + puce de couleur,
-   plutôt que les teintes claires qui se fondaient dans un poster sombre. */
-.poster-badge {
+/* Bandeau de statut sur la couverture (façon TV Time) : bande pleine largeur
+   au pied de l'affiche, plutôt qu'un badge en coin. Rendu depuis le composant
+   Poster lui-même (il porte déjà overflow:hidden + border-radius, donc le
+   bandeau est nativement découpé aux coins arrondis). Couleurs opaques fixes
+   (pas les teintes .badge-pill pensées pour du papier) pour rester lisible
+   par-dessus n'importe quelle affiche, sombre ou claire. */
+.poster-banner {
   position: absolute;
-  top: 7px;
-  left: 7px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 9px;
+  text-align: center;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
+  letter-spacing: 0.01em;
+  padding: 6px 4px;
   color: #fff;
-  background: rgba(15, 13, 9, 0.68);
-  backdrop-filter: blur(8px) saturate(160%);
-  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  background: rgba(20, 17, 12, 0.78);
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
 }
 
-.poster-badge::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-3);
-}
-
-.poster-badge.status-ongoing::before {
+.poster-banner.status-ongoing {
   background: var(--accent);
 }
 
