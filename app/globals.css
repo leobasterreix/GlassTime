@@ -132,7 +132,7 @@ input {
 .page {
   max-width: 520px;
   margin: 0 auto;
-  padding: max(20px, env(safe-area-inset-top)) 18px calc(var(--tab-h) + 28px);
+  padding: max(20px, env(safe-area-inset-top)) 18px calc(var(--tab-h) + 8px + env(safe-area-inset-bottom, 6px));
   min-height: 100dvh;
   animation: page-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
@@ -521,7 +521,7 @@ input {
 
 .tabbar {
   position: fixed;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(env(safe-area-inset-bottom, 14px) - 8px);
   left: 50%;
   transform: translateX(-50%);
   width: min(460px, calc(100% - 28px));
@@ -615,12 +615,47 @@ details.season[open] .chevron {
 /* ===== Fiche série/film : en-tête ===== */
 
 .show-hero {
+  position: relative;
   padding: 24px;
   text-align: center;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Bouton favori (cœur) : coin haut-droit de la fiche, toujours lisible
+   (fond opaque) même par-dessus une image de fond. */
+.fav-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  color: var(--text-3);
+  transition: all 0.2s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+.fav-btn svg {
+  width: 19px;
+  height: 19px;
+}
+
+.fav-btn:active {
+  transform: scale(0.85);
+}
+
+.fav-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-wash);
 }
 
 .show-hero .hero-poster {
@@ -718,6 +753,23 @@ details.season[open] .chevron {
   font-weight: 700;
   background: var(--pill-bg);
   border: 1px solid var(--hairline);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.6, 1), background-color 0.2s, border-color 0.2s;
+}
+
+a.provider-pill {
+  cursor: pointer;
+}
+
+a.provider-pill:hover {
+  background-color: var(--surface-2);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+a.provider-pill:active {
+  transform: scale(0.96);
 }
 
 .provider-pill img {
@@ -869,6 +921,7 @@ details.season[open] .chevron {
     max-width: 780px;
     padding-left: 32px;
     padding-right: 32px;
+    padding-bottom: calc(var(--tab-h) + 36px);
   }
 
   .page-title {
@@ -913,6 +966,7 @@ details.season[open] .chevron {
 
   .tabbar {
     width: min(560px, calc(100% - 28px));
+    bottom: 20px;
   }
 
   .tabbar a {

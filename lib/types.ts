@@ -57,6 +57,7 @@ export type CastMember = {
 export type Provider = {
   name: string;
   logo?: string | null;
+  link?: string | null;
 };
 
 export type Review = {

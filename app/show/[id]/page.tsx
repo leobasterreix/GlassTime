@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
+import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack, type ShowFollowStatus } from "@/lib/store";
 import { toast } from "@/lib/toast";
@@ -16,6 +17,7 @@ import {
   fmtRelative,
   isAired,
   watchedCount,
+  getProviderSearchUrl,
 } from "@/lib/utils";
 
 const STATUS_LABELS: { value: ShowFollowStatus; label: string }[] = [
@@ -29,8 +31,20 @@ export default function ShowPage() {
   const router = useRouter();
   const id = Number(params.id);
   const mounted = useMounted();
-  const { followed, watched, showCache, cacheShow, setEpisode, setEpisodes, localReviews, setLocalReview, showStatus, setShowStatus } =
-    useTrack();
+  const {
+    followed,
+    watched,
+    showCache,
+    cacheShow,
+    setEpisode,
+    setEpisodes,
+    localReviews,
+    setLocalReview,
+    showStatus,
+    setShowStatus,
+    favoriteShows,
+    toggleFavoriteShow,
+  } = useTrack();
   // Proposition de rattrapage après avoir coché un épisode « en avance »
   const [catchUp, setCatchUp] = useState<{ ep: Episode; count: number } | null>(null);
 
@@ -203,6 +217,18 @@ export default function ShowPage() {
           background: heroBg ? `${heroBg}, var(--glass-bg)` : undefined,
         }}
       >
+        <FavoriteButton
+          active={favoriteShows.includes(show.id)}
+          onToggle={() => {
+            const wasFavorite = favoriteShows.includes(show.id);
+            cacheShow(show);
+            toggleFavoriteShow(show.id);
+            toast(
+              wasFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+              wasFavorite ? "💔" : "❤️"
+            );
+          }}
+        />
         <div className="hero-poster">
           <Poster item={show} />
         </div>
@@ -286,12 +312,21 @@ export default function ShowPage() {
               OÙ REGARDER
             </div>
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              {show.providers!.map((p) => (
-                <span key={p.name} className="provider-pill">
-                  {p.logo && <img src={p.logo} alt="" />}
-                  {p.name}
-                </span>
-              ))}
+              {show.providers!.map((p) => {
+                const searchUrl = getProviderSearchUrl(p.name, show.title, p.link);
+                return (
+                  <a
+                    key={p.name}
+                    href={searchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="provider-pill"
+                  >
+                    {p.logo && <img src={p.logo} alt="" />}
+                    {p.name}
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}

@@ -3,11 +3,12 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
+import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import type { Movie, Review } from "@/lib/types";
-import { minutesHuman } from "@/lib/utils";
+import { minutesHuman, getProviderSearchUrl } from "@/lib/utils";
 
 export default function MoviePage() {
   const params = useParams<{ id: string }>();
@@ -24,6 +25,8 @@ export default function MoviePage() {
     toggleMovieWatched,
     localReviews,
     setLocalReview,
+    favoriteMovies,
+    toggleFavoriteMovie,
   } = useTrack();
 
   const [fetched, setFetched] = useState<Movie | null>(null);
@@ -164,6 +167,18 @@ export default function MoviePage() {
           background: heroBg ? `${heroBg}, var(--glass-bg)` : undefined,
         }}
       >
+        <FavoriteButton
+          active={favoriteMovies.includes(movie.id)}
+          onToggle={() => {
+            const wasFavorite = favoriteMovies.includes(movie.id);
+            cacheMovie(movie);
+            toggleFavoriteMovie(movie.id);
+            toast(
+              wasFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+              wasFavorite ? "💔" : "❤️"
+            );
+          }}
+        />
         <div className="hero-poster">
           <Poster item={movie} />
         </div>
@@ -235,12 +250,21 @@ export default function MoviePage() {
                 OÙ REGARDER
               </div>
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                {movie.providers!.map((p) => (
-                  <span key={p.name} className="provider-pill">
-                    {p.logo && <img src={p.logo} alt="" />}
-                    {p.name}
-                  </span>
-                ))}
+                {movie.providers!.map((p) => {
+                  const searchUrl = getProviderSearchUrl(p.name, movie.title, p.link);
+                  return (
+                    <a
+                      key={p.name}
+                      href={searchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="provider-pill"
+                    >
+                      {p.logo && <img src={p.logo} alt="" />}
+                      {p.name}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}

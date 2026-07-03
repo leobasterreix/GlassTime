@@ -25,6 +25,9 @@ const SYNC_KEYS = [
   "showStatus",
   "watchedLog",
   "accent",
+  "favoriteShows",
+  "favoriteMovies",
+  "favoriteBooks",
   "updatedAt",
 ] as const;
 
@@ -73,12 +76,36 @@ export default function SyncManager() {
     let unsubStore = () => {};
     let applying = false;
 
-    async function pushState(userId: string) {
+    async function pushState(userId: string, session: any) {
       try {
         const state = snapshot();
         await supabase.from("user_states").upsert({
           user_id: userId,
           state,
+          updated_at: new Date().toISOString(),
+        });
+
+        // Version publique simplifiée pour les abonnements
+        const publicState = {
+          followed: state.followed || [],
+          moviesWatched: state.moviesWatched || [],
+          booksRead: state.booksRead || [],
+          showCache: state.showCache || {},
+          movieCache: state.movieCache || {},
+          bookCache: state.bookCache || {},
+        };
+
+        const firstName = session?.user?.user_metadata?.first_name || "";
+        const lastName = session?.user?.user_metadata?.last_name || "";
+        const avatar = session?.user?.user_metadata?.avatar || "🍿";
+
+        await supabase.from("profiles").upsert({
+          id: userId,
+          email: session?.user?.email || "",
+          first_name: firstName,
+          last_name: lastName,
+          avatar_url: avatar,
+          public_state: publicState,
           updated_at: new Date().toISOString(),
         });
       } catch (err) {
@@ -111,15 +138,16 @@ export default function SyncManager() {
               applying = true;
               useTrack.setState(server);
               applying = false;
-            } else if (localUpdated > serverUpdated) {
-              void pushState(userId);
+              void pushState(userId, session);
+            } else {
+              void pushState(userId, session);
             }
 
             // S'abonner aux changements du store local
             unsubStore = useTrack.subscribe(() => {
               if (applying) return;
               clearTimeout(timer);
-              timer = setTimeout(() => pushState(userId), 1500);
+              timer = setTimeout(() => pushState(userId, session), 1500);
             });
           } catch (err) {
             console.error("Erreur de réconciliation initiale :", err);

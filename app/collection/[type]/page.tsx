@@ -7,19 +7,20 @@ import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 
-type CollectionType = "shows" | "movies" | "books";
+type CollectionType = "shows" | "movies" | "books" | "favorites";
 type Segment = "todo" | "done";
 
 const TITLES: Record<CollectionType, string> = {
   shows: "📺 Mes séries",
   movies: "🎬 Mes films",
   books: "📚 Mes livres",
+  favorites: "❤️ Mes favoris",
 };
 
 export default function CollectionPage() {
   const params = useParams<{ type: string }>();
   const router = useRouter();
-  const type = (["shows", "movies", "books"].includes(params.type)
+  const type = (["shows", "movies", "books", "favorites"].includes(params.type)
     ? params.type
     : "shows") as CollectionType;
   const mounted = useMounted();
@@ -34,6 +35,9 @@ export default function CollectionPage() {
     booksRead,
     booksReadDates,
     bookCache,
+    favoriteShows,
+    favoriteMovies,
+    favoriteBooks,
   } = useTrack();
   useHydrateLibrary();
   const [segment, setSegment] = useState<Segment>("todo");
@@ -71,7 +75,7 @@ export default function CollectionPage() {
       .map((id) => movieCache[id])
       .filter(Boolean)
       .map((m) => ({ id: m.id, href: `/movie/${m.id}`, item: m }));
-  } else {
+  } else if (type === "books") {
     segments = { todo: `À lire · ${booksWatchlist.length}`, done: `Lus · ${booksRead.length}` };
     const ids =
       segment === "todo"
@@ -91,6 +95,22 @@ export default function CollectionPage() {
             ? `📅 ${booksReadDates[b.id]}`
             : undefined,
       }));
+  } else {
+    // Favoris : mélange séries, films et livres, chacun avec sa propre route
+    items = [
+      ...favoriteShows
+        .map((id) => showCache[id])
+        .filter(Boolean)
+        .map((s) => ({ id: `show-${s.id}`, href: `/show/${s.id}`, item: s, caption: "📺 Série" })),
+      ...favoriteMovies
+        .map((id) => movieCache[id])
+        .filter(Boolean)
+        .map((m) => ({ id: `movie-${m.id}`, href: `/movie/${m.id}`, item: m, caption: "🎬 Film" })),
+      ...favoriteBooks
+        .map((id) => bookCache[id])
+        .filter(Boolean)
+        .map((b) => ({ id: `book-${b.id}`, href: `/book/${b.id}`, item: b, caption: "📚 Livre" })),
+    ];
   }
 
   return (
@@ -126,8 +146,12 @@ export default function CollectionPage() {
 
       {items.length === 0 ? (
         <div className="glass empty">
-          <div className="big">🗂️</div>
-          <p className="muted">Rien ici pour le moment.</p>
+          <div className="big">{type === "favorites" ? "❤️" : "🗂️"}</div>
+          <p className="muted">
+            {type === "favorites"
+              ? "Aucun favori pour le moment. Le cœur sur une fiche l'ajoute ici."
+              : "Rien ici pour le moment."}
+          </p>
         </div>
       ) : (
         <div className="grid-posters">

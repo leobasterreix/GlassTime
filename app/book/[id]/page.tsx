@@ -3,8 +3,10 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
+import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { Book, Review } from "@/lib/types";
 
 export default function BookDetailPage({
@@ -29,6 +31,8 @@ export default function BookDetailPage({
     setBookReadDate,
     localReviews,
     setLocalReview,
+    favoriteBooks,
+    toggleFavoriteBook,
   } = useTrack();
   useHydrateLibrary();
 
@@ -211,6 +215,18 @@ export default function BookDetailPage({
 
       {/* Hero Banner */}
       <div className="glass show-hero" style={{ marginTop: 14, marginBottom: 20 }}>
+        <FavoriteButton
+          active={favoriteBooks.includes(book.id)}
+          onToggle={() => {
+            const wasFavorite = favoriteBooks.includes(book.id);
+            cacheBook(book);
+            toggleFavoriteBook(book.id);
+            toast(
+              wasFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+              wasFavorite ? "💔" : "❤️"
+            );
+          }}
+        />
         <div className="hero-poster">
           <Poster item={book} />
         </div>

@@ -25,6 +25,8 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const rememberMe = request.cookies.get("remember_me")?.value !== "false";
+
   const supabase = createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -40,9 +42,14 @@ export async function middleware(request: NextRequest) {
           response = NextResponse.next({
             request,
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const finalOptions = { ...options };
+            if (!rememberMe) {
+              delete finalOptions.maxAge;
+              delete finalOptions.expires;
+            }
+            response.cookies.set(name, value, finalOptions);
+          });
         },
       },
     }

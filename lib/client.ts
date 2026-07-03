@@ -46,25 +46,41 @@ export function useHydrateLibrary() {
   const moviesWatched = useTrack((st) => st.moviesWatched);
   const booksWatchlist = useTrack((st) => st.booksWatchlist);
   const booksRead = useTrack((st) => st.booksRead);
+  // Un favori peut ne pas être suivi/dans une liste par ailleurs (ex: favori
+  // "coup de cœur" sur une série qu'on ne suit pas activement) : il faut donc
+  // aussi hydrater son cache, sinon il n'a pas de fiche à afficher.
+  const favoriteShows = useTrack((st) => st.favoriteShows);
+  const favoriteMovies = useTrack((st) => st.favoriteMovies);
+  const favoriteBooks = useTrack((st) => st.favoriteBooks);
 
   useEffect(() => {
     if (!mounted) return;
     const { showCache, movieCache, bookCache, cacheShow, cacheMovie, cacheBook } =
       useTrack.getState();
 
-    for (const id of followed) {
+    for (const id of new Set([...followed, ...favoriteShows])) {
       if (showCache[id]?.seasons?.length) continue;
       apiGet<Show>(`/api/show/${id}`).then((s) => s && cacheShow(s));
     }
-    for (const id of new Set([...movieWatchlist, ...moviesWatched])) {
+    for (const id of new Set([...movieWatchlist, ...moviesWatched, ...favoriteMovies])) {
       if (movieCache[id]?.runtime) continue;
       apiGet<Movie>(`/api/movie/${id}`).then((m) => m && cacheMovie(m));
     }
     // Le Set évite les re-fetch en boucle quand un livre reste introuvable
-    for (const id of new Set([...booksWatchlist, ...booksRead])) {
+    for (const id of new Set([...booksWatchlist, ...booksRead, ...favoriteBooks])) {
       if (bookCache[id] || fetchedBookIds.has(id)) continue;
       fetchedBookIds.add(id);
       apiGet<Book>(`/api/book/${id}`).then((b) => b && cacheBook(b));
     }
-  }, [mounted, followed, movieWatchlist, moviesWatched, booksWatchlist, booksRead]);
+  }, [
+    mounted,
+    followed,
+    movieWatchlist,
+    moviesWatched,
+    booksWatchlist,
+    booksRead,
+    favoriteShows,
+    favoriteMovies,
+    favoriteBooks,
+  ]);
 }

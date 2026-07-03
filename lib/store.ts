@@ -18,6 +18,9 @@ type TrackState = {
   booksWatchlist: string[];
   booksRead: string[];
   booksProgress: Record<string, number>;
+  favoriteShows: number[];
+  favoriteMovies: number[];
+  favoriteBooks: string[];
   /** Statut de suivi par série : active (défaut), en pause, abandonnée. */
   showStatus: Record<number, ShowFollowStatus>;
   /** Journal d'activité : nombre d'éléments marqués par jour (YYYY-MM-DD). */
@@ -56,6 +59,9 @@ type TrackState = {
   setAccent: (color: string | null) => void;
   localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
   setLocalReview: (type: "movie" | "show" | "book", id: number | string, rating: number, content: string) => void;
+  toggleFavoriteShow: (id: number) => void;
+  toggleFavoriteMovie: (id: number) => void;
+  toggleFavoriteBook: (id: string) => void;
   migrateDemoIds: () => void;
 };
 
@@ -98,11 +104,32 @@ export const useTrack = create<TrackState>()(
       showStatus: {},
       watchedLog: {},
       localReviews: {},
+      favoriteShows: [],
+      favoriteMovies: [],
+      favoriteBooks: [],
       updatedAt: 0,
 
       toggleFollow: (id) =>
         set((st) => ({
           followed: toggleIn(st.followed, id),
+          updatedAt: Date.now(),
+        })),
+
+      toggleFavoriteShow: (id) =>
+        set((st) => ({
+          favoriteShows: toggleIn(st.favoriteShows ?? [], id),
+          updatedAt: Date.now(),
+        })),
+
+      toggleFavoriteMovie: (id) =>
+        set((st) => ({
+          favoriteMovies: toggleIn(st.favoriteMovies ?? [], id),
+          updatedAt: Date.now(),
+        })),
+
+      toggleFavoriteBook: (id) =>
+        set((st) => ({
+          favoriteBooks: toggleInStr(st.favoriteBooks ?? [], id),
           updatedAt: Date.now(),
         })),
 
@@ -401,6 +428,9 @@ export const useTrack = create<TrackState>()(
           showStatus: {},
           watchedLog: {},
           localReviews: {},
+          favoriteShows: [],
+          favoriteMovies: [],
+          favoriteBooks: [],
           updatedAt: Date.now(),
         }),
     }),

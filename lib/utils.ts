@@ -103,3 +103,33 @@ export function minutesHuman(min: number): string {
 export function epLabel(ep: Episode) {
   return `S${String(ep.s).padStart(2, "0")} · E${String(ep.e).padStart(2, "0")}`;
 }
+
+export function getProviderSearchUrl(providerName: string, title: string, fallbackUrl?: string | null): string {
+  const query = encodeURIComponent(title);
+  const name = providerName.toLowerCase();
+  if (name.includes("netflix")) {
+    return `https://www.netflix.com/search?q=${query}`;
+  }
+  if (name.includes("prime video") || name.includes("amazon")) {
+    return `https://www.primevideo.com/search/ref=atv_sr_sug?phrase=${query}`;
+  }
+  if (name.includes("disney")) {
+    return `https://www.disneyplus.com/search?q=${query}`;
+  }
+  if (name.includes("canal") || name.includes("mycanal")) {
+    return `https://www.canalplus.com/recherche?q=${query}`;
+  }
+  if (name.includes("max") || name.includes("hbo")) {
+    return `https://www.max.com/search?q=${query}`;
+  }
+  if (name.includes("paramount")) {
+    return `https://www.paramountplus.com/search?q=${query}`;
+  }
+  if (name.includes("apple tv") || name.includes("itunes")) {
+    return `https://tv.apple.com/search?term=${query}`;
+  }
+  if (name.includes("crunchyroll")) {
+    return `https://www.crunchyroll.com/search?q=${query}`;
+  }
+  return fallbackUrl || `https://www.google.com/search?q=Regarder+${query}+streaming`;
+}

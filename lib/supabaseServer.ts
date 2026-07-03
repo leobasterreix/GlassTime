@@ -8,6 +8,8 @@ export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
 
+  const rememberMe = cookieStore.get("remember_me")?.value !== "false";
+
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -18,9 +20,14 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const finalOptions = { ...options };
+              if (!rememberMe) {
+                delete finalOptions.maxAge;
+                delete finalOptions.expires;
+              }
+              cookieStore.set(name, value, finalOptions);
+            });
           } catch {
             // Ignoré si appelé depuis un Server Component.
             // Géré par le middleware pour rafraîchir les sessions.

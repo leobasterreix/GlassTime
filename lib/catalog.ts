@@ -90,6 +90,7 @@ async function fetchProviders(type: "tv" | "movie", id: number): Promise<Provide
     const d = await tmdb(`/${type}/${id}/watch/providers`);
     const fr = d.results?.FR;
     if (!fr) return [];
+    const watchLink = fr.link || null;
     const seen = new Set<number>();
     const providers: Provider[] = [];
     for (const p of [...(fr.flatrate ?? []), ...(fr.free ?? []), ...(fr.ads ?? [])]) {
@@ -98,6 +99,7 @@ async function fetchProviders(type: "tv" | "movie", id: number): Promise<Provide
       providers.push({
         name: p.provider_name,
         logo: p.logo_path ? `${IMG}w92${p.logo_path}` : null,
+        link: watchLink,
       });
     }
     return providers.slice(0, 6);

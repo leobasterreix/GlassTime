@@ -14,6 +14,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // Nouveaux états
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error") === "auth-code-error") {
@@ -25,6 +33,12 @@ export default function LoginPage() {
     setMode(next);
     setError(null);
     setNotice(null);
+    setFirstName("");
+    setLastName("");
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -33,6 +47,10 @@ export default function LoginPage() {
     setError(null);
     setNotice(null);
 
+    if (mode === "signup" && (!firstName.trim() || !lastName.trim())) {
+      setError("Veuillez renseigner votre prénom et votre nom.");
+      return;
+    }
     if (!email.trim() || !password) {
       setError("Renseignez votre e-mail et votre mot de passe.");
       return;
@@ -41,14 +59,28 @@ export default function LoginPage() {
       setError("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
 
     setLoading(true);
     try {
+      // Définir le cookie remember_me pour le serveur
+      document.cookie = `remember_me=${rememberMe}; path=/; max-age=${365 * 24 * 3600}; SameSite=Lax`;
+
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+            }
+          },
         });
         if (error) throw error;
         // Selon les réglages Supabase : session immédiate ou e-mail de confirmation
@@ -80,6 +112,9 @@ export default function LoginPage() {
     setError(null);
     setNotice(null);
     try {
+      // Définir le cookie remember_me pour le serveur
+      document.cookie = `remember_me=${rememberMe}; path=/; max-age=${365 * 24 * 3600}; SameSite=Lax`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -159,7 +194,28 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <form onSubmit={handleEmailSubmit} className="stack" style={{ gap: 12 }}>
+             <form onSubmit={handleEmailSubmit} className="stack" style={{ gap: 12 }}>
+              {mode === "signup" && (
+                <div className="row" style={{ gap: 10 }}>
+                  <input
+                    className="field"
+                    type="text"
+                    placeholder="Prénom"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="field"
+                    type="text"
+                    placeholder="Nom"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
               <input
                 className="field"
                 type="email"
@@ -168,23 +224,121 @@ export default function LoginPage() {
                 placeholder="Adresse e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-              />
-              <input
-                className="field"
-                type="password"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                placeholder="Mot de passe"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                required
               />
 
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  className="field"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ paddingRight: 46 }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-3)",
+                  }}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {mode === "signup" && (
+                <div style={{ position: "relative", width: "100%" }}>
+                  <input
+                    className="field"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Confirmer le mot de passe"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={{ paddingRight: 46 }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--text-3)",
+                    }}
+                  >
+                    {showConfirmPassword ? (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              <label className="row pressable" style={{ gap: 8, alignItems: "center", width: "fit-content", marginTop: 4, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    accentColor: "var(--accent)",
+                    cursor: "pointer"
+                  }}
+                />
+                <span className="tiny" style={{ fontWeight: 600, color: "var(--text-2)", cursor: "pointer", userSelect: "none" }}>
+                  Rester connecté
+                </span>
+              </label>
+
               {error && (
-                <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600 }}>
+                <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
                   {error}
                 </p>
               )}
               {notice && (
-                <p style={{ color: "var(--accent-ink)", fontSize: 13.5, fontWeight: 600 }}>
+                <p style={{ color: "var(--accent-ink)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
                   {notice}
                 </p>
               )}
@@ -192,7 +346,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 className="btn btn-primary pressable"
-                style={{ width: "100%" }}
+                style={{ width: "100%", marginTop: 8 }}
                 disabled={loading}
               >
                 {loading
