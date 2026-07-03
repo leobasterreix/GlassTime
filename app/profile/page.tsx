@@ -501,9 +501,8 @@ export default function ProfilePage() {
               alignItems: "center",
               justifyContent: "center",
               fontSize: 30,
-              background:
-                "linear-gradient(135deg, rgba(10,132,255,.5), rgba(191,90,242,.5))",
-              border: "1px solid var(--glass-border)",
+              background: "var(--accent-wash)",
+              border: "1px solid var(--accent)",
             }}
           >
             🍿
@@ -862,7 +861,7 @@ export default function ProfilePage() {
         </button>
         <button
           className="glass card pressable"
-          style={{ width: "100%", textAlign: "center", color: "#ff6b6b", fontWeight: 700 }}
+          style={{ width: "100%", textAlign: "center", color: "var(--danger)", fontWeight: 700 }}
           onClick={() => {
             if (confirm("Effacer toutes vos données de suivi ? Cette action est irréversible.")) {
               clearAll();

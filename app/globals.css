@@ -1,62 +1,83 @@
-/* ===== GlassTime — design system "liquid glass" ===== */
+/* ===== GlassTime — design system "éditorial" (papier + accent corail) ===== */
 
-:root {
-  --bg: #06070d;
-  --text: rgba(255, 255, 255, 0.94);
-  --text-2: rgba(255, 255, 255, 0.62);
-  --text-3: rgba(255, 255, 255, 0.4);
-  --accent: #0a84ff;
-  --accent-2: #bf5af2;
-  --success: #30d158;
-  --glass-bg: rgba(255, 255, 255, 0.065);
-  --glass-bg-strong: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.13);
-  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-  --glass-highlight: rgba(255, 255, 255, 0.12);
-  --track: rgba(255, 255, 255, 0.09);
-  --pill-bg: rgba(255, 255, 255, 0.1);
-  --tab-bg: rgba(18, 20, 30, 0.6);
-  --tab-border: rgba(255, 255, 255, 0.12);
-  --tab-shadow: 0 16px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  /* Onglet actif : même dégradé de marque que .chip.active / .segmented button.active,
-     identique dans les deux thèmes (couleur vive, pas besoin d'adaptation). */
-  --tab-active-bg: linear-gradient(135deg, rgba(10, 132, 255, 0.42), rgba(191, 90, 242, 0.4));
-  --tab-active-color: #fff;
-  --tab-active-shadow: 0 4px 16px rgba(10, 132, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  --tab-rim-light: rgba(255, 255, 255, 0.35);
-  --tab-rim-shadow: rgba(0, 0, 0, 0.22);
-  --tab-sheen: rgba(255, 255, 255, 0.16);
-  --hero-veil-1: rgba(6, 7, 13, 0.25);
-  --hero-veil-2: rgba(6, 7, 13, 0.85);
-  --aurora-opacity: 1;
-  --radius: 24px;
-  --radius-sm: 16px;
-  --tab-h: 84px;
+:root,
+[data-theme="light"] {
+  /* Papier chaud, cartes légèrement plus claires qui se détachent en douceur */
+  --bg: #f3efe7;
+  --surface: #fbf9f4;
+  --surface-2: #efe9dd;
+  --text: #241f18;
+  --text-2: #6f675b;
+  --text-3: #a49b8d;
+  /* Accent unique : corail chaud */
+  --accent: #d9503a;
+  --accent-ink: #bd4028; /* corail assombri, lisible en texte sur papier */
+  --accent-wash: rgba(217, 80, 58, 0.12);
+  --accent-fg: #ffffff;
+  --danger: #c0392b;
+  --hairline: rgba(36, 31, 24, 0.1);
+  --hairline-strong: rgba(36, 31, 24, 0.17);
+  --shadow-card: 0 1px 2px rgba(45, 35, 25, 0.04), 0 10px 30px rgba(45, 35, 25, 0.07);
+  --shadow-poster: 0 2px 5px rgba(45, 35, 25, 0.07), 0 10px 24px rgba(45, 35, 25, 0.11);
+  --track: rgba(36, 31, 24, 0.08);
+  --pill-bg: rgba(36, 31, 24, 0.05);
+  --shimmer: rgba(255, 255, 255, 0.55);
+  --tab-bg: rgba(251, 249, 244, 0.72);
+  --tab-border: rgba(36, 31, 24, 0.08);
+  --tab-shadow: 0 8px 30px rgba(45, 35, 25, 0.14);
+  --hero-veil-1: rgba(243, 239, 231, 0.35);
+  --hero-veil-2: rgba(243, 239, 231, 0.94);
+  --aurora-opacity: 0.7;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Nuit chaude type espresso, pas de bleu-noir clinique */
+  --bg: #17140f;
+  --surface: #221d16;
+  --surface-2: #1b1712;
+  --text: #f1ece3;
+  --text-2: rgba(241, 236, 227, 0.62);
+  --text-3: rgba(241, 236, 227, 0.4);
+  --accent: #e5604a;
+  --accent-ink: #ef7a63;
+  --accent-wash: rgba(229, 96, 74, 0.18);
+  --accent-fg: #ffffff;
+  --danger: #e5645a;
+  --hairline: rgba(241, 236, 227, 0.1);
+  --hairline-strong: rgba(241, 236, 227, 0.18);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 34px rgba(0, 0, 0, 0.42);
+  --shadow-poster: 0 4px 10px rgba(0, 0, 0, 0.35), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --track: rgba(241, 236, 227, 0.1);
+  --pill-bg: rgba(241, 236, 227, 0.08);
+  --shimmer: rgba(255, 255, 255, 0.07);
+  --tab-bg: rgba(34, 29, 22, 0.72);
+  --tab-border: rgba(241, 236, 227, 0.1);
+  --tab-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --hero-veil-1: rgba(23, 20, 15, 0.35);
+  --hero-veil-2: rgba(23, 20, 15, 0.94);
+  --aurora-opacity: 0.6;
   color-scheme: dark;
 }
 
-[data-theme="light"] {
-  --bg: #eef0f7;
-  --text: rgba(18, 22, 38, 0.95);
-  --text-2: rgba(18, 22, 38, 0.6);
-  --text-3: rgba(18, 22, 38, 0.4);
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(18, 22, 38, 0.1);
-  --glass-shadow: 0 12px 32px rgba(30, 38, 66, 0.12);
-  --glass-highlight: rgba(255, 255, 255, 0.9);
-  --track: rgba(18, 22, 38, 0.1);
-  --pill-bg: rgba(18, 22, 38, 0.06);
-  --tab-bg: rgba(255, 255, 255, 0.65);
-  --tab-border: rgba(18, 22, 38, 0.06);
-  --tab-shadow: 0 12px 40px rgba(30, 38, 66, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --tab-rim-light: rgba(255, 255, 255, 0.85);
-  --tab-rim-shadow: rgba(18, 22, 38, 0.08);
-  --tab-sheen: rgba(255, 255, 255, 0.55);
-  --hero-veil-1: rgba(238, 240, 247, 0.6);
-  --hero-veil-2: rgba(238, 240, 247, 0.94);
-  --aurora-opacity: 0.55;
-  color-scheme: light;
+:root {
+  --font-serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype",
+    Palatino, Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, system-ui, sans-serif;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --tab-h: 84px;
+
+  /* Alias de compatibilité : d'anciens styles inline (fiches film/série/livre,
+     profil) référencent encore ces noms. On les remappe sur le nouveau système
+     papier/corail pour rester cohérent sans réécrire tout le JSX. */
+  --glass-bg: var(--surface);
+  --glass-bg-strong: var(--surface-2);
+  --glass-border: var(--hairline-strong);
+  --glass-highlight: var(--shimmer);
+  --glass-shadow: var(--shadow-card);
+  --accent-2: var(--accent);
 }
 
 * {
@@ -68,41 +89,599 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
-    Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-/* Aurore d'arrière-plan */
+/* Voile de fond : un souffle de corail en haut de page, très discret.
+   Fini l'aurore multicolore. */
 .aurora {
   position: fixed;
-  inset: -20%;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(38% 30% at 18% 12%, rgba(10, 132, 255, 0.32), transparent 70%),
-    radial-gradient(32% 28% at 85% 8%, rgba(191, 90, 242, 0.26), transparent 70%),
-    radial-gradient(40% 34% at 78% 82%, rgba(255, 55, 95, 0.16), transparent 70%),
-    radial-gradient(36% 30% at 12% 88%, rgba(48, 209, 88, 0.12), transparent 70%);
-  animation: aurora-drift 24s ease-in-out infinite alternate;
+  background: radial-gradient(90% 45% at 50% -12%, var(--accent-wash), transparent 62%);
+  opacity: var(--aurora-opacity);
 }
 
-/* ===== Transition entre pages ===== */
+a {
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* ===== Structure ===== */
 
 .page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 18px calc(var(--tab-h) + 28px);
+  min-height: 100dvh;
   animation: page-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Titre de page : serif éditorial */
+.page-title {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin-bottom: 6px;
+}
+
+.page-sub {
+  color: var(--text-3);
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  margin-bottom: 24px;
+}
+
+/* Titre de section : intitulé de rubrique façon magazine (capitales espacées) */
+.section-title {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-2);
+  margin: 30px 0 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.section-title small {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+
+/* ===== Surfaces (cartes papier) ===== */
+/* La classe reste ".glass" pour ne pas toucher tout le JSX, mais ce n'est
+   plus du verre : une carte papier à filet fin et ombre douce. */
+
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.glass-strong {
+  background: var(--surface);
+}
+
+.card {
+  padding: 16px;
+}
+
+.pressable {
+  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.6, 1), background 0.2s,
+    border-color 0.2s;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* ===== Chips & boutons ===== */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 15px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.chip.active {
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  transition: all 0.2s;
+}
+
+/* CTA principal : plein corail */
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: transparent;
+}
+
+/* État "déjà fait" (suivie, vu) : contour corail, plus discret que le plein */
+.btn-success {
+  background: transparent;
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+/* Bouton check circulaire */
+.check {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1.5px solid var(--hairline-strong);
+  color: var(--text-3);
+  font-size: 18px;
+  transition: all 0.22s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+.check:active {
+  transform: scale(0.85);
+}
+
+.check.checked {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-fg);
+  box-shadow: 0 4px 14px var(--accent-wash);
+}
+
+.check:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.check.small {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  font-size: 15px;
+}
+
+/* ===== Barre de progression ===== */
+
+.progress {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.progress > div {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* ===== Affiches (posters) ===== */
+
+.poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-poster);
+}
+
+/* Simple filet de définition, plus de reflet verre */
+.poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--hairline);
+  pointer-events: none;
+}
+
+.poster img.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster .emoji {
+  font-size: clamp(30px, 9vw, 44px);
+}
+
+.poster .label {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 10px;
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+}
+
+.poster.mini {
+  width: 56px;
+  min-width: 56px;
+  border-radius: 10px;
+}
+
+.poster.mini .emoji {
+  font-size: 24px;
+}
+
+/* ===== Grilles & listes ===== */
+
+.grid-posters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.hscroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 18px 14px;
+  margin: 0 -18px;
+  scrollbar-width: none;
+}
+
+.hscroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hscroll > * {
+  min-width: 118px;
+  width: 118px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stack-wide {
+  align-items: stretch;
+}
+
+.grid-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== Segmented control ===== */
+
+.segmented {
+  display: flex;
+  padding: 4px;
+  border-radius: 999px;
+  gap: 4px;
+}
+
+.segmented button {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+  transition: all 0.25s;
+}
+
+.segmented button.active {
+  color: var(--accent-fg);
+  background: var(--accent);
+}
+
+/* ===== Recherche ===== */
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 16px;
+}
+
+.search input::placeholder {
+  color: var(--text-3);
+}
+
+/* ===== Barre d'onglets ===== */
+/* Seule surface qui garde un léger flou : elle flotte au-dessus du contenu
+   qui défile, donc le frosted a un vrai sens ici (pas décoratif). */
+
+.tabbar {
+  position: fixed;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 28px));
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 6px;
+  border-radius: 26px;
+  z-index: 50;
+  background: var(--tab-bg);
+  border: 1px solid var(--tab-border);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--tab-shadow);
+}
+
+.tabbar a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  transition: color 0.2s, background 0.2s;
+}
+
+.tabbar a svg {
+  width: 23px;
+  height: 23px;
+}
+
+.tabbar a.active {
+  color: var(--accent);
+  background: var(--accent-wash);
+}
+
+/* ===== Divers ===== */
+
+.muted {
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+
+.tiny {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pill-bg);
+  border: 1px solid var(--hairline);
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.empty .big {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+details.season > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.season > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.season .chevron {
+  transition: transform 0.25s;
+}
+
+details.season[open] .chevron {
+  transform: rotate(90deg);
+}
+
+/* ===== Fiche série/film : en-tête ===== */
+
+.show-hero {
+  padding: 24px;
+  text-align: center;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.show-hero .hero-poster {
+  width: 116px;
+  flex-shrink: 0;
+}
+
+.show-hero .hero-body {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Titre de fiche en serif, comme les titres de page */
+.show-hero h1 {
+  font-family: var(--font-serif);
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+
+/* ===== Cartes avec image de fond (agenda) ===== */
+
+.card-backdrop {
+  background-size: cover;
+  background-position: center 25%;
+  position: relative;
+  isolation: isolate;
+}
+
+.card-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hero-veil-2) 32%, var(--hero-veil-1));
+  z-index: -1;
+}
+
+/* ===== Casting ===== */
+
+.cast-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 18px 14px;
+  margin: 0 -18px;
+  scrollbar-width: none;
+}
+
+.cast-row::-webkit-scrollbar {
+  display: none;
+}
+
+.cast-member {
+  min-width: 76px;
+  width: 76px;
+  text-align: center;
+}
+
+.cast-photo {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 6px;
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.cast-member .name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.cast-member .role {
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+/* ===== Plateformes de streaming ===== */
+
+.provider-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--pill-bg);
+  border: 1px solid var(--hairline);
+}
+
+.provider-pill img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
 }
 
 /* ===== Skeletons (chargement) ===== */
@@ -119,12 +698,7 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--glass-highlight),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
   animation: shimmer 1.4s infinite;
 }
 
@@ -198,603 +772,11 @@ body {
   }
 }
 
-/* ===== Cartes avec image de fond (agenda) ===== */
-
-.card-backdrop {
-  background-size: cover;
-  background-position: center 25%;
-  position: relative;
-  isolation: isolate;
-}
-
-.card-backdrop::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--hero-veil-2) 30%, var(--hero-veil-1));
-  z-index: -1;
-}
-
-/* ===== Casting ===== */
-
-.cast-row {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding: 4px 18px 14px;
-  margin: 0 -18px;
-  scrollbar-width: none;
-}
-
-.cast-row::-webkit-scrollbar {
-  display: none;
-}
-
-.cast-member {
-  min-width: 76px;
-  width: 76px;
-  text-align: center;
-}
-
-.cast-photo {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin: 0 auto 6px;
-  border: 1.5px solid var(--glass-border);
-  background: var(--glass-bg-strong);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.cast-member .name {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.cast-member .role {
-  font-size: 11px;
-  color: var(--text-3);
-  line-height: 1.25;
-  margin-top: 2px;
-}
-
-/* ===== Plateformes de streaming ===== */
-
-.provider-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 12px 6px 6px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 700;
-  background: var(--pill-bg);
-  border: 1px solid var(--glass-border);
-}
-
-.provider-pill img {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-}
-
-@keyframes aurora-drift {
-  from { transform: translate3d(-2%, -1%, 0) scale(1); }
-  to { transform: translate3d(2%, 2%, 0) scale(1.08); }
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-a {
-  touch-action: manipulation;
-}
-
-input {
-  font: inherit;
-  color: inherit;
-}
-
-/* ===== Structure ===== */
-
-.page {
-  max-width: 520px;
-  margin: 0 auto;
-  padding: max(20px, env(safe-area-inset-top)) 18px calc(var(--tab-h) + 28px);
-  min-height: 100dvh;
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin-bottom: 4px;
-}
-
-.page-sub {
-  color: var(--text-2);
-  font-size: 15px;
-  margin-bottom: 20px;
-}
-
-.section-title {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 26px 0 12px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.section-title small {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-3);
-}
-
-/* ===== Verre ===== */
-
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
-}
-
-.glass-strong {
-  background: var(--glass-bg-strong);
-}
-
-.card {
-  padding: 16px;
-}
-
-.pressable {
-  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.6, 1), background 0.2s;
-}
-
-.pressable:active {
-  transform: scale(0.965);
-}
-
-/* ===== Chips & boutons ===== */
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-2);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-
-.chip.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.85), rgba(191, 90, 242, 0.85));
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 18px rgba(10, 132, 255, 0.35);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 13px 22px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 700;
-  background: var(--glass-bg-strong);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 26px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #24a148, var(--success));
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 26px rgba(48, 209, 88, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-/* Bouton check circulaire */
-.check {
-  width: 46px;
-  height: 46px;
-  min-width: 46px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--glass-bg-strong);
-  border: 1.5px solid var(--glass-border);
-  color: var(--text-2);
-  font-size: 18px;
-  transition: all 0.22s cubic-bezier(0.3, 1.4, 0.6, 1);
-}
-
-.check:active {
-  transform: scale(0.85);
-}
-
-.check.checked {
-  background: linear-gradient(135deg, #24a148, var(--success));
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #fff;
-  box-shadow: 0 6px 20px rgba(48, 209, 88, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.check:disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.check.small {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  font-size: 15px;
-}
-
-/* ===== Barre de progression ===== */
-
-.progress {
-  height: 5px;
-  border-radius: 99px;
-  background: var(--track);
-  overflow: hidden;
-}
-
-.progress > div {
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
-}
-
-/* ===== Affiches (posters) ===== */
-
-.poster {
-  position: relative;
-  aspect-ratio: 2 / 3;
-  border-radius: 18px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-.poster::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 38%);
-  pointer-events: none;
-}
-
-.poster img.art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.poster .emoji {
-  font-size: clamp(30px, 9vw, 44px);
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
-}
-
-.poster .label {
-  font-size: 12.5px;
-  font-weight: 700;
-  text-align: center;
-  padding: 0 10px;
-  letter-spacing: -0.01em;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-}
-
-.poster.mini {
-  width: 58px;
-  min-width: 58px;
-  border-radius: 14px;
-}
-
-.poster.mini .emoji {
-  font-size: 24px;
-}
-
-/* ===== Grilles & listes ===== */
-
-.grid-posters {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.hscroll {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 4px 18px 14px;
-  margin: 0 -18px;
-  scrollbar-width: none;
-}
-
-.hscroll::-webkit-scrollbar {
-  display: none;
-}
-
-.hscroll > * {
-  min-width: 118px;
-  width: 118px;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Liste qui passe en grille sur tablette/desktop (accueil, agenda, films) */
-.stack-wide {
-  align-items: stretch;
-}
-
-/* Grilles de statistiques et badges (profil) */
-.grid-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* ===== Segmented control ===== */
-
-.segmented {
-  display: flex;
-  padding: 4px;
-  border-radius: 999px;
-  gap: 4px;
-}
-
-.segmented button {
-  flex: 1;
-  padding: 10px 0;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-2);
-  transition: all 0.25s;
-}
-
-.segmented button.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.9), rgba(191, 90, 242, 0.9));
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.35);
-}
-
-/* ===== Recherche ===== */
-
-.search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 18px;
-  border-radius: 999px;
-  margin-bottom: 16px;
-}
-
-.search input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  font-size: 16px;
-}
-
-.search input::placeholder {
-  color: var(--text-3);
-}
-
-/* ===== Barre d'onglets ===== */
-
-.tabbar {
-  position: fixed;
-  bottom: calc(14px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(480px, calc(100% - 28px));
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 6px;
-  border-radius: 32px;
-  z-index: 50;
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--tab-bg);
-  border: 1px solid var(--tab-border);
-  backdrop-filter: blur(32px) saturate(200%) brightness(1.05);
-  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.05);
-  box-shadow:
-    var(--tab-shadow),
-    inset 0 1.5px 1px var(--tab-rim-light),
-    inset 0 -1.5px 3px var(--tab-rim-shadow);
-}
-
-/* Reflet diagonal qui glisse très lentement : donne au verre son aspect
-   « vivant » plutôt qu'un simple flou statique. Discret et lent exprès. */
-.tabbar::before {
-  content: "";
-  position: absolute;
-  inset: -60% -25%;
-  background: linear-gradient(
-    115deg,
-    transparent 32%,
-    var(--tab-sheen) 48%,
-    var(--tab-sheen) 52%,
-    transparent 68%
-  );
-  animation: tab-sheen 10s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes tab-sheen {
-  0%, 100% { transform: translateX(-35%); }
-  50% { transform: translateX(35%); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .tabbar::before {
+  .page,
+  .toast {
     animation: none;
   }
-}
-
-.tabbar a {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  color: var(--text-3);
-  font-size: 10.5px;
-  font-weight: 600;
-  transition: all 0.25s;
-}
-
-.tabbar a svg {
-  width: 23px;
-  height: 23px;
-}
-
-.tabbar a.active {
-  color: var(--tab-active-color);
-  background: var(--tab-active-bg);
-  box-shadow: var(--tab-active-shadow);
-}
-
-/* ===== Divers ===== */
-
-.muted {
-  color: var(--text-2);
-  font-size: 13.5px;
-}
-
-.tiny {
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.empty {
-  text-align: center;
-  padding: 40px 24px;
-}
-
-.empty .big {
-  font-size: 44px;
-  margin-bottom: 12px;
-}
-
-details.season > summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-details.season > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.season .chevron {
-  transition: transform 0.25s;
-}
-
-details.season[open] .chevron {
-  transform: rotate(90deg);
-}
-
-/* ===== Fiche série : en-tête ===== */
-
-.show-hero {
-  padding: 24px;
-  text-align: center;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.show-hero .hero-poster {
-  width: 110px;
-  flex-shrink: 0;
-}
-
-.show-hero .hero-body {
-  width: 100%;
-  min-width: 0;
 }
 
 /* ===== Tablette (iPad portrait, grands téléphones en paysage) ===== */
@@ -807,12 +789,12 @@ details.season[open] .chevron {
   }
 
   .page-title {
-    font-size: 38px;
+    font-size: 44px;
   }
 
   .grid-posters {
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
 
   .hscroll > * {
@@ -839,7 +821,7 @@ details.season[open] .chevron {
   }
 
   .show-hero .hero-poster {
-    width: 170px;
+    width: 180px;
   }
 
   .show-hero .hero-body {
@@ -881,7 +863,7 @@ details.season[open] .chevron {
   }
 }
 
-/* ===== Barcode Scanner ===== */
+/* ===== Scanner de code-barres (vue caméra : reste volontairement sombre) ===== */
 
 .scanner-overlay {
   position: fixed;
@@ -959,11 +941,10 @@ details.season[open] .chevron {
   height: 130px;
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-radius: 12px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65); /* Dim area outside target box */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
   position: relative;
 }
 
-/* Corner indicators */
 .scanner-target-box::before {
   content: "";
   position: absolute;
@@ -971,7 +952,7 @@ details.season[open] .chevron {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  border: 3px solid #0084ff;
+  border: 3px solid var(--accent);
   border-radius: 12px;
   clip-path: polygon(
     0 0, 24px 0, 24px 24px, 0 24px, 0 0,
@@ -985,8 +966,8 @@ details.season[open] .chevron {
   position: absolute;
   width: 280px;
   height: 2px;
-  background: #ff3b30;
-  box-shadow: 0 0 8px #ff3b30, 0 0 14px #ff3b30;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent), 0 0 14px var(--accent);
   animation: laser-scan 2.5s infinite linear;
   z-index: 10;
 }
@@ -1021,13 +1002,13 @@ details.season[open] .chevron {
   bottom: 110px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 59, 48, 0.92);
+  background: var(--accent);
   padding: 10px 18px;
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 20;
   max-width: 90%;
   animation: shake 0.4s ease-in-out;

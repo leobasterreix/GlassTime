@@ -57,7 +57,7 @@ export default function LoginPage() {
         </p>
 
         {error && (
-          <p style={{ color: "#ff6b6b", fontSize: 13.5, fontWeight: 600, marginBottom: 16 }}>
+          <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600, marginBottom: 16 }}>
             {error}
           </p>
         )}

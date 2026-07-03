@@ -4,8 +4,8 @@
   "description": "Suivez vos séries, films et livres : épisodes vus, agenda des diffusions, statistiques.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#06070d",
-  "theme_color": "#06070d",
+  "background_color": "#f3efe7",
+  "theme_color": "#f3efe7",
   "icons": [
     {
       "src": "/icon-512.png",

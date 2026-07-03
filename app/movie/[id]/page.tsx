@@ -344,7 +344,7 @@ export default function MoviePage() {
             />
           </div>
           {errorMsg && (
-            <div style={{ color: "#ff6b6b", fontSize: 12.5, fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", fontSize: 12.5, fontWeight: 600 }}>
               {errorMsg}
             </div>
           )}

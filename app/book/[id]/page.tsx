@@ -312,11 +312,11 @@ export default function BookDetailPage({
                   background: "var(--glass-border)",
                   outline: "none",
                   cursor: "pointer",
-                  accentColor: "#bf5af2",
+                  accentColor: "var(--accent)",
                 }}
               />
               <div className="progress" style={{ height: 6, marginTop: 12 }}>
-                <div style={{ width: `${pct}%`, background: "linear-gradient(90deg, #bf5af2, #0a84ff)" }} />
+                <div style={{ width: `${pct}%`, background: "var(--accent)" }} />
               </div>
             </div>
           )}
@@ -469,7 +469,7 @@ export default function BookDetailPage({
           />
 
           {errorMsg && (
-            <div style={{ color: "#ff6b6b", fontSize: 12.5, fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", fontSize: 12.5, fontWeight: 600 }}>
               {errorMsg}
             </div>
           )}

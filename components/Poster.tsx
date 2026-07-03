@@ -5,13 +5,6 @@ type PosterItem = {
   colors?: [string, string];
 };
 
-/** Teinte dérivée du titre pour les affiches sans image. */
-function fallbackColors(title: string): [string, string] {
-  let h = 0;
-  for (const c of title) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return [`hsl(${h} 45% 16%)`, `hsl(${h} 55% 42%)`];
-}
-
 export default function Poster({
   item,
   mini,
@@ -26,14 +19,10 @@ export default function Poster({
       </div>
     );
   }
-  const colors = item.colors ?? fallbackColors(item.title);
+  // Repli sans affiche : carte papier neutre (fond --surface-2 via le CSS),
+  // initiale ou emoji + titre. Plus de teinte aléatoire qui jurerait.
   return (
-    <div
-      className={`poster${mini ? " mini" : ""}`}
-      style={{
-        background: `linear-gradient(160deg, ${colors[1]} 0%, ${colors[0]} 78%)`,
-      }}
-    >
+    <div className={`poster${mini ? " mini" : ""}`}>
       <span className="emoji">{item.emoji ?? item.title.charAt(0)}</span>
       {!mini && <span className="label">{item.title}</span>}
     </div>
