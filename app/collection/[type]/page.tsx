@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import Poster from "@/components/Poster";
+import ShowStatusBadge from "@/components/ShowStatusBadge";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 
@@ -50,7 +51,13 @@ export default function CollectionPage() {
     );
   }
 
-  let items: { id: number | string; href: string; caption?: string; item: { title: string; poster?: string | null } }[] = [];
+  let items: {
+    id: number | string;
+    href: string;
+    caption?: string;
+    isShow?: boolean;
+    item: { title: string; poster?: string | null; status?: "En cours" | "Terminée" };
+  }[] = [];
   let segments: { todo: string; done: string } | null = null;
 
   if (type === "shows") {
@@ -61,6 +68,7 @@ export default function CollectionPage() {
         id: s.id,
         href: `/show/${s.id}`,
         item: s,
+        isShow: true,
         caption:
           (showStatus[s.id] ?? "active") === "paused"
             ? "⏸️ En pause"
@@ -101,7 +109,7 @@ export default function CollectionPage() {
       ...favoriteShows
         .map((id) => showCache[id])
         .filter(Boolean)
-        .map((s) => ({ id: `show-${s.id}`, href: `/show/${s.id}`, item: s, caption: "📺 Série" })),
+        .map((s) => ({ id: `show-${s.id}`, href: `/show/${s.id}`, item: s, isShow: true, caption: "📺 Série" })),
       ...favoriteMovies
         .map((id) => movieCache[id])
         .filter(Boolean)
@@ -155,8 +163,9 @@ export default function CollectionPage() {
         </div>
       ) : (
         <div className="grid-posters">
-          {items.map(({ id, href, item, caption }) => (
-            <Link key={id} href={href} className="pressable">
+          {items.map(({ id, href, item, caption, isShow }) => (
+            <Link key={id} href={href} className="pressable" style={{ position: "relative", display: "block" }}>
+              {isShow && <ShowStatusBadge status={item.status} overlay />}
               <Poster item={item} />
               {caption && (
                 <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>

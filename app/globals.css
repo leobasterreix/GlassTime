@@ -585,6 +585,55 @@ input {
   border: 1px solid var(--hairline);
 }
 
+/* Statut de diffusion d'une série (En cours / Terminée) : « active » reprend
+   la même teinte corail discrète que les autres états actifs de l'app
+   (onglet sélectionné, chip active) ; « ended » reste neutre/posé. */
+.badge-pill.status-ongoing {
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+  border-color: transparent;
+}
+
+.badge-pill.status-ended {
+  color: var(--text-2);
+}
+
+/* Variante posée en médaillon sur un poster (listes/grilles) plutôt qu'en
+   ligne de texte : coin haut-gauche, le cœur/le check occupent déjà le
+   coin haut-droit ailleurs dans l'app. Contrairement à .badge-pill (pensé
+   pour une surface papier), celle-ci doit rester lisible par-dessus
+   n'importe quelle affiche : fond sombre opaque fixe + puce de couleur,
+   plutôt que les teintes claires qui se fondaient dans un poster sombre. */
+.poster-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(15, 13, 9, 0.68);
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+}
+
+.poster-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.poster-badge.status-ongoing::before {
+  background: var(--accent);
+}
+
 .empty {
   text-align: center;
   padding: 40px 24px;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
+import ShowStatusBadge from "@/components/ShowStatusBadge";
 import { useHydrateLibrary, apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { ACCENT_PRESETS } from "@/lib/accent";
@@ -638,15 +639,15 @@ export default function ProfilePage() {
     ...favoriteShows
       .map((id) => showCache[id])
       .filter(Boolean)
-      .map((s) => ({ key: `show-${s.id}`, href: `/show/${s.id}`, item: s })),
+      .map((s) => ({ key: `show-${s.id}`, href: `/show/${s.id}`, item: s, isShow: true })),
     ...favoriteMovies
       .map((id) => movieCache[id])
       .filter(Boolean)
-      .map((m) => ({ key: `movie-${m.id}`, href: `/movie/${m.id}`, item: m })),
+      .map((m) => ({ key: `movie-${m.id}`, href: `/movie/${m.id}`, item: m, isShow: false })),
     ...favoriteBooks
       .map((id) => bookCache[id])
       .filter(Boolean)
-      .map((b) => ({ key: `book-${b.id}`, href: `/book/${b.id}`, item: b })),
+      .map((b) => ({ key: `book-${b.id}`, href: `/book/${b.id}`, item: b, isShow: false })),
   ];
   const myShows = followed.map((id) => showCache[id]).filter(Boolean);
   const moviesToWatch = movieWatchlist.map((id) => movieCache[id]).filter(Boolean);
@@ -889,8 +890,14 @@ export default function ProfilePage() {
                 </Link>
               </h2>
               <div className="hscroll">
-                {favoriteItems.slice(0, 12).map(({ key, href, item }) => (
-                  <Link key={key} href={href} className="pressable">
+                {favoriteItems.slice(0, 12).map(({ key, href, item, isShow }) => (
+                  <Link key={key} href={href} className="pressable" style={{ position: "relative", display: "block" }}>
+                    {isShow && (
+                      <ShowStatusBadge
+                        status={"status" in item ? item.status : undefined}
+                        overlay
+                      />
+                    )}
                     <Poster item={item} />
                   </Link>
                 ))}
@@ -909,7 +916,13 @@ export default function ProfilePage() {
               </h2>
               <div className="hscroll">
                 {myShows.slice(0, 12).map((s) => (
-                  <Link key={s.id} href={`/show/${s.id}`} className="pressable">
+                  <Link
+                    key={s.id}
+                    href={`/show/${s.id}`}
+                    className="pressable"
+                    style={{ position: "relative", display: "block" }}
+                  >
+                    <ShowStatusBadge status={s.status} overlay />
                     <Poster item={s} />
                   </Link>
                 ))}

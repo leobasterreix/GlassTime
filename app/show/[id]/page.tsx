@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import FavoriteButton from "@/components/FavoriteButton";
+import ShowStatusBadge from "@/components/ShowStatusBadge";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack, type ShowFollowStatus } from "@/lib/store";
 import { toast } from "@/lib/toast";
@@ -236,11 +237,15 @@ export default function ShowPage() {
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 14 }}>
           {show.title}
         </h1>
+        {show.status && (
+          <div className="row" style={{ justifyContent: "center", gap: 8, marginTop: 8 }}>
+            <ShowStatusBadge status={show.status} />
+          </div>
+        )}
         <p className="muted" style={{ marginTop: 6 }}>
           {[
             show.year || null,
             show.genres.join(" · ") || null,
-            show.status ?? null,
             show.rating ? `★ ${show.rating.toFixed(1)}` : null,
           ]
             .filter(Boolean)

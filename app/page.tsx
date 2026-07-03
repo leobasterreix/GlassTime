@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import Poster from "@/components/Poster";
+import ShowStatusBadge from "@/components/ShowStatusBadge";
 import { useHydrateLibrary } from "@/lib/client";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
@@ -190,8 +191,11 @@ export default function AgendaPage() {
                           href={`/show/${show.id}`}
                           style={{ flex: 1, minWidth: 0 }}
                         >
-                          <div style={{ fontWeight: 700, fontSize: 16 }}>
-                            {show.title}
+                          <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                            <div style={{ fontWeight: 700, fontSize: 16 }}>
+                              {show.title}
+                            </div>
+                            <ShowStatusBadge status={show.status} />
                           </div>
                           <div className="muted" style={{ marginTop: 2 }}>
                             {epLabel(next)} — {next.title}
