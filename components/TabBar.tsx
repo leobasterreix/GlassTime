@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+/** Doit correspondre à Constants.nativeAppUserAgent côté app iOS. */
+const NATIVE_APP_UA_MARKER = "GlassTimeNativeApp";
 
 const TABS = [
   {
@@ -38,7 +42,16 @@ const TABS = [
 
 export default function TabBar() {
   const pathname = usePathname();
-  if (pathname === "/login") return null;
+  // Dans le wrapper natif iOS, c'est la barre SwiftUI (Liquid Glass) qui
+  // s'affiche : on masque celle-ci pour éviter d'en avoir deux superposées.
+  // Vérifié après montage (comme useMounted ailleurs) pour ne pas provoquer
+  // d'erreur d'hydratation : le premier rendu reste identique au serveur.
+  const [isNativeApp, setIsNativeApp] = useState(false);
+  useEffect(() => {
+    setIsNativeApp(navigator.userAgent.includes(NATIVE_APP_UA_MARKER));
+  }, []);
+
+  if (pathname === "/login" || isNativeApp) return null;
   return (
     <nav className="tabbar">
       {TABS.map((t) => {
