@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+
+type Mode = "signin" | "signup";
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<Mode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -14,21 +21,73 @@ export default function LoginPage() {
     }
   }, []);
 
-  async function handleGoogleLogin() {
-    if (loading) return;
-    setLoading(true);
+  function switchMode(next: Mode) {
+    setMode(next);
     setError(null);
+    setNotice(null);
+  }
+
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (loading) return;
+    setError(null);
+    setNotice(null);
+
+    if (!email.trim() || !password) {
+      setError("Renseignez votre e-mail et votre mot de passe.");
+      return;
+    }
+    if (mode === "signup" && password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) throw error;
+        // Selon les réglages Supabase : session immédiate ou e-mail de confirmation
+        if (data.session) {
+          window.location.href = "/";
+        } else {
+          setNotice(
+            "Compte créé ! Vérifiez votre boîte mail pour confirmer votre inscription."
+          );
+          setMode("signin");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        window.location.href = "/";
+      }
+    } catch (err: unknown) {
+      setError(translateError(err));
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setError(null);
+    setNotice(null);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err?.message ?? "Une erreur est survenue lors de la redirection.");
-      setLoading(false);
+    } catch (err: unknown) {
+      setError(translateError(err));
+      setGoogleLoading(false);
     }
   }
 
@@ -44,70 +103,143 @@ export default function LoginPage() {
     >
       <div
         className="glass"
-        style={{ padding: 28, width: "100%", maxWidth: 420, margin: "0 auto", textAlign: "center" }}
+        style={{ padding: 28, width: "100%", maxWidth: 420, margin: "0 auto" }}
       >
-        <div style={{ fontSize: 52, filter: "drop-shadow(0 8px 20px rgba(0,0,0,.5))" }}>
-          📺
-        </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 10 }}>
-          GlassTime
-        </h1>
-        <p className="muted" style={{ marginTop: 6, marginBottom: 24 }}>
-          Suivez vos séries et films préférés avec synchronisation multi-appareils
-        </p>
-
-        {error && (
-          <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600, marginBottom: 16 }}>
-            {error}
-          </p>
-        )}
-
-        <button
-          onClick={handleGoogleLogin}
-          className="btn pressable"
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "12px 16px",
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            borderRadius: 14,
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 15,
-            transition: "all 0.2s ease",
-            cursor: "pointer",
-          }}
-          disabled={loading}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="20"
-            height="20"
-            style={{ marginRight: 10, flexShrink: 0 }}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48 }}>📺</div>
+          <h1
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 28,
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              marginTop: 8,
+            }}
           >
-            <path
-              fill="#EA4335"
-              d="M5.2662 9.7651A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3.01A11.962 11.962 0 0 0 12 0C7.18 0 3.06 2.72 1.058 6.702l4.208 3.063z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M1.058 6.702A11.944 11.944 0 0 0 0 12c0 1.88.432 3.657 1.2 5.253l4.243-3.153A7.054 7.054 0 0 1 4.909 12c0-1.6.436-3.109 1.2-4.418l-5.05-4.88z"
-            />
-            <path
-              fill="#4285F4"
-              d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.84-2.99a7.077 7.077 0 0 1-10.854-3.793l-4.243 3.153C3.06 21.28 7.18 24 12 24z"
-            />
-            <path
-              fill="#34A853"
-              d="M24 12c0-.86-.08-1.7-.22-2.51H12v4.75h6.73c-.29 1.53-1.15 2.82-2.45 3.68l3.84 2.99C22.37 19.04 24 15.82 24 12z"
-            />
-          </svg>
-          {loading ? "Redirection vers Google…" : "Se connecter avec Google"}
-        </button>
+            GlassTime
+          </h1>
+          <p className="muted" style={{ marginTop: 6, marginBottom: 22 }}>
+            {mode === "signin"
+              ? "Connectez-vous pour retrouver vos séries, films et livres."
+              : "Créez un compte pour synchroniser vos suivis sur tous vos appareils."}
+          </p>
+        </div>
+
+        {!isSupabaseConfigured ? (
+          <div className="glass card" style={{ textAlign: "center" }}>
+            <p className="muted">
+              L'authentification n'est pas encore activée. L'application est
+              accessible librement pour le moment.
+            </p>
+            <a
+              href="/"
+              className="btn btn-primary pressable"
+              style={{ marginTop: 16, display: "inline-flex" }}
+            >
+              Entrer
+            </a>
+          </div>
+        ) : (
+          <>
+            {/* Bascule connexion / inscription */}
+            <div className="glass segmented" style={{ marginBottom: 18 }}>
+              <button
+                className={mode === "signin" ? "active" : ""}
+                onClick={() => switchMode("signin")}
+                type="button"
+              >
+                Connexion
+              </button>
+              <button
+                className={mode === "signup" ? "active" : ""}
+                onClick={() => switchMode("signup")}
+                type="button"
+              >
+                Inscription
+              </button>
+            </div>
+
+            <form onSubmit={handleEmailSubmit} className="stack" style={{ gap: 12 }}>
+              <input
+                className="field"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="Adresse e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                className="field"
+                type="password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                placeholder="Mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              {error && (
+                <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600 }}>
+                  {error}
+                </p>
+              )}
+              {notice && (
+                <p style={{ color: "var(--accent-ink)", fontSize: 13.5, fontWeight: 600 }}>
+                  {notice}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary pressable"
+                style={{ width: "100%" }}
+                disabled={loading}
+              >
+                {loading
+                  ? "Un instant…"
+                  : mode === "signin"
+                    ? "Se connecter"
+                    : "Créer mon compte"}
+              </button>
+            </form>
+
+            <div className="divider" style={{ margin: "18px 0" }}>
+              ou
+            </div>
+
+            <button
+              onClick={handleGoogleLogin}
+              className="btn pressable"
+              style={{ width: "100%" }}
+              disabled={googleLoading}
+              type="button"
+            >
+              <svg viewBox="0 0 24 24" width="19" height="19" style={{ flexShrink: 0 }}>
+                <path fill="#EA4335" d="M5.2662 9.7651A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3.01A11.962 11.962 0 0 0 12 0C7.18 0 3.06 2.72 1.058 6.702l4.208 3.063z" />
+                <path fill="#FBBC05" d="M1.058 6.702A11.944 11.944 0 0 0 0 12c0 1.88.432 3.657 1.2 5.253l4.243-3.153A7.054 7.054 0 0 1 4.909 12c0-1.6.436-3.109 1.2-4.418l-5.05-4.88z" />
+                <path fill="#4285F4" d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.84-2.99a7.077 7.077 0 0 1-10.854-3.793l-4.243 3.153C3.06 21.28 7.18 24 12 24z" />
+                <path fill="#34A853" d="M24 12c0-.86-.08-1.7-.22-2.51H12v4.75h6.73c-.29 1.53-1.15 2.82-2.45 3.68l3.84 2.99C22.37 19.04 24 15.82 24 12z" />
+              </svg>
+              {googleLoading ? "Redirection…" : "Continuer avec Google"}
+            </button>
+          </>
+        )}
       </div>
     </main>
   );
+}
+
+/** Messages d'erreur Supabase traduits en français lisible. */
+function translateError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const m = msg.toLowerCase();
+  if (m.includes("invalid login")) return "E-mail ou mot de passe incorrect.";
+  if (m.includes("already registered") || m.includes("already been registered"))
+    return "Un compte existe déjà avec cet e-mail. Connectez-vous.";
+  if (m.includes("email not confirmed"))
+    return "Confirmez d'abord votre e-mail via le lien reçu par mail.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Trop de tentatives. Réessayez dans un instant.";
+  if (m.includes("password")) return "Mot de passe invalide (6 caractères minimum).";
+  return "Une erreur est survenue. Veuillez réessayer.";
 }

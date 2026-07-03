@@ -11,18 +11,19 @@ const PUBLIC_PATHS = [
 ];
 
 export async function middleware(request: NextRequest) {
-  // BYPASS TEMPORAIRE : Permet de tester l'application en local pendant la panne de Supabase
-  const BYPASS_AUTH = true; 
-  if (BYPASS_AUTH) return NextResponse.next();
+  // Garde-fou anti-verrouillage : tant que les vraies clés Supabase ne sont pas
+  // configurées, on laisse l'application ouverte (pas d'authentification).
+  // L'auth s'active donc automatiquement dès qu'on renseigne
+  // NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY (local + Vercel).
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) return NextResponse.next();
 
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
 
   const supabase = createServerClient(
     supabaseUrl,

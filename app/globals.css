@@ -473,6 +473,48 @@ input {
   color: var(--text-3);
 }
 
+/* ===== Champs de formulaire (connexion / inscription) ===== */
+
+.field {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field:focus {
+  border-color: var(--accent);
+}
+
+.field::placeholder {
+  color: var(--text-3);
+}
+
+/* Séparateur "ou" entre e-mail et Google */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
 /* ===== Barre d'onglets ===== */
 /* Seule surface qui garde un léger flou : elle flotte au-dessus du contenu
    qui défile, donc le frosted a un vrai sens ici (pas décoratif). */
