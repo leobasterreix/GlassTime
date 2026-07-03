@@ -1,0 +1,69 @@
+name: GlassTime
+options:
+  bundleIdPrefix: com.leobasterreix
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "26.0"
+
+targets:
+  GlassTime:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: GlassTime
+        excludes:
+          - Info.plist
+    info:
+      path: GlassTime/Info.plist
+      properties:
+        CFBundleDisplayName: GlassTime
+        # Pas de chiffrement propriétaire (juste TLS standard) : évite la question
+        # de conformité export à chaque envoi sur TestFlight / App Store Connect.
+        ITSAppUsesNonExemptEncryption: false
+        # Écran de lancement minimal, fond sombre assorti à --bg: #06070d du site
+        # pour un enchaînement visuel sans flash blanc avant le premier rendu web.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        # Toutes orientations : le site est déjà responsive jusqu'à l'iPad Pro
+        # (breakpoints tablette/desktop dans globals.css), donc pas de raison de
+        # brider l'app native au portrait seul.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Autorise explicitement le domaine de production. Redondant en pratique
+        # puisque Vercel sert du HTTPS/TLS valide (ATS l'autorise déjà par défaut),
+        # mais déclaré ici pour documenter clairement l'intention.
+        NSAppTransportSecurity:
+          NSExceptionDomains:
+            glass-time.vercel.app:
+              NSIncludesSubdomains: true
+              NSExceptionAllowsInsecureHTTPLoads: false
+              NSExceptionMinimumTLSVersion: TLSv1.2
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.leobasterreix.GlassTime
+        PRODUCT_NAME: GlassTime
+        # Universel iPhone + iPad : l'app web est déjà responsive jusqu'à l'iPad Pro.
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_VERSION: "6.0"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_STRICT_CONCURRENCY: complete
+
+schemes:
+  GlassTime:
+    build:
+      targets:
+        GlassTime: all
+    run:
+      config: Debug

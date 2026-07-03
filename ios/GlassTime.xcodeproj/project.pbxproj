@@ -1,0 +1,371 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		21DE378A35F20A727ABABF0D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1762C88890C6B84D0E536D91 /* ContentView.swift */; };
+		2629405F2855CC91D9468F8D /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548615EE7348127BDBB71E6 /* Constants.swift */; };
+		2C0A3063105895F86FE365B3 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12484CD89F95B6B44D8879D5 /* WebViewRepresentable.swift */; };
+		5F1FB8F69E4C4D7B8CC6AF9A /* GlassTimeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B085B3BDBC4F8D2CB753337 /* GlassTimeApp.swift */; };
+		68DF3621666E98E461429B68 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9236D9F82E32E450B119E086 /* WebViewModel.swift */; };
+		7B1D905415660E945F5AE1B4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E8A34DF575C2D12E5C27C968 /* Assets.xcassets */; };
+		B83FC938F3C1265A6C218CF6 /* WebViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28218DEE30E6B22811CDE15E /* WebViewContainer.swift */; };
+		C62C4C60C3B295DEFCC238A8 /* AppTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5435EC53468A685D967E5EF3 /* AppTab.swift */; };
+		E6C636898D20E41361B48D24 /* LiquidTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 439C618C4210671049946EF3 /* LiquidTabBar.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		12484CD89F95B6B44D8879D5 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
+		1762C88890C6B84D0E536D91 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		28218DEE30E6B22811CDE15E /* WebViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewContainer.swift; sourceTree = "<group>"; };
+		3548615EE7348127BDBB71E6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		439C618C4210671049946EF3 /* LiquidTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidTabBar.swift; sourceTree = "<group>"; };
+		5435EC53468A685D967E5EF3 /* AppTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTab.swift; sourceTree = "<group>"; };
+		83CD9D8ABD9BAF4538F655D2 /* GlassTime.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GlassTime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B085B3BDBC4F8D2CB753337 /* GlassTimeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassTimeApp.swift; sourceTree = "<group>"; };
+		9236D9F82E32E450B119E086 /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
+		E8A34DF575C2D12E5C27C968 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		092E2B4B2BE17790CD34957F = {
+			isa = PBXGroup;
+			children = (
+				5E11D13B44A65E2AE65F2FA9 /* GlassTime */,
+				A5879F2EC972F2D68C5FDE28 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1C623A3353EE299D25301E7B /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				3548615EE7348127BDBB71E6 /* Constants.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		417C96FD874A0A7A4C8B8F6A /* TabBar */ = {
+			isa = PBXGroup;
+			children = (
+				439C618C4210671049946EF3 /* LiquidTabBar.swift */,
+			);
+			path = TabBar;
+			sourceTree = "<group>";
+		};
+		5E11D13B44A65E2AE65F2FA9 /* GlassTime */ = {
+			isa = PBXGroup;
+			children = (
+				E8A34DF575C2D12E5C27C968 /* Assets.xcassets */,
+				1762C88890C6B84D0E536D91 /* ContentView.swift */,
+				8B085B3BDBC4F8D2CB753337 /* GlassTimeApp.swift */,
+				A9BF997E048E447AF3181727 /* Models */,
+				1C623A3353EE299D25301E7B /* Support */,
+				417C96FD874A0A7A4C8B8F6A /* TabBar */,
+				F3BAA976CE69F47150ADE8A0 /* WebView */,
+			);
+			path = GlassTime;
+			sourceTree = "<group>";
+		};
+		A5879F2EC972F2D68C5FDE28 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				83CD9D8ABD9BAF4538F655D2 /* GlassTime.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A9BF997E048E447AF3181727 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5435EC53468A685D967E5EF3 /* AppTab.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F3BAA976CE69F47150ADE8A0 /* WebView */ = {
+			isa = PBXGroup;
+			children = (
+				28218DEE30E6B22811CDE15E /* WebViewContainer.swift */,
+				9236D9F82E32E450B119E086 /* WebViewModel.swift */,
+				12484CD89F95B6B44D8879D5 /* WebViewRepresentable.swift */,
+			);
+			path = WebView;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0E215284C718723AE10C7651 /* GlassTime */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B4B63EEB75F08C043CC8848D /* Build configuration list for PBXNativeTarget "GlassTime" */;
+			buildPhases = (
+				8CA082A972E187C212FF56D3 /* Sources */,
+				AA496AEF459A92AFE3D06D8A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GlassTime;
+			packageProductDependencies = (
+			);
+			productName = GlassTime;
+			productReference = 83CD9D8ABD9BAF4538F655D2 /* GlassTime.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		40F1FA3B5802B86EDB81A119 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = C5BECFC8112BE1FE1AC364B3 /* Build configuration list for PBXProject "GlassTime" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 092E2B4B2BE17790CD34957F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A5879F2EC972F2D68C5FDE28 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0E215284C718723AE10C7651 /* GlassTime */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA496AEF459A92AFE3D06D8A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7B1D905415660E945F5AE1B4 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8CA082A972E187C212FF56D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C62C4C60C3B295DEFCC238A8 /* AppTab.swift in Sources */,
+				2629405F2855CC91D9468F8D /* Constants.swift in Sources */,
+				21DE378A35F20A727ABABF0D /* ContentView.swift in Sources */,
+				5F1FB8F69E4C4D7B8CC6AF9A /* GlassTimeApp.swift in Sources */,
+				E6C636898D20E41361B48D24 /* LiquidTabBar.swift in Sources */,
+				B83FC938F3C1265A6C218CF6 /* WebViewContainer.swift in Sources */,
+				68DF3621666E98E461429B68 /* WebViewModel.swift in Sources */,
+				2C0A3063105895F86FE365B3 /* WebViewRepresentable.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4E2E09189B7B6AB0980AA344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		62044183852CFCF5EF3AA07E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GlassTime/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leobasterreix.GlassTime;
+				PRODUCT_NAME = GlassTime;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A8820109733932AE49099401 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E1B63638E5077E571E1F86DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GlassTime/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leobasterreix.GlassTime;
+				PRODUCT_NAME = GlassTime;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B4B63EEB75F08C043CC8848D /* Build configuration list for PBXNativeTarget "GlassTime" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1B63638E5077E571E1F86DE /* Debug */,
+				62044183852CFCF5EF3AA07E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C5BECFC8112BE1FE1AC364B3 /* Build configuration list for PBXProject "GlassTime" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A8820109733932AE49099401 /* Debug */,
+				4E2E09189B7B6AB0980AA344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 40F1FA3B5802B86EDB81A119 /* Project object */;
+}
