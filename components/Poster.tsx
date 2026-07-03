@@ -1,10 +1,12 @@
+import type { DisplayShowStatus } from "@/lib/utils";
+
 type PosterItem = {
   title: string;
   poster?: string | null;
   emoji?: string;
   colors?: [string, string];
   /** Séries uniquement : films et livres n'ont pas cette notion. */
-  status?: "En cours" | "Terminée";
+  status?: DisplayShowStatus;
 };
 
 export default function Poster({

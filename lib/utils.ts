@@ -1,6 +1,25 @@
 import type { Episode, Show } from "./types";
+import type { ShowFollowStatus } from "./store";
 
 export const DAY = 86400000;
+
+/** Type élargi du badge/bandeau : le statut personnel « abandonnée » prime
+ * visuellement sur le statut de diffusion (même si la série continue
+ * d'être diffusée, l'afficher comme « active » n'aurait pas de sens). */
+export type DisplayShowStatus = "En cours" | "Terminée" | "Abandonnée";
+
+/**
+ * Combine le statut de diffusion (show.status, TMDB) et le statut personnel
+ * de suivi (showStatus du store) en un seul statut à afficher : abandonnée
+ * (violet) prend le pas sur terminée (violet aussi) puis sur en cours (vert).
+ */
+export function effectiveShowStatus(
+  show: Show,
+  personalStatus?: ShowFollowStatus
+): DisplayShowStatus | undefined {
+  if (personalStatus === "dropped") return "Abandonnée";
+  return show.status;
+}
 
 export function epKey(s: number, e: number) {
   return `${s}:${e}`;

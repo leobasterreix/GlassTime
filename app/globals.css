@@ -585,17 +585,21 @@ input {
   border: 1px solid var(--hairline);
 }
 
-/* Statut de diffusion d'une série (En cours / Terminée) : « active » reprend
-   la même teinte corail discrète que les autres états actifs de l'app
-   (onglet sélectionné, chip active) ; « ended » reste neutre/posé. */
+/* Statut d'une série : vert = en cours (bonne nouvelle, ça continue),
+   violet = terminée OU abandonnée par l'utilisateur (même couleur pour les
+   deux — dans les deux cas, plus rien à attendre — le texte du badge reste
+   différent : « Terminée » / « Abandonnée »). Couleurs fixes, indépendantes
+   de l'accent personnalisable de l'utilisateur. */
 .badge-pill.status-ongoing {
-  color: var(--accent-ink);
-  background: var(--accent-wash);
+  color: #2f6b3d;
+  background: rgba(79, 138, 91, 0.16);
   border-color: transparent;
 }
 
 .badge-pill.status-ended {
-  color: var(--text-2);
+  color: #6a4b93;
+  background: rgba(125, 91, 166, 0.15);
+  border-color: transparent;
 }
 
 /* Bandeau de statut sur la couverture (façon TV Time) : bande pleine largeur
@@ -616,13 +620,13 @@ input {
   letter-spacing: 0.01em;
   padding: 6px 4px;
   color: #fff;
-  background: rgba(20, 17, 12, 0.78);
+  background: rgba(125, 91, 166, 0.88);
   backdrop-filter: blur(6px) saturate(140%);
   -webkit-backdrop-filter: blur(6px) saturate(140%);
 }
 
 .poster-banner.status-ongoing {
-  background: var(--accent);
+  background: rgba(79, 138, 91, 0.88);
 }
 
 .empty {

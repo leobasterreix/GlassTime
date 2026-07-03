@@ -11,6 +11,7 @@ import { markEpisodeWatched, markWatchedUpTo } from "@/lib/watch";
 import type { Episode, Show, Review } from "@/lib/types";
 import {
   airedEpisodes,
+  effectiveShowStatus,
   epKey,
   epLabel,
   fmtDate,
@@ -230,7 +231,7 @@ export default function ShowPage() {
           }}
         />
         <div className="hero-poster">
-          <Poster item={show} />
+          <Poster item={{ ...show, status: effectiveShowStatus(show, currentStatus) }} />
         </div>
         <div className="hero-body">
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 14 }}>

@@ -6,6 +6,7 @@ import { useState } from "react";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import { effectiveShowStatus, type DisplayShowStatus } from "@/lib/utils";
 
 type CollectionType = "shows" | "movies" | "books" | "favorites";
 type Segment = "todo" | "done";
@@ -54,7 +55,7 @@ export default function CollectionPage() {
     id: number | string;
     href: string;
     caption?: string;
-    item: { title: string; poster?: string | null; status?: "En cours" | "Terminée" };
+    item: { title: string; poster?: string | null; status?: DisplayShowStatus };
   }[] = [];
   let segments: { todo: string; done: string } | null = null;
 
@@ -65,13 +66,10 @@ export default function CollectionPage() {
       .map((s) => ({
         id: s.id,
         href: `/show/${s.id}`,
-        item: s,
-        caption:
-          (showStatus[s.id] ?? "active") === "paused"
-            ? "⏸️ En pause"
-            : (showStatus[s.id] ?? "active") === "dropped"
-              ? "🗑️ Abandonnée"
-              : undefined,
+        item: { ...s, status: effectiveShowStatus(s, showStatus[s.id]) },
+        // « Abandonnée » est déjà couverte par le bandeau violet sur l'affiche ;
+        // seule « en pause » (non représentée par le bandeau) garde sa légende.
+        caption: (showStatus[s.id] ?? "active") === "paused" ? "⏸️ En pause" : undefined,
       }));
   } else if (type === "movies") {
     segments = { todo: `À voir · ${movieWatchlist.length}`, done: `Vus · ${moviesWatched.length}` };
@@ -106,7 +104,12 @@ export default function CollectionPage() {
       ...favoriteShows
         .map((id) => showCache[id])
         .filter(Boolean)
-        .map((s) => ({ id: `show-${s.id}`, href: `/show/${s.id}`, item: s, caption: "📺 Série" })),
+        .map((s) => ({
+          id: `show-${s.id}`,
+          href: `/show/${s.id}`,
+          item: { ...s, status: effectiveShowStatus(s, showStatus[s.id]) },
+          caption: "📺 Série",
+        })),
       ...favoriteMovies
         .map((id) => movieCache[id])
         .filter(Boolean)

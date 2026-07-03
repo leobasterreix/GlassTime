@@ -13,7 +13,7 @@ import {
   notificationsEnabled,
   notificationsSupported,
 } from "@/lib/notifications";
-import { airedEpisodes, DAY, minutesHuman, watchedCount } from "@/lib/utils";
+import { airedEpisodes, DAY, effectiveShowStatus, minutesHuman, watchedCount } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import type { Book, Movie, Show } from "@/lib/types";
 
@@ -104,6 +104,7 @@ export default function ProfilePage() {
     showCache,
     movieCache,
     bookCache,
+    showStatus,
     watchedLog,
     importState,
     clearAll,
@@ -891,7 +892,13 @@ export default function ProfilePage() {
               <div className="hscroll">
                 {favoriteItems.slice(0, 12).map(({ key, href, item }) => (
                   <Link key={key} href={href} className="pressable">
-                    <Poster item={item} />
+                    <Poster
+                      item={
+                        "status" in item
+                          ? { ...item, status: effectiveShowStatus(item, showStatus[item.id]) }
+                          : item
+                      }
+                    />
                   </Link>
                 ))}
               </div>
@@ -910,7 +917,7 @@ export default function ProfilePage() {
               <div className="hscroll">
                 {myShows.slice(0, 12).map((s) => (
                   <Link key={s.id} href={`/show/${s.id}`} className="pressable">
-                    <Poster item={s} />
+                    <Poster item={{ ...s, status: effectiveShowStatus(s, showStatus[s.id]) }} />
                   </Link>
                 ))}
               </div>
