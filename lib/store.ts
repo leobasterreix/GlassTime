@@ -51,6 +51,9 @@ type TrackState = {
   clearAll: () => void;
   theme: "system" | "light" | "dark";
   toggleTheme: () => void;
+  /** Couleur d'accent personnalisée (hex). null = corail par défaut. */
+  accent: string | null;
+  setAccent: (color: string | null) => void;
   localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
   setLocalReview: (type: "movie" | "show" | "book", id: number | string, rating: number, content: string) => void;
   migrateDemoIds: () => void;
@@ -264,6 +267,10 @@ export const useTrack = create<TrackState>()(
             theme: (next[st.theme] ?? "system") as "system" | "light" | "dark",
           };
         }),
+
+      accent: null,
+
+      setAccent: (color) => set({ accent: color, updatedAt: Date.now() }),
 
       setLocalReview: (type, id, rating, content) =>
         set((st) => ({

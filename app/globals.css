@@ -684,6 +684,47 @@ details.season[open] .chevron {
   border-radius: 6px;
 }
 
+/* ===== Sélecteur de couleur d'accent ===== */
+
+.accent-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-strong);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.accent-swatch:active {
+  transform: scale(0.9);
+}
+
+/* Sélecteur libre : input natif restylé en pastille ronde propre */
+.accent-picker {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.accent-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.accent-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.accent-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
 /* ===== Skeletons (chargement) ===== */
 
 .skeleton {

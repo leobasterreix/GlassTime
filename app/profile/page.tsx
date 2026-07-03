@@ -5,6 +5,7 @@ import Link from "next/link";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary, apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
+import { ACCENT_PRESETS } from "@/lib/accent";
 import { toast } from "@/lib/toast";
 import {
   disableNotifications,
@@ -99,8 +100,14 @@ export default function ProfilePage() {
     clearAll,
     theme,
     toggleTheme,
+    accent,
+    setAccent,
   } = useTrack();
   useHydrateLibrary();
+
+  // Accent actif ne correspondant à aucune des pastilles prédéfinies
+  const isCustomAccent =
+    !!accent && !ACCENT_PRESETS.some((p) => p.value === accent);
 
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar?: string } | null>(null);
   const [syncOn, setSyncOn] = useState<boolean | null>(null);
@@ -759,6 +766,59 @@ export default function ProfilePage() {
               ? "☀️ Thème : Clair"
               : "🌙 Thème : Sombre"}
         </button>
+
+        {/* Couleur d'accent : 4 teintes + sélecteur libre */}
+        <div className="glass card stack" style={{ gap: 14 }}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>Couleur d'accent</span>
+            <div className="row" style={{ gap: 10 }}>
+              {ACCENT_PRESETS.map((p) => {
+                const active = accent === p.value;
+                return (
+                  <button
+                    key={p.name}
+                    className="accent-swatch pressable"
+                    aria-label={p.name}
+                    title={p.name}
+                    onClick={() => {
+                      setAccent(p.value);
+                      toast(`Accent : ${p.name}`, "🎨");
+                    }}
+                    style={{
+                      background: p.swatch,
+                      boxShadow: active
+                        ? `0 0 0 2px var(--surface), 0 0 0 4px ${p.swatch}`
+                        : "none",
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <span className="muted">Couleur personnalisée</span>
+            <label
+              className="row"
+              style={{ gap: 10, cursor: "pointer" }}
+              title="Choisir n'importe quelle couleur"
+            >
+              <span className="tiny" style={{ textTransform: "uppercase" }}>
+                {isCustomAccent ? accent : "Choisir"}
+              </span>
+              <input
+                type="color"
+                className="accent-picker"
+                value={accent ?? "#d9503a"}
+                onChange={(e) => setAccent(e.target.value)}
+                style={
+                  isCustomAccent
+                    ? { boxShadow: `0 0 0 2px var(--surface), 0 0 0 4px ${accent}` }
+                    : undefined
+                }
+              />
+            </label>
+          </div>
+        </div>
         {notificationsSupported() && (
           <button
             className="glass card pressable"

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTrack } from "@/lib/store";
+import { applyAccent } from "@/lib/accent";
 import { supabase } from "@/lib/supabaseClient";
 
 // Synchronisation multi-appareils via Supabase.
@@ -23,6 +24,7 @@ const SYNC_KEYS = [
   "booksProgress",
   "showStatus",
   "watchedLog",
+  "accent",
   "updatedAt",
 ] as const;
 
@@ -35,9 +37,13 @@ function snapshot(): SyncState {
 
 export default function SyncManager() {
   const theme = useTrack((st) => st.theme);
+  const accent = useTrack((st) => st.accent);
 
   useEffect(() => {
-    function applyTheme() {
+    // Applique le thème (clair/sombre) puis la couleur d'accent : l'accent
+    // doit être ré-appliqué à chaque bascule car sa version « encre » (texte)
+    // dépend du thème.
+    function applyThemeAndAccent() {
       let resolved: "light" | "dark" = "dark";
       if (theme === "system") {
         resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -45,17 +51,18 @@ export default function SyncManager() {
         resolved = theme;
       }
       document.documentElement.setAttribute("data-theme", resolved);
+      applyAccent(accent, resolved);
     }
 
-    applyTheme();
+    applyThemeAndAccent();
 
     if (theme === "system") {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
-      const listener = () => applyTheme();
+      const listener = () => applyThemeAndAccent();
       media.addEventListener("change", listener);
       return () => media.removeEventListener("change", listener);
     }
-  }, [theme]);
+  }, [theme, accent]);
 
   useEffect(() => {
     useTrack.getState().migrateDemoIds();
