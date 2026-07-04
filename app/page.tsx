@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import { useHydrateLibrary } from "@/lib/client";
@@ -33,6 +33,7 @@ const STALE_DAYS = 60;
 export default function AgendaPage() {
   const router = useRouter();
   const mounted = useMounted();
+  const [tab, setTab] = useState<"rattraper" | "prochaines">("rattraper");
   const {
     followed,
     watched,
@@ -234,13 +235,16 @@ export default function AgendaPage() {
             </div>
           )}
 
-          {/* À rattraper — toujours affichée (avec un état vide) pour que
-             les deux sections de l'agenda restent visibles en permanence. */}
-          <h2 className="section-title">
-            À rattraper
-            {toCatchUp.length > 0 && <small>{toCatchUp.length}</small>}
-          </h2>
-          {toCatchUp.length === 0 ? (
+          <div className="glass segmented" style={{ marginBottom: 16 }}>
+            <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
+              À rattraper{toCatchUp.length > 0 ? ` · ${toCatchUp.length}` : ""}
+            </button>
+            <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
+              Prochaines diffusions{upcomingCards.length > 0 ? ` · ${upcomingCards.length}` : ""}
+            </button>
+          </div>
+
+          {tab === "rattraper" && (toCatchUp.length === 0 ? (
             <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
               <span className="muted">Tout est rattrapé, bravo !</span>
             </div>
@@ -292,11 +296,9 @@ export default function AgendaPage() {
                   );
                 })}
             </div>
-          )}
+          ))}
 
-          {/* Prochaines diffusions */}
-          <h2 className="section-title">Prochaines diffusions</h2>
-          {upcomingCards.length === 0 ? (
+          {tab === "prochaines" && (upcomingCards.length === 0 ? (
             <div className="glass card" style={{ textAlign: "center" }}>
               <span className="muted">Aucune diffusion prévue pour le moment.</span>
             </div>
@@ -345,7 +347,7 @@ export default function AgendaPage() {
                 )
               )}
             </div>
-          )}
+          ))}
         </>
       )}
     </main>
