@@ -234,15 +234,19 @@ export default function AgendaPage() {
             </div>
           )}
 
-          {/* À rattraper */}
-          {toCatchUp.length > 0 && (
-            <>
-              <h2 className="section-title">
-                À rattraper
-                <small>{toCatchUp.length}</small>
-              </h2>
-              <div className="stack" style={{ marginBottom: 20 }}>
-                {toCatchUp.map(({ show, next }) => {
+          {/* À rattraper — toujours affichée (avec un état vide) pour que
+             les deux sections de l'agenda restent visibles en permanence. */}
+          <h2 className="section-title">
+            À rattraper
+            {toCatchUp.length > 0 && <small>{toCatchUp.length}</small>}
+          </h2>
+          {toCatchUp.length === 0 ? (
+            <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
+              <span className="muted">Tout est rattrapé, bravo !</span>
+            </div>
+          ) : (
+            <div className="stack" style={{ marginBottom: 20 }}>
+              {toCatchUp.map(({ show, next }) => {
                   const badge = catchupBadge(show);
                   return (
                     <SwipeableRow
@@ -287,8 +291,7 @@ export default function AgendaPage() {
                     </SwipeableRow>
                   );
                 })}
-              </div>
-            </>
+            </div>
           )}
 
           {/* Prochaines diffusions */}
