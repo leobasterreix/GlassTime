@@ -6,7 +6,12 @@ import { useState } from "react";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
-import { effectiveShowStatus, type DisplayShowStatus } from "@/lib/utils";
+import {
+  bookStatus,
+  effectiveShowStatus,
+  movieStatus,
+  type DisplayStatus,
+} from "@/lib/utils";
 
 type CollectionType = "shows" | "movies" | "books" | "favorites";
 type Segment = "todo" | "done";
@@ -55,7 +60,7 @@ export default function CollectionPage() {
     id: number | string;
     href: string;
     caption?: string;
-    item: { title: string; poster?: string | null; status?: DisplayShowStatus };
+    item: { title: string; poster?: string | null; status?: DisplayStatus };
   }[] = [];
   let segments: { todo: string; done: string } | null = null;
 
@@ -77,7 +82,11 @@ export default function CollectionPage() {
     items = ids
       .map((id) => movieCache[id])
       .filter(Boolean)
-      .map((m) => ({ id: m.id, href: `/movie/${m.id}`, item: m }));
+      .map((m) => ({
+        id: m.id,
+        href: `/movie/${m.id}`,
+        item: { ...m, status: movieStatus(segment === "todo", segment === "done") },
+      }));
   } else if (type === "books") {
     segments = { todo: `À lire · ${booksWatchlist.length}`, done: `Lus · ${booksRead.length}` };
     const ids =
@@ -92,7 +101,7 @@ export default function CollectionPage() {
       .map((b) => ({
         id: b.id,
         href: `/book/${b.id}`,
-        item: b,
+        item: { ...b, status: bookStatus(segment === "todo", segment === "done") },
         caption:
           segment === "done" && booksReadDates[b.id]
             ? `📅 ${booksReadDates[b.id]}`
@@ -113,11 +122,27 @@ export default function CollectionPage() {
       ...favoriteMovies
         .map((id) => movieCache[id])
         .filter(Boolean)
-        .map((m) => ({ id: `movie-${m.id}`, href: `/movie/${m.id}`, item: m, caption: "🎬 Film" })),
+        .map((m) => ({
+          id: `movie-${m.id}`,
+          href: `/movie/${m.id}`,
+          item: {
+            ...m,
+            status: movieStatus(movieWatchlist.includes(m.id), moviesWatched.includes(m.id)),
+          },
+          caption: "🎬 Film",
+        })),
       ...favoriteBooks
         .map((id) => bookCache[id])
         .filter(Boolean)
-        .map((b) => ({ id: `book-${b.id}`, href: `/book/${b.id}`, item: b, caption: "📚 Livre" })),
+        .map((b) => ({
+          id: `book-${b.id}`,
+          href: `/book/${b.id}`,
+          item: {
+            ...b,
+            status: bookStatus(booksWatchlist.includes(b.id), booksRead.includes(b.id)),
+          },
+          caption: "📚 Livre",
+        })),
     ];
   }
 

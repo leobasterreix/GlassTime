@@ -11,13 +11,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Query or ISBN required" }, { status: 400 });
     }
 
+    // "subject" n'est pas renvoyé par défaut par l'API OpenLibrary : il faut
+    // le demander explicitement via `fields` pour alimenter nos genres.
+    const fields = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,ratings_average,subject";
     let url = "";
     if (isbn) {
       // Clean up ISBN string (remove spaces, hyphens)
       const cleanIsbn = isbn.replace(/[\s-]/g, "");
-      url = `https://openlibrary.org/search.json?q=isbn:${cleanIsbn}&limit=1`;
+      url = `https://openlibrary.org/search.json?q=isbn:${cleanIsbn}&limit=1&fields=${fields}`;
     } else {
-      url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query!)}&limit=20`;
+      url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query!)}&limit=20&fields=${fields}`;
     }
 
     const res = await fetch(url, { next: { revalidate: 3600 } });

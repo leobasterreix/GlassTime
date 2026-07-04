@@ -8,6 +8,7 @@ import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import type { Book, Review } from "@/lib/types";
+import { bookStatus } from "@/lib/utils";
 
 export default function BookDetailPage({
   params: paramsPromise,
@@ -23,11 +24,9 @@ export default function BookDetailPage({
     booksRead,
     booksReadDates,
     bookCache,
-    booksProgress,
     cacheBook,
     toggleBookWatchlist,
     toggleBookRead,
-    setBookProgress,
     setBookReadDate,
     localReviews,
     setLocalReview,
@@ -188,10 +187,6 @@ export default function BookDetailPage({
   const isFollowed = booksWatchlist.includes(book.id);
   const isRead = booksRead.includes(book.id);
 
-  const progress = booksProgress[book.id] ?? 0;
-  const pagesTotal = book.pages ?? 0;
-  const pct = pagesTotal > 0 ? Math.min(Math.round((progress / pagesTotal) * 100), 100) : 0;
-
   // Merge local reviews backup in state list
   const myLocalReview = localReviews[`book-${book.id}`];
   const hasLocalOnly = myLocalReview && !siteReviews.some((r) => r.id === "local-review");
@@ -228,7 +223,7 @@ export default function BookDetailPage({
           }}
         />
         <div className="hero-poster">
-          <Poster item={book} />
+          <Poster item={{ ...book, status: bookStatus(isFollowed, isRead) }} />
         </div>
         <div className="hero-body">
           <h1 style={{ fontSize: 25, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 14 }}>
@@ -279,65 +274,6 @@ export default function BookDetailPage({
           </div>
         </div>
       </div>
-
-      {/* Progress Tracker Section */}
-      {isFollowed && !isRead && (
-        <div className="glass card" style={{ padding: 20, marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Votre progression de lecture</h3>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div className="row" style={{ gap: 6 }}>
-              <span className="muted" style={{ fontSize: 14 }}>Page</span>
-              <input
-                type="number"
-                min="0"
-                max={pagesTotal > 0 ? pagesTotal : undefined}
-                value={progress}
-                onChange={(e) => {
-                  const val = Math.max(0, Number(e.target.value));
-                  setBookProgress(book.id, pagesTotal > 0 ? Math.min(val, pagesTotal) : val);
-                }}
-                style={{
-                  width: 70,
-                  padding: "5px 8px",
-                  borderRadius: 6,
-                  border: "1.5px solid var(--glass-border)",
-                  background: "var(--glass-bg-strong)",
-                  color: "var(--text)",
-                  textAlign: "center",
-                  fontWeight: 700,
-                  outline: "none",
-                }}
-              />
-              <span className="muted" style={{ fontSize: 14 }}>sur {pagesTotal > 0 ? pagesTotal : "?"}</span>
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text)" }}>{pct}% lu</span>
-          </div>
-
-          {pagesTotal > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <input
-                type="range"
-                min="0"
-                max={pagesTotal}
-                value={progress}
-                onChange={(e) => setBookProgress(book.id, Number(e.target.value))}
-                style={{
-                  width: "100%",
-                  height: 6,
-                  borderRadius: 999,
-                  background: "var(--glass-border)",
-                  outline: "none",
-                  cursor: "pointer",
-                  accentColor: "var(--accent)",
-                }}
-              />
-              <div className="progress" style={{ height: 6, marginTop: 12 }}>
-                <div style={{ width: `${pct}%`, background: "var(--accent)" }} />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Date de lecture (si lu) */}
       {isRead && (

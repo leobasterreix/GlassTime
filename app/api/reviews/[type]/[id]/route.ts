@@ -95,8 +95,8 @@ export async function POST(
 
   try {
     const { rating, content } = await req.json();
-    if (!rating || rating < 1 || rating > 10) {
-      return NextResponse.json({ error: "Note invalide (doit être entre 1 et 10)" }, { status: 400 });
+    if (!rating || rating < 1 || rating > 5) {
+      return NextResponse.json({ error: "Note invalide (doit être entre 1 et 5)" }, { status: 400 });
     }
 
     const supabase = await createClient();

@@ -602,31 +602,24 @@ input {
   border-color: transparent;
 }
 
-/* Bandeau de statut sur la couverture (façon TV Time) : bande pleine largeur
-   au pied de l'affiche, plutôt qu'un badge en coin. Rendu depuis le composant
-   Poster lui-même (il porte déjà overflow:hidden + border-radius, donc le
-   bandeau est nativement découpé aux coins arrondis). Couleurs opaques fixes
-   (pas les teintes .badge-pill pensées pour du papier) pour rester lisible
-   par-dessus n'importe quelle affiche, sombre ou claire. */
+/* Bandeau de statut sur la couverture (façon TV Time) : simple bande de
+   couleur pleine largeur au pied de l'affiche, sans texte — la couleur seule
+   porte l'information (vert = en cours/en liste, violet = terminé/vu/lu).
+   Rendu depuis Poster lui-même (déjà overflow:hidden + border-radius, donc
+   nativement découpé aux coins arrondis). Couleurs opaques fixes,
+   indépendantes de l'accent personnalisable. */
 .poster-banner {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 1;
-  text-align: center;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  padding: 6px 4px;
-  color: #fff;
-  background: rgba(125, 91, 166, 0.88);
-  backdrop-filter: blur(6px) saturate(140%);
-  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  height: 5px;
+  background: rgba(125, 91, 166, 0.92);
 }
 
 .poster-banner.status-ongoing {
-  background: rgba(79, 138, 91, 0.88);
+  background: rgba(79, 138, 91, 0.92);
 }
 
 .empty {
@@ -820,6 +813,13 @@ a.provider-pill:active {
   width: 22px;
   height: 22px;
   border-radius: 6px;
+}
+
+/* Plateforme que l'utilisateur a renseignée comme sienne (profil) : mise en
+   avant discrète, sans changer la mécanique de tri (juste un repère visuel). */
+.provider-pill.owned {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--pill-bg));
 }
 
 /* ===== Sélecteur de couleur d'accent ===== */
@@ -1206,4 +1206,75 @@ a.provider-pill:active {
   text-align: center;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(10, 10, 12, 0.8);
+}
+
+/* ===== Centre de notifications in-app ===== */
+
+.notif-bell {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: 16px;
+  z-index: 60;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+.notif-bell svg {
+  width: 19px;
+  height: 19px;
+}
+
+.notif-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.notif-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 94;
+  background: rgba(20, 16, 10, 0.28);
+}
+
+.notif-panel {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px + 48px);
+  right: 16px;
+  left: 16px;
+  max-width: 400px;
+  margin-left: auto;
+  z-index: 95;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.notif-unread-mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 5px;
+  flex-shrink: 0;
 }

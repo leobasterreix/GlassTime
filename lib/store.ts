@@ -8,6 +8,15 @@ import { epKey } from "./utils";
 
 export type ShowFollowStatus = "active" | "paused" | "dropped";
 
+export type AppNotification = {
+  id: string;
+  message: string;
+  emoji: string;
+  href?: string;
+  createdAt: string;
+  read: boolean;
+};
+
 type TrackState = {
   followed: number[];
   watched: Record<number, Record<string, true>>;
@@ -17,7 +26,6 @@ type TrackState = {
   moviesWatchedDates: Record<number, string>;
   booksWatchlist: string[];
   booksRead: string[];
-  booksProgress: Record<string, number>;
   favoriteShows: number[];
   favoriteMovies: number[];
   favoriteBooks: string[];
@@ -48,7 +56,6 @@ type TrackState = {
   importState: (data: Record<string, unknown>) => void;
   toggleBookWatchlist: (id: string) => void;
   toggleBookRead: (id: string) => void;
-  setBookProgress: (id: string, pages: number) => void;
   booksReadDates: Record<string, string>;
   setBookReadDate: (id: string, date: string | null) => void;
   clearAll: () => void;
@@ -62,6 +69,15 @@ type TrackState = {
   toggleFavoriteShow: (id: number) => void;
   toggleFavoriteMovie: (id: number) => void;
   toggleFavoriteBook: (id: string) => void;
+  /** Plateformes de streaming possédées par l'utilisateur (ex. "Netflix"). */
+  myPlatforms: string[];
+  toggleMyPlatform: (name: string) => void;
+  /** Centre de notifications in-app (distinct des notifications navigateur). */
+  notifications: AppNotification[];
+  pushNotification: (n: Omit<AppNotification, "createdAt" | "read">) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
   migrateDemoIds: () => void;
 };
 
@@ -100,13 +116,14 @@ export const useTrack = create<TrackState>()(
       showCache: {},
       movieCache: {},
       bookCache: {},
-      booksProgress: {},
       showStatus: {},
       watchedLog: {},
       localReviews: {},
       favoriteShows: [],
       favoriteMovies: [],
       favoriteBooks: [],
+      myPlatforms: [],
+      notifications: [],
       updatedAt: 0,
 
       toggleFollow: (id) =>
@@ -114,6 +131,38 @@ export const useTrack = create<TrackState>()(
           followed: toggleIn(st.followed, id),
           updatedAt: Date.now(),
         })),
+
+      toggleMyPlatform: (name) =>
+        set((st) => ({
+          myPlatforms: toggleInStr(st.myPlatforms ?? [], name),
+          updatedAt: Date.now(),
+        })),
+
+      pushNotification: (n) =>
+        set((st) => {
+          if ((st.notifications ?? []).some((x) => x.id === n.id)) return {};
+          return {
+            notifications: [
+              { ...n, createdAt: new Date().toISOString(), read: false },
+              ...(st.notifications ?? []),
+            ].slice(0, 50),
+            updatedAt: Date.now(),
+          };
+        }),
+
+      markNotificationRead: (id) =>
+        set((st) => ({
+          notifications: (st.notifications ?? []).map((n) =>
+            n.id === id ? { ...n, read: true } : n
+          ),
+        })),
+
+      markAllNotificationsRead: () =>
+        set((st) => ({
+          notifications: (st.notifications ?? []).map((n) => ({ ...n, read: true })),
+        })),
+
+      clearNotifications: () => set({ notifications: [] }),
 
       toggleFavoriteShow: (id) =>
         set((st) => ({
@@ -257,15 +306,6 @@ export const useTrack = create<TrackState>()(
             updatedAt: Date.now(),
           };
         }),
-
-      setBookProgress: (id, pages) =>
-        set((st) => ({
-          booksProgress: {
-            ...st.booksProgress,
-            [id]: pages,
-          },
-          updatedAt: Date.now(),
-        })),
 
       setBookReadDate: (id, dateStr) =>
         set((st) => {
@@ -424,13 +464,14 @@ export const useTrack = create<TrackState>()(
           showCache: {},
           movieCache: {},
           bookCache: {},
-          booksProgress: {},
           showStatus: {},
           watchedLog: {},
           localReviews: {},
           favoriteShows: [],
           favoriteMovies: [],
           favoriteBooks: [],
+          myPlatforms: [],
+          notifications: [],
           updatedAt: Date.now(),
         }),
     }),

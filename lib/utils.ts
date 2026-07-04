@@ -7,6 +7,20 @@ export const DAY = 86400000;
  * visuellement sur le statut de diffusion (même si la série continue
  * d'être diffusée, l'afficher comme « active » n'aurait pas de sens). */
 export type DisplayShowStatus = "En cours" | "Terminée" | "Abandonnée";
+export type DisplayMovieStatus = "À voir" | "Vu";
+export type DisplayBookStatus = "À lire" | "Lu";
+/** Statut générique affichable en bandeau de couleur sur une affiche, tous
+ * types de contenu confondus (séries, films, livres). */
+export type DisplayStatus = DisplayShowStatus | DisplayMovieStatus | DisplayBookStatus;
+
+/** Statuts « verts » (en cours / en liste) par opposition aux statuts
+ * « violets » (terminé, plus rien à faire). Purement visuel : Poster n'a
+ * plus besoin du texte pour distinguer les deux, seulement de la couleur. */
+const ONGOING_STATUSES = new Set<DisplayStatus>(["En cours", "À voir", "À lire"]);
+
+export function isOngoingStatus(status: DisplayStatus): boolean {
+  return ONGOING_STATUSES.has(status);
+}
 
 /**
  * Combine le statut de diffusion (show.status, TMDB) et le statut personnel
@@ -19,6 +33,24 @@ export function effectiveShowStatus(
 ): DisplayShowStatus | undefined {
   if (personalStatus === "dropped") return "Abandonnée";
   return show.status;
+}
+
+export function movieStatus(
+  inWatchlist: boolean,
+  watched: boolean
+): DisplayMovieStatus | undefined {
+  if (watched) return "Vu";
+  if (inWatchlist) return "À voir";
+  return undefined;
+}
+
+export function bookStatus(
+  inWatchlist: boolean,
+  read: boolean
+): DisplayBookStatus | undefined {
+  if (read) return "Lu";
+  if (inWatchlist) return "À lire";
+  return undefined;
 }
 
 export function epKey(s: number, e: number) {
@@ -121,6 +153,34 @@ export function minutesHuman(min: number): string {
 
 export function epLabel(ep: Episode) {
   return `S${String(ep.s).padStart(2, "0")} · E${String(ep.e).padStart(2, "0")}`;
+}
+
+/** Notes GlassTime (user_reviews) : échelle 1-5 depuis ce changement, mais
+ * d'anciennes notes restent stockées sur l'échelle 1-10 — on les ramène sur 5
+ * à l'affichage plutôt que de migrer les données existantes. */
+export function formatSiteRating(rating: number): string {
+  const normalized = rating > 5 ? rating / 2 : rating;
+  return Number.isInteger(normalized) ? normalized.toFixed(0) : normalized.toFixed(1);
+}
+
+/** Plateformes de streaming courantes proposées dans le sélecteur du profil
+ * — mêmes noms que ceux reconnus par getProviderSearchUrl ci-dessous. */
+export const KNOWN_PLATFORMS = [
+  "Netflix",
+  "Prime Video",
+  "Disney+",
+  "Canal+",
+  "Max",
+  "Paramount+",
+  "Apple TV",
+  "Crunchyroll",
+];
+
+export function isOwnedPlatform(myPlatforms: string[], providerName: string): boolean {
+  const name = providerName.toLowerCase();
+  return myPlatforms.some(
+    (p) => name.includes(p.toLowerCase()) || p.toLowerCase().includes(name)
+  );
 }
 
 export function getProviderSearchUrl(providerName: string, title: string, fallbackUrl?: string | null): string {

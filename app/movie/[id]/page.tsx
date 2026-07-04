@@ -8,7 +8,7 @@ import { apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import type { Movie, Review } from "@/lib/types";
-import { minutesHuman, getProviderSearchUrl } from "@/lib/utils";
+import { formatSiteRating, minutesHuman, getProviderSearchUrl, isOwnedPlatform, movieStatus } from "@/lib/utils";
 
 export default function MoviePage() {
   const params = useParams<{ id: string }>();
@@ -27,6 +27,7 @@ export default function MoviePage() {
     setLocalReview,
     favoriteMovies,
     toggleFavoriteMovie,
+    myPlatforms,
   } = useTrack();
 
   const [fetched, setFetched] = useState<Movie | null>(null);
@@ -43,7 +44,7 @@ export default function MoviePage() {
     }
   }, [siteReviews, tmdbReviews, tmdbLoading]);
 
-  const [formRating, setFormRating] = useState<number>(10);
+  const [formRating, setFormRating] = useState<number>(5);
   const [formContent, setFormContent] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -180,7 +181,7 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-poster">
-          <Poster item={movie} />
+          <Poster item={{ ...movie, status: movieStatus(inList, seen) }} />
         </div>
         <div className="hero-body">
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 14 }}>
@@ -250,21 +251,28 @@ export default function MoviePage() {
                 OÙ REGARDER
               </div>
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                {movie.providers!.map((p) => {
-                  const searchUrl = getProviderSearchUrl(p.name, movie.title, p.link);
-                  return (
-                    <a
-                      key={p.name}
-                      href={searchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="provider-pill"
-                    >
-                      {p.logo && <img src={p.logo} alt="" />}
-                      {p.name}
-                    </a>
-                  );
-                })}
+                {[...movie.providers!]
+                  .sort(
+                    (a, b) =>
+                      Number(isOwnedPlatform(myPlatforms, b.name)) -
+                      Number(isOwnedPlatform(myPlatforms, a.name))
+                  )
+                  .map((p) => {
+                    const searchUrl = getProviderSearchUrl(p.name, movie.title, p.link);
+                    const owned = isOwnedPlatform(myPlatforms, p.name);
+                    return (
+                      <a
+                        key={p.name}
+                        href={searchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`provider-pill${owned ? " owned" : ""}`}
+                      >
+                        {p.logo && <img src={p.logo} alt="" />}
+                        {p.name}
+                      </a>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -325,10 +333,10 @@ export default function MoviePage() {
         <form onSubmit={handleReviewSubmit} className="stack" style={{ gap: 12 }}>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>
-              Note : {formRating} / 10
+              Note : {formRating} / 5
             </label>
             <div className="row" style={{ gap: 4 }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+              {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
@@ -459,7 +467,7 @@ export default function MoviePage() {
                 </div>
                 {r.rating && (
                   <span className="badge-pill" style={{ fontSize: 12 }}>
-                    ★ {r.rating.toFixed(0)}/10
+                    {reviewsTab === "site" ? `★ ${formatSiteRating(r.rating)}/5` : `★ ${r.rating.toFixed(0)}/10`}
                   </span>
                 )}
               </div>

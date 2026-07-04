@@ -1,23 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Poster from "@/components/Poster";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { minutesHuman } from "@/lib/utils";
+import { bookStatus, effectiveShowStatus, minutesHuman, movieStatus } from "@/lib/utils";
 import type { Book, Movie, Show } from "@/lib/types";
 
 type MediaType = "shows" | "movies" | "books";
 
 export default function DiscoverPage() {
+  return (
+    <Suspense>
+      <DiscoverContent />
+    </Suspense>
+  );
+}
+
+function DiscoverContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const mounted = useMounted();
   const {
     followed,
+    showCache,
+    showStatus,
     movieWatchlist,
     moviesWatched,
     booksWatchlist,
@@ -30,9 +41,14 @@ export default function DiscoverPage() {
     toggleBookRead,
   } = useTrack();
 
-  const [type, setType] = useState<MediaType>("shows");
-  const [query, setQuery] = useState("");
-  const [genre, setGenre] = useState<string | null>(null);
+  const [type, setType] = useState<MediaType>(
+    () => (searchParams.get("type") as MediaType) || "shows"
+  );
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [genre, setGenre] = useState<string | null>(() => searchParams.get("genre"));
+  const [bookGenre, setBookGenre] = useState<string | null>(
+    () => searchParams.get("bgenre")
+  );
   const [genres, setGenres] = useState<string[]>([]);
   const [showResults, setShowResults] = useState<Show[] | null>(null);
   const [movieResults, setMovieResults] = useState<Movie[] | null>(null);
@@ -44,6 +60,19 @@ export default function DiscoverPage() {
   useEffect(() => {
     apiGet<string[]>("/api/genres").then((g) => g && setGenres(g));
   }, []);
+
+  // Persiste type/recherche/genre dans l'URL pour retrouver son état exact
+  // en revenant en arrière depuis une fiche (bouton retour du navigateur).
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("type", type);
+    if (query) params.set("q", query);
+    if (type === "shows" && genre) params.set("genre", genre);
+    if (type === "books" && bookGenre) params.set("bgenre", bookGenre);
+    const qs = params.toString();
+    router.replace(qs ? `/discover?${qs}` : "/discover", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, query, genre, bookGenre]);
 
   // Recommendations: based on followed items
   useEffect(() => {
@@ -97,6 +126,27 @@ export default function DiscoverPage() {
     };
   }, [type, q, genre]);
 
+  // Pas d'API de genres pour les livres (OpenLibrary ne fournit que des
+  // « subjects » bruts par résultat) : on dérive des chips à partir des
+  // résultats de recherche courants, pour filtrer côté client.
+  const bookGenres = useMemo(() => {
+    if (!bookResults) return [];
+    const counts = new Map<string, number>();
+    for (const b of bookResults) {
+      for (const g of b.genres) counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([g]) => g);
+  }, [bookResults]);
+
+  const filteredBookResults = useMemo(() => {
+    if (!bookResults) return bookResults;
+    if (!bookGenre) return bookResults;
+    return bookResults.filter((b) => b.genres.includes(bookGenre));
+  }, [bookResults, bookGenre]);
+
   function addMovieToWatchlist(m: Movie) {
     cacheMovie(m);
     toggleMovieWatchlist(m.id);
@@ -135,9 +185,18 @@ export default function DiscoverPage() {
     setType(newType);
     setQuery("");
     setGenre(null);
+    setBookGenre(null);
   };
 
   const searching = q.length > 0 || (type === "shows" && genre !== null);
+
+  /** Statut d'affichage (bandeau) pour une série pas forcément en cache
+   * complet — utilise showCache si disponible, sinon pas de bandeau (TMDB
+   * ne renvoie pas le statut de diffusion dans les listes de recherche). */
+  function showBandStatus(s: Show) {
+    const cached = showCache[s.id];
+    return cached ? effectiveShowStatus(cached, showStatus[s.id]) : undefined;
+  }
 
   return (
     <main className="page">
@@ -215,6 +274,21 @@ export default function DiscoverPage() {
         </div>
       )}
 
+      {type === "books" && bookGenres.length > 0 && (
+        <div className="hscroll" style={{ paddingBottom: 8, marginBottom: 12 }}>
+          {bookGenres.map((g) => (
+            <button
+              key={g}
+              className={`chip pressable${bookGenre === g ? " active" : ""}`}
+              style={{ width: "auto", minWidth: "auto" }}
+              onClick={() => setBookGenre(bookGenre === g ? null : g)}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 1. SÉRIES RESULTS */}
       {type === "shows" && (
         <>
@@ -222,11 +296,24 @@ export default function DiscoverPage() {
             <>
               <h2 className="section-title">✨ Pour vous</h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
-                {showRecs.map((s) => (
-                  <Link key={s.id} href={`/show/${s.id}`} className="pressable">
-                    <Poster item={s} />
-                  </Link>
-                ))}
+                {showRecs.map((s) => {
+                  const isFollowed = mounted && followed.includes(s.id);
+                  return (
+                    <div key={s.id} style={{ position: "relative", flexShrink: 0 }}>
+                      <Link href={`/show/${s.id}`} className="pressable">
+                        <Poster item={{ ...s, status: showBandStatus(s) }} />
+                      </Link>
+                      <button
+                        className={`check small${isFollowed ? " checked" : ""}`}
+                        style={{ position: "absolute", top: 8, right: 8 }}
+                        aria-label={isFollowed ? "Ne plus suivre" : "Suivre"}
+                        onClick={() => followShow(s)}
+                      >
+                        {isFollowed ? "✓" : "+"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -235,11 +322,24 @@ export default function DiscoverPage() {
             <>
               <h2 className="section-title">🔥 Tendances</h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
-                {showResults.slice(0, 10).map((s) => (
-                  <Link key={s.id} href={`/show/${s.id}`} className="pressable">
-                    <Poster item={s} />
-                  </Link>
-                ))}
+                {showResults.slice(0, 10).map((s) => {
+                  const isFollowed = mounted && followed.includes(s.id);
+                  return (
+                    <div key={s.id} style={{ position: "relative", flexShrink: 0 }}>
+                      <Link href={`/show/${s.id}`} className="pressable">
+                        <Poster item={{ ...s, status: showBandStatus(s) }} />
+                      </Link>
+                      <button
+                        className={`check small${isFollowed ? " checked" : ""}`}
+                        style={{ position: "absolute", top: 8, right: 8 }}
+                        aria-label={isFollowed ? "Ne plus suivre" : "Suivre"}
+                        onClick={() => followShow(s)}
+                      >
+                        {isFollowed ? "✓" : "+"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -267,7 +367,7 @@ export default function DiscoverPage() {
                 return (
                   <div key={s.id} style={{ position: "relative" }}>
                     <Link href={`/show/${s.id}`} className="pressable" style={{ display: "block" }}>
-                      <Poster item={s} />
+                      <Poster item={{ ...s, status: showBandStatus(s) }} />
                     </Link>
                     <button
                       className={`check small${isFollowed ? " checked" : ""}`}
@@ -292,11 +392,29 @@ export default function DiscoverPage() {
             <>
               <h2 className="section-title">✨ Pour vous</h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
-                {movieRecs.map((m) => (
-                  <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
-                    <Poster item={m} />
-                  </Link>
-                ))}
+                {movieRecs.map((m) => {
+                  const inList = mounted && movieWatchlist.includes(m.id);
+                  const seen = mounted && moviesWatched.includes(m.id);
+                  return (
+                    <div key={m.id} style={{ position: "relative", flexShrink: 0 }}>
+                      <Link href={`/movie/${m.id}`} className="pressable">
+                        <Poster item={{ ...m, status: movieStatus(inList, seen) }} />
+                      </Link>
+                      {!seen && (
+                        <button
+                          className={`check small${inList ? " checked" : ""}`}
+                          style={{ position: "absolute", top: 8, right: 8 }}
+                          aria-label={inList ? "Retirer de la liste à voir" : "Ajouter à la liste à voir"}
+                          onClick={() =>
+                            inList ? toggleMovieWatchlist(m.id) : addMovieToWatchlist(m)
+                          }
+                        >
+                          {inList ? "✓" : "+"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -332,7 +450,7 @@ export default function DiscoverPage() {
                 return (
                   <div key={m.id} className="glass card row">
                     <Link href={`/movie/${m.id}`} style={{ display: "flex", flexShrink: 0 }}>
-                      <Poster item={m} mini />
+                      <Poster item={{ ...m, status: movieStatus(inList, seen) }} mini />
                     </Link>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <Link href={`/movie/${m.id}`} style={{ textDecoration: "none", color: "inherit" }}>
@@ -390,10 +508,10 @@ export default function DiscoverPage() {
         <>
           <h2 className="section-title">
             Résultats
-            {bookResults && <small>{bookResults.length}</small>}
+            {filteredBookResults && <small>{filteredBookResults.length}</small>}
           </h2>
 
-          {bookResults === null ? (
+          {filteredBookResults === null ? (
             <div className="glass empty">
               <div className="big">📚</div>
               <p className="muted">
@@ -401,14 +519,14 @@ export default function DiscoverPage() {
                 code-barres.
               </p>
             </div>
-          ) : bookResults.length === 0 ? (
+          ) : filteredBookResults.length === 0 ? (
             <div className="glass empty">
               <div className="big">🔍</div>
               <p className="muted">Aucun livre ne correspond à votre recherche.</p>
             </div>
           ) : (
             <div className="stack stack-wide">
-              {bookResults.map((b) => {
+              {filteredBookResults.map((b) => {
                 const inList = mounted && booksWatchlist.includes(b.id);
                 const read = mounted && booksRead.includes(b.id);
                 const meta = [
@@ -422,7 +540,7 @@ export default function DiscoverPage() {
                 return (
                   <div key={b.id} className="glass card row">
                     <Link href={`/book/${b.id}`} style={{ display: "flex", flexShrink: 0 }}>
-                      <Poster item={b} mini />
+                      <Poster item={{ ...b, status: bookStatus(inList, read) }} mini />
                     </Link>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <Link href={`/book/${b.id}`} style={{ textDecoration: "none", color: "inherit" }}>

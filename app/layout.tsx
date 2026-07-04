@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import NotificationCenter from "@/components/NotificationCenter";
 import SyncManager from "@/components/SyncManager";
 import TabBar from "@/components/TabBar";
 import Toaster from "@/components/Toaster";
@@ -44,6 +45,7 @@ export default function RootLayout({
         <SyncManager />
         {children}
         <Toaster />
+        <NotificationCenter />
         <TabBar />
       </body>
     </html>

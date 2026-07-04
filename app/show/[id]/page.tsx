@@ -16,9 +16,11 @@ import {
   epLabel,
   fmtDate,
   fmtRelative,
+  formatSiteRating,
   isAired,
   watchedCount,
   getProviderSearchUrl,
+  isOwnedPlatform,
 } from "@/lib/utils";
 
 const STATUS_LABELS: { value: ShowFollowStatus; label: string }[] = [
@@ -45,6 +47,7 @@ export default function ShowPage() {
     setShowStatus,
     favoriteShows,
     toggleFavoriteShow,
+    myPlatforms,
   } = useTrack();
   // Proposition de rattrapage après avoir coché un épisode « en avance »
   const [catchUp, setCatchUp] = useState<{ ep: Episode; count: number } | null>(null);
@@ -63,7 +66,7 @@ export default function ShowPage() {
     }
   }, [siteReviews, tmdbReviews, tmdbLoading]);
 
-  const [formRating, setFormRating] = useState<number>(10);
+  const [formRating, setFormRating] = useState<number>(5);
   const [formContent, setFormContent] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -312,21 +315,28 @@ export default function ShowPage() {
               OÙ REGARDER
             </div>
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              {show.providers!.map((p) => {
-                const searchUrl = getProviderSearchUrl(p.name, show.title, p.link);
-                return (
-                  <a
-                    key={p.name}
-                    href={searchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="provider-pill"
-                  >
-                    {p.logo && <img src={p.logo} alt="" />}
-                    {p.name}
-                  </a>
-                );
-              })}
+              {[...show.providers!]
+                .sort(
+                  (a, b) =>
+                    Number(isOwnedPlatform(myPlatforms, b.name)) -
+                    Number(isOwnedPlatform(myPlatforms, a.name))
+                )
+                .map((p) => {
+                  const searchUrl = getProviderSearchUrl(p.name, show.title, p.link);
+                  const owned = isOwnedPlatform(myPlatforms, p.name);
+                  return (
+                    <a
+                      key={p.name}
+                      href={searchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`provider-pill${owned ? " owned" : ""}`}
+                    >
+                      {p.logo && <img src={p.logo} alt="" />}
+                      {p.name}
+                    </a>
+                  );
+                })}
             </div>
           </div>
         )}
@@ -484,10 +494,10 @@ export default function ShowPage() {
         <form onSubmit={handleReviewSubmit} className="stack" style={{ gap: 12 }}>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>
-              Note : {formRating} / 10
+              Note : {formRating} / 5
             </label>
             <div className="row" style={{ gap: 4 }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+              {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
@@ -618,7 +628,7 @@ export default function ShowPage() {
                 </div>
                 {r.rating && (
                   <span className="badge-pill" style={{ fontSize: 12 }}>
-                    ★ {r.rating.toFixed(0)}/10
+                    {reviewsTab === "site" ? `★ ${formatSiteRating(r.rating)}/5` : `★ ${r.rating.toFixed(0)}/10`}
                   </span>
                 )}
               </div>

@@ -21,13 +21,14 @@ const SYNC_KEYS = [
   "showCache",
   "movieCache",
   "bookCache",
-  "booksProgress",
   "showStatus",
   "watchedLog",
   "accent",
   "favoriteShows",
   "favoriteMovies",
   "favoriteBooks",
+  "myPlatforms",
+  "notifications",
   "updatedAt",
 ] as const;
 

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import Poster from "@/components/Poster";
-import ShowStatusBadge from "@/components/ShowStatusBadge";
 import { useHydrateLibrary } from "@/lib/client";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
@@ -12,10 +11,12 @@ import {
   airedEpisodes,
   allEpisodes,
   DAY,
+  effectiveShowStatus,
   epLabel,
   fmtDateLong,
   fmtRelative,
   fmtRelativeOrDate,
+  movieStatus,
   nextEpisode,
   watchedCount,
 } from "@/lib/utils";
@@ -27,8 +28,15 @@ type Entry =
 
 export default function AgendaPage() {
   const mounted = useMounted();
-  const { followed, watched, showCache, movieWatchlist, movieCache, showStatus } =
-    useTrack();
+  const {
+    followed,
+    watched,
+    showCache,
+    movieWatchlist,
+    movieCache,
+    showStatus,
+    pushNotification,
+  } = useTrack();
   useHydrateLibrary();
 
   const today = new Intl.DateTimeFormat("fr-FR", {
@@ -106,6 +114,25 @@ export default function AgendaPage() {
         .map((ep) => ({ show, ep }))
     );
     notifyTodayEpisodes(airingToday);
+    for (const { show, ep } of airingToday) {
+      pushNotification({
+        id: `ep-${show.id}-${ep.s}:${ep.e}`,
+        message: `${show.title} — ${epLabel(ep)} disponible aujourd'hui`,
+        emoji: "📺",
+        href: `/show/${show.id}`,
+      });
+    }
+    const moviesToday = movieWatchlist
+      .map((id) => movieCache[id])
+      .filter((m): m is Movie => !!m?.releaseDate && m.releaseDate.slice(0, 10) === todayStr);
+    for (const m of moviesToday) {
+      pushNotification({
+        id: `movie-${m.id}`,
+        message: `${m.title} — sortie aujourd'hui`,
+        emoji: "🎬",
+        href: `/movie/${m.id}`,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, pendingEpisodes]);
 
@@ -185,7 +212,10 @@ export default function AgendaPage() {
                     >
                       <div className="row">
                         <Link href={`/show/${show.id}`}>
-                          <Poster item={show} mini />
+                          <Poster
+                            item={{ ...show, status: effectiveShowStatus(show, showStatus[show.id]) }}
+                            mini
+                          />
                         </Link>
                         <Link
                           href={`/show/${show.id}`}
@@ -195,7 +225,6 @@ export default function AgendaPage() {
                             <div style={{ fontWeight: 700, fontSize: 16 }}>
                               {show.title}
                             </div>
-                            <ShowStatusBadge status={show.status} />
                           </div>
                           <div className="muted" style={{ marginTop: 2 }}>
                             {epLabel(next)} — {next.title}
@@ -267,7 +296,10 @@ export default function AgendaPage() {
                         href={`/show/${entry.show.id}`}
                         className="glass card pressable row"
                       >
-                        <Poster item={entry.show} mini />
+                        <Poster
+                          item={{ ...entry.show, status: effectiveShowStatus(entry.show, showStatus[entry.show.id]) }}
+                          mini
+                        />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: 15.5 }}>
                             {entry.show.title}
@@ -286,7 +318,10 @@ export default function AgendaPage() {
                         href={`/movie/${entry.movie.id}`}
                         className="glass card pressable row"
                       >
-                        <Poster item={entry.movie} mini />
+                        <Poster
+                          item={{ ...entry.movie, status: movieStatus(true, false) }}
+                          mini
+                        />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: 15.5 }}>
                             {entry.movie.title}

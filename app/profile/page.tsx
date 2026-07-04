@@ -13,7 +13,16 @@ import {
   notificationsEnabled,
   notificationsSupported,
 } from "@/lib/notifications";
-import { airedEpisodes, DAY, effectiveShowStatus, minutesHuman, watchedCount } from "@/lib/utils";
+import {
+  airedEpisodes,
+  bookStatus,
+  DAY,
+  effectiveShowStatus,
+  KNOWN_PLATFORMS,
+  minutesHuman,
+  movieStatus,
+  watchedCount,
+} from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import type { Book, Movie, Show } from "@/lib/types";
 
@@ -29,7 +38,6 @@ const SYNC_KEYS = [
   "showCache",
   "movieCache",
   "bookCache",
-  "booksProgress",
   "showStatus",
   "watchedLog",
   "localReviews",
@@ -37,6 +45,8 @@ const SYNC_KEYS = [
   "favoriteShows",
   "favoriteMovies",
   "favoriteBooks",
+  "myPlatforms",
+  "notifications",
   "updatedAt",
 ] as const;
 
@@ -115,6 +125,8 @@ export default function ProfilePage() {
     favoriteShows,
     favoriteMovies,
     favoriteBooks,
+    myPlatforms,
+    toggleMyPlatform,
   } = useTrack();
   useHydrateLibrary();
 
@@ -470,7 +482,7 @@ export default function ProfilePage() {
     }
   }
 
-  const [activeTab, setActiveTab] = useState<"stats" | "community">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "settings" | "community">("stats");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -639,15 +651,33 @@ export default function ProfilePage() {
     ...favoriteShows
       .map((id) => showCache[id])
       .filter(Boolean)
-      .map((s) => ({ key: `show-${s.id}`, href: `/show/${s.id}`, item: s })),
+      .map((s) => ({
+        key: `show-${s.id}`,
+        href: `/show/${s.id}`,
+        item: { ...s, status: effectiveShowStatus(s, showStatus[s.id]) },
+      })),
     ...favoriteMovies
       .map((id) => movieCache[id])
       .filter(Boolean)
-      .map((m) => ({ key: `movie-${m.id}`, href: `/movie/${m.id}`, item: m })),
+      .map((m) => ({
+        key: `movie-${m.id}`,
+        href: `/movie/${m.id}`,
+        item: {
+          ...m,
+          status: movieStatus(movieWatchlist.includes(m.id), moviesWatched.includes(m.id)),
+        },
+      })),
     ...favoriteBooks
       .map((id) => bookCache[id])
       .filter(Boolean)
-      .map((b) => ({ key: `book-${b.id}`, href: `/book/${b.id}`, item: b })),
+      .map((b) => ({
+        key: `book-${b.id}`,
+        href: `/book/${b.id}`,
+        item: {
+          ...b,
+          status: bookStatus(booksWatchlist.includes(b.id), booksRead.includes(b.id)),
+        },
+      })),
   ];
   const myShows = followed.map((id) => showCache[id]).filter(Boolean);
   const moviesToWatch = movieWatchlist.map((id) => movieCache[id]).filter(Boolean);
@@ -782,7 +812,22 @@ export default function ProfilePage() {
             color: activeTab === "stats" ? "var(--accent)" : "inherit",
           }}
         >
-          📊 Stats & Préférences
+          📊 Stats
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className="glass card pressable"
+          style={{
+            flex: 1,
+            padding: "10px",
+            textAlign: "center",
+            fontWeight: 700,
+            background: activeTab === "settings" ? "var(--accent-wash)" : "transparent",
+            borderColor: activeTab === "settings" ? "var(--accent)" : "var(--hairline)",
+            color: activeTab === "settings" ? "var(--accent)" : "inherit",
+          }}
+        >
+          ⚙️ Préférences
         </button>
         <button
           onClick={() => setActiveTab("community")}
@@ -892,13 +937,7 @@ export default function ProfilePage() {
               <div className="hscroll">
                 {favoriteItems.slice(0, 12).map(({ key, href, item }) => (
                   <Link key={key} href={href} className="pressable">
-                    <Poster
-                      item={
-                        "status" in item
-                          ? { ...item, status: effectiveShowStatus(item, showStatus[item.id]) }
-                          : item
-                      }
-                    />
+                    <Poster item={item} />
                   </Link>
                 ))}
               </div>
@@ -941,7 +980,7 @@ export default function ProfilePage() {
                   <div className="hscroll">
                     {moviesToWatch.slice(0, 12).map((m) => (
                       <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
-                        <Poster item={m} />
+                        <Poster item={{ ...m, status: movieStatus(true, false) }} />
                       </Link>
                     ))}
                   </div>
@@ -955,7 +994,7 @@ export default function ProfilePage() {
                   <div className="hscroll">
                     {moviesSeen.slice(0, 12).map((m) => (
                       <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
-                        <Poster item={m} />
+                        <Poster item={{ ...m, status: movieStatus(false, true) }} />
                         {moviesWatchedDates[m.id] && (
                           <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
                             📅 {formatDateRead(moviesWatchedDates[m.id])}
@@ -986,7 +1025,7 @@ export default function ProfilePage() {
                   <div className="hscroll">
                     {booksToRead.slice(0, 12).map((b) => (
                       <Link key={b.id} href={`/book/${b.id}`} className="pressable">
-                        <Poster item={b} />
+                        <Poster item={{ ...b, status: bookStatus(true, false) }} />
                       </Link>
                     ))}
                   </div>
@@ -1000,7 +1039,7 @@ export default function ProfilePage() {
                   <div className="hscroll">
                     {booksDone.slice(0, 12).map((b) => (
                       <Link key={b.id} href={`/book/${b.id}`} className="pressable">
-                        <Poster item={b} />
+                        <Poster item={{ ...b, status: bookStatus(false, true) }} />
                         {booksReadDates[b.id] && (
                           <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
                             📅 {formatDateRead(booksReadDates[b.id])}
@@ -1048,7 +1087,9 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
-
+        </>
+      ) : activeTab === "settings" ? (
+        <>
           <h2 className="section-title">Préférences</h2>
           <div className="stack" style={{ marginBottom: 20 }}>
             <button
@@ -1121,6 +1162,27 @@ export default function ProfilePage() {
                     }
                   />
                 </label>
+              </div>
+            </div>
+            {/* Plateformes de streaming possédées */}
+            <div className="glass card stack" style={{ gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>Mes plateformes</span>
+              <p className="tiny">Utilisé pour mettre en avant vos plateformes sur les fiches séries et films.</p>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                {KNOWN_PLATFORMS.map((name) => {
+                  const active = myPlatforms.includes(name);
+                  return (
+                    <button
+                      key={name}
+                      className={`chip pressable${active ? " active" : ""}`}
+                      style={{ width: "auto", minWidth: "auto" }}
+                      onClick={() => toggleMyPlatform(name)}
+                    >
+                      {active ? "✓ " : ""}
+                      {name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             {notificationsSupported() && (
@@ -1238,7 +1300,7 @@ export default function ProfilePage() {
         </>
       ) : (
         <div className="stack" style={{ gap: 24 }}>
-          {/* 1. Recherche d'amis */}
+          {/* Communauté */}
           <div className="glass card stack" style={{ gap: 14, padding: 20 }}>
             <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)" }}>
               🔍 RECHERCHER UN AMI

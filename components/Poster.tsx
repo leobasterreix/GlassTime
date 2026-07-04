@@ -1,12 +1,12 @@
-import type { DisplayShowStatus } from "@/lib/utils";
+import { isOngoingStatus, type DisplayStatus } from "@/lib/utils";
 
 type PosterItem = {
   title: string;
   poster?: string | null;
   emoji?: string;
   colors?: [string, string];
-  /** Séries uniquement : films et livres n'ont pas cette notion. */
-  status?: DisplayShowStatus;
+  /** Séries, films ou livres : pilote la couleur du bandeau de statut. */
+  status?: DisplayStatus;
 };
 
 export default function Poster({
@@ -16,15 +16,14 @@ export default function Poster({
   item: PosterItem;
   mini?: boolean;
 }) {
-  // Bandeau de statut : uniquement sur les affiches de taille normale (une
-  // mini affiche de 56px n'a pas la place pour un texte lisible ; ce
-  // contexte-là garde un badge en ligne à côté du titre à la place).
-  const banner = !mini && item.status && (
+  // Bandeau de statut : une fine bande de couleur au pied de l'affiche, sans
+  // texte (juste la couleur suffit à distinguer « en cours »/« en liste » du
+  // vert, de « terminé »/« vu »/« lu » du violet) — fonctionne donc aussi
+  // bien en taille normale qu'en mini affiche.
+  const banner = item.status && (
     <span
-      className={`poster-banner${item.status === "En cours" ? " status-ongoing" : ""}`}
-    >
-      {item.status}
-    </span>
+      className={`poster-banner${isOngoingStatus(item.status) ? " status-ongoing" : ""}`}
+    />
   );
 
   if (item.poster) {
