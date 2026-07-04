@@ -298,6 +298,32 @@ export async function getShowDetail(id: number): Promise<Show | null> {
   }
 }
 
+/**
+ * Statut de diffusion de plusieurs séries, en un seul appel léger par série
+ * (juste /tv/{id}, sans saisons/casting/providers/trailer) — utilisé pour
+ * afficher le bandeau de statut sur des affiches non encore suivies dans
+ * Découvrir, où les endpoints de liste TMDB ne renvoient pas ce champ.
+ */
+export async function getShowsStatus(
+  ids: number[]
+): Promise<Record<number, "En cours" | "Terminée">> {
+  if (!hasTmdb() || ids.length === 0) return {};
+  const entries = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const d = await tmdb(`/tv/${id}`);
+        const status: "En cours" | "Terminée" = ["Ended", "Canceled"].includes(d.status)
+          ? "Terminée"
+          : "En cours";
+        return [id, status] as const;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return Object.fromEntries(entries.filter((e): e is [number, "En cours" | "Terminée"] => e !== null));
+}
+
 export async function listMovies(q?: string): Promise<Movie[]> {
   if (!hasTmdb()) return [];
   try {

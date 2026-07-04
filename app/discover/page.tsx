@@ -8,7 +8,7 @@ import BarcodeScanner from "@/components/BarcodeScanner";
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
-import { bookStatus, effectiveShowStatus, minutesHuman, movieStatus } from "@/lib/utils";
+import { bookStatus, minutesHuman, movieStatus } from "@/lib/utils";
 import type { Book, Movie, Show } from "@/lib/types";
 
 type MediaType = "shows" | "movies" | "books";
@@ -83,6 +83,7 @@ function DiscoverContent() {
   const [movieResults, setMovieResults] = useState<Movie[] | null>(null);
   const [bookResults, setBookResults] = useState<Book[] | null>(null);
   const [showRecs, setShowRecs] = useState<Show[]>([]);
+  const [showStatusExtra, setShowStatusExtra] = useState<Record<number, "En cours" | "Terminée">>({});
   const [movieRecs, setMovieRecs] = useState<Movie[]>([]);
   const [bookRecs, setBookRecs] = useState<Book[]>([]);
   const [bookTrending, setBookTrending] = useState<Book[] | null>(null);
@@ -196,6 +197,22 @@ function DiscoverContent() {
     };
   }, [type, q, genre, bookYear, bookMonth]);
 
+  // Bandeau de statut sur les séries pas encore suivies : les listes TMDB ne
+  // renvoient pas ce champ, on le récupère à part (appel léger, sans
+  // saisons/casting) pour les séries visibles qu'on n'a pas déjà en cache.
+  useEffect(() => {
+    if (type !== "shows") return;
+    const cache = useTrack.getState().showCache;
+    const ids = [...new Set([...showRecs, ...(showResults ?? [])].map((s) => s.id))].filter(
+      (id) => !cache[id] && !(id in showStatusExtra)
+    );
+    if (ids.length === 0) return;
+    apiGet<Record<number, "En cours" | "Terminée">>(`/api/shows-status?ids=${ids.join(",")}`).then(
+      (d) => d && setShowStatusExtra((prev) => ({ ...prev, ...d }))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, showRecs, showResults]);
+
   // Pas d'API de genres pour les livres (OpenLibrary ne fournit que des
   // « subjects » bruts par résultat) : on dérive des chips à partir des
   // résultats de recherche courants, pour filtrer côté client.
@@ -263,12 +280,16 @@ function DiscoverContent() {
   const searching = q.length > 0 || (type === "shows" && genre !== null);
   const browsingBooks = q.length > 0 || bookYear !== null;
 
-  /** Statut d'affichage (bandeau) pour une série pas forcément en cache
-   * complet — utilise showCache si disponible, sinon pas de bandeau (TMDB
-   * ne renvoie pas le statut de diffusion dans les listes de recherche). */
+  /** Statut d'affichage (bandeau) pour une série : les listes TMDB
+   * (recherche/tendances/populaires) ne renvoient pas le statut de
+   * diffusion, contrairement à la fiche complète — showStatusExtra comble
+   * ce trou via un appel léger dédié (voir l'effet ci-dessous), pour que le
+   * bandeau apparaisse aussi sur les séries pas encore suivies. */
   function showBandStatus(s: Show) {
+    if (showStatus[s.id] === "dropped") return "Abandonnée" as const;
     const cached = showCache[s.id];
-    return cached ? effectiveShowStatus(cached, showStatus[s.id]) : undefined;
+    if (cached?.status) return cached.status;
+    return showStatusExtra[s.id];
   }
 
   function bookPosterRow(b: Book) {
