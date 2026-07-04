@@ -143,6 +143,28 @@ export function fmtRelativeOrDate(d: string | Date, thresholdDays = 30): string 
   return fmtRelative(d);
 }
 
+/** Un ISO datetime complet (Trakt) porte une heure ; une date seule (TMDB,
+ * "YYYY-MM-DD") n'en porte pas — sert à savoir si on peut afficher l'heure. */
+function hasTimeInfo(d: string): boolean {
+  return d.length > 10;
+}
+
+/** fmtRelative, avec l'heure en plus quand elle est connue ("dans 3 j à 22h05"). */
+export function fmtRelativeWithTime(d: string): string {
+  const base = fmtRelative(d);
+  if (!hasTimeInfo(d)) return base;
+  const time = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(d));
+  return `${base} à ${time}`;
+}
+
+/** fmtRelativeOrDate, avec l'heure en plus quand elle est connue. */
+export function fmtRelativeOrDateWithTime(d: string, thresholdDays = 30): string {
+  const base = fmtRelativeOrDate(d, thresholdDays);
+  if (!hasTimeInfo(d)) return base;
+  const time = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(d));
+  return `${base} à ${time}`;
+}
+
 export function minutesHuman(min: number): string {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);

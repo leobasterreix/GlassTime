@@ -18,7 +18,8 @@ import {
   effectiveShowStatus,
   epLabel,
   fmtRelative,
-  fmtRelativeOrDate,
+  fmtRelativeOrDateWithTime,
+  fmtRelativeWithTime,
   movieStatus,
   nextEpisode,
   watchedCount,
@@ -345,7 +346,7 @@ export default function AgendaPage() {
                             {epLabel(ep)} — {ep.title}
                           </div>
                           <div className="tiny" style={{ marginTop: 2 }}>
-                            diffusé {fmtRelativeOrDate(ep.airDate!)}
+                            diffusé {fmtRelativeOrDateWithTime(ep.airDate!)}
                           </div>
                         </div>
                         <button
@@ -450,7 +451,7 @@ export default function AgendaPage() {
                           {epLabel(card.ep)} — {card.ep.title}
                         </div>
                       </div>
-                      <span className="badge-pill">{fmtRelative(card.date)}</span>
+                      <span className="badge-pill">{fmtRelativeWithTime(card.date)}</span>
                     </div>
                   </SwipeableRow>
                 ) : (

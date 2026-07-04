@@ -1,6 +1,8 @@
 // Couche catalogue : Requêtes vers TMDB si TMDB_API_KEY est définie.
 
 import type { CastMember, Movie, Provider, Review, Show } from "./types";
+import { epKey } from "./utils";
+import { getEpisodeAirTimes } from "./trakt";
 
 const IMG = "https://image.tmdb.org/t/p/";
 
@@ -225,11 +227,12 @@ export async function listShows(q?: string, genre?: string): Promise<Show[]> {
 export async function getShowDetail(id: number): Promise<Show | null> {
   if (!hasTmdb()) return null;
   try {
-    const [d, videosData, providers, cast] = await Promise.all([
+    const [d, videosData, providers, cast, airTimes] = await Promise.all([
       tmdb(`/tv/${id}`),
       tmdb(`/tv/${id}/videos`, { language: "fr-FR" }).catch(() => ({ results: [] })),
       fetchProviders("tv", id),
       fetchCast("tv", id),
+      getEpisodeAirTimes(id),
     ]);
     const nums: number[] = (d.seasons ?? [])
       .filter((s: { season_number: number }) => s.season_number > 0)
@@ -286,7 +289,8 @@ export async function getShowDetail(id: number): Promise<Show | null> {
               s: ep.season_number,
               e: ep.episode_number,
               title: ep.name || `Épisode ${ep.episode_number}`,
-              airDate: ep.air_date ?? null,
+              // Horaire réel (Trakt) si disponible, sinon date seule (TMDB).
+              airDate: airTimes[epKey(ep.season_number, ep.episode_number)] ?? ep.air_date ?? null,
             })
           ),
         }))
