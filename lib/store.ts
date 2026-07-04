@@ -17,9 +17,29 @@ export type AppNotification = {
   read: boolean;
 };
 
+export type DiscoverPrefs = {
+  type: "shows" | "movies" | "books";
+  query: string;
+  genre: string | null;
+  bookGenre: string | null;
+  bookYear: string | null;
+  bookMonth: string | null;
+};
+
+const DEFAULT_DISCOVER_PREFS: DiscoverPrefs = {
+  type: "shows",
+  query: "",
+  genre: null,
+  bookGenre: null,
+  bookYear: null,
+  bookMonth: null,
+};
+
 type TrackState = {
   followed: number[];
   watched: Record<number, Record<string, true>>;
+  /** Dernière date (YYYY-MM-DD) où un épisode de la série a été marqué vu. */
+  lastWatchedAt: Record<number, string>;
   movieWatchlist: number[];
   moviesWatched: number[];
   /** Date de visionnage des films (YYYY-MM-DD), comme booksReadDates. */
@@ -78,6 +98,10 @@ type TrackState = {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
+  /** Dernière recherche Découvrir — survit au changement d'onglet (pas juste
+   * au retour navigateur, qui lui passe par l'URL). */
+  discoverPrefs: DiscoverPrefs;
+  setDiscoverPrefs: (p: Partial<DiscoverPrefs>) => void;
   migrateDemoIds: () => void;
 };
 
@@ -107,6 +131,7 @@ export const useTrack = create<TrackState>()(
     (set) => ({
       followed: [],
       watched: {},
+      lastWatchedAt: {},
       movieWatchlist: [],
       moviesWatched: [],
       moviesWatchedDates: {},
@@ -124,6 +149,7 @@ export const useTrack = create<TrackState>()(
       favoriteBooks: [],
       myPlatforms: [],
       notifications: [],
+      discoverPrefs: DEFAULT_DISCOVER_PREFS,
       updatedAt: 0,
 
       toggleFollow: (id) =>
@@ -163,6 +189,9 @@ export const useTrack = create<TrackState>()(
         })),
 
       clearNotifications: () => set({ notifications: [] }),
+
+      setDiscoverPrefs: (p) =>
+        set((st) => ({ discoverPrefs: { ...st.discoverPrefs, ...p } })),
 
       toggleFavoriteShow: (id) =>
         set((st) => ({
@@ -210,6 +239,9 @@ export const useTrack = create<TrackState>()(
           const delta = value && !had ? 1 : !value && had ? -1 : 0;
           return {
             watched: { ...st.watched, [showId]: map },
+            lastWatchedAt: value
+              ? { ...st.lastWatchedAt, [showId]: todayISO() }
+              : st.lastWatchedAt,
             watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),
           };
@@ -231,6 +263,9 @@ export const useTrack = create<TrackState>()(
           }
           return {
             watched: { ...st.watched, [showId]: map },
+            lastWatchedAt: value
+              ? { ...st.lastWatchedAt, [showId]: todayISO() }
+              : st.lastWatchedAt,
             watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),
           };
@@ -455,6 +490,7 @@ export const useTrack = create<TrackState>()(
         set({
           followed: [],
           watched: {},
+          lastWatchedAt: {},
           movieWatchlist: [],
           moviesWatched: [],
           moviesWatchedDates: {},
@@ -472,6 +508,7 @@ export const useTrack = create<TrackState>()(
           favoriteBooks: [],
           myPlatforms: [],
           notifications: [],
+          discoverPrefs: DEFAULT_DISCOVER_PREFS,
           updatedAt: Date.now(),
         }),
     }),

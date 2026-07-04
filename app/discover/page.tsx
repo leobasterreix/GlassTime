@@ -13,6 +13,24 @@ import type { Book, Movie, Show } from "@/lib/types";
 
 type MediaType = "shows" | "movies" | "books";
 
+const MONTHS = [
+  { value: "01", label: "Janvier" },
+  { value: "02", label: "Février" },
+  { value: "03", label: "Mars" },
+  { value: "04", label: "Avril" },
+  { value: "05", label: "Mai" },
+  { value: "06", label: "Juin" },
+  { value: "07", label: "Juillet" },
+  { value: "08", label: "Août" },
+  { value: "09", label: "Septembre" },
+  { value: "10", label: "Octobre" },
+  { value: "11", label: "Novembre" },
+  { value: "12", label: "Décembre" },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 1900 + 1 }, (_, i) => CURRENT_YEAR - i);
+
 export default function DiscoverPage() {
   return (
     <Suspense>
@@ -33,21 +51,32 @@ function DiscoverContent() {
     moviesWatched,
     booksWatchlist,
     booksRead,
+    bookCache,
     cacheMovie,
     cacheBook,
     toggleMovieWatchlist,
     toggleMovieWatched,
     toggleBookWatchlist,
     toggleBookRead,
+    discoverPrefs,
+    setDiscoverPrefs,
   } = useTrack();
 
   const [type, setType] = useState<MediaType>(
-    () => (searchParams.get("type") as MediaType) || "shows"
+    () => (searchParams.get("type") as MediaType) || discoverPrefs.type
   );
-  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
-  const [genre, setGenre] = useState<string | null>(() => searchParams.get("genre"));
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? discoverPrefs.query);
+  const [genre, setGenre] = useState<string | null>(
+    () => searchParams.get("genre") ?? discoverPrefs.genre
+  );
   const [bookGenre, setBookGenre] = useState<string | null>(
-    () => searchParams.get("bgenre")
+    () => searchParams.get("bgenre") ?? discoverPrefs.bookGenre
+  );
+  const [bookYear, setBookYear] = useState<string | null>(
+    () => searchParams.get("byear") ?? discoverPrefs.bookYear
+  );
+  const [bookMonth, setBookMonth] = useState<string | null>(
+    () => searchParams.get("bmonth") ?? discoverPrefs.bookMonth
   );
   const [genres, setGenres] = useState<string[]>([]);
   const [showResults, setShowResults] = useState<Show[] | null>(null);
@@ -55,24 +84,30 @@ function DiscoverContent() {
   const [bookResults, setBookResults] = useState<Book[] | null>(null);
   const [showRecs, setShowRecs] = useState<Show[]>([]);
   const [movieRecs, setMovieRecs] = useState<Movie[]>([]);
+  const [bookRecs, setBookRecs] = useState<Book[]>([]);
+  const [bookTrending, setBookTrending] = useState<Book[] | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     apiGet<string[]>("/api/genres").then((g) => g && setGenres(g));
   }, []);
 
-  // Persiste type/recherche/genre dans l'URL pour retrouver son état exact
-  // en revenant en arrière depuis une fiche (bouton retour du navigateur).
+  // Persiste type/recherche/genre à la fois dans l'URL (retour navigateur
+  // depuis une fiche) et dans le store (survit aussi à un changement d'onglet
+  // de la barre de navigation, qui lui repart d'une URL /discover nue).
   useEffect(() => {
     const params = new URLSearchParams();
     params.set("type", type);
     if (query) params.set("q", query);
     if (type === "shows" && genre) params.set("genre", genre);
     if (type === "books" && bookGenre) params.set("bgenre", bookGenre);
+    if (type === "books" && bookYear) params.set("byear", bookYear);
+    if (type === "books" && bookYear && bookMonth) params.set("bmonth", bookMonth);
     const qs = params.toString();
     router.replace(qs ? `/discover?${qs}` : "/discover", { scroll: false });
+    setDiscoverPrefs({ type, query, genre, bookGenre, bookYear, bookMonth });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, query, genre, bookGenre]);
+  }, [type, query, genre, bookGenre, bookYear, bookMonth]);
 
   // Recommendations: based on followed items
   useEffect(() => {
@@ -91,6 +126,39 @@ function DiscoverContent() {
     }
   }, [mounted]);
 
+  // Recommandations livres : pas d'API dédiée côté OpenLibrary, donc dérivées
+  // du genre le plus fréquent parmi les livres déjà suivis/lus.
+  const bookTopGenre = useMemo(() => {
+    if (!mounted) return null;
+    const counts = new Map<string, number>();
+    for (const id of [...booksRead, ...booksWatchlist]) {
+      const b = bookCache[id];
+      if (!b) continue;
+      for (const g of b.genres) counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+    if (counts.size === 0) return null;
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }, [mounted, booksRead, booksWatchlist, bookCache]);
+
+  useEffect(() => {
+    if (!bookTopGenre) {
+      setBookRecs([]);
+      return;
+    }
+    apiGet<Book[]>(`/api/books?subject=${encodeURIComponent(bookTopGenre)}`).then((d) => {
+      if (!d) return;
+      const tracked = new Set([...booksRead, ...booksWatchlist]);
+      setBookRecs(d.filter((b) => !tracked.has(b.id)).slice(0, 10));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookTopGenre]);
+
+  // Tendances livres : proposées par défaut, avant toute recherche.
+  useEffect(() => {
+    if (type !== "books" || bookTrending !== null) return;
+    apiGet<Book[]>("/api/books/trending").then((d) => d && setBookTrending(d));
+  }, [type, bookTrending]);
+
   const q = query.trim();
   useEffect(() => {
     let cancelled = false;
@@ -108,13 +176,15 @@ function DiscoverContent() {
           const data = await apiGet<Movie[]>(`/api/movies?${params}`);
           if (!cancelled) setMovieResults(data ?? []);
         } else {
-          if (!q) {
+          if (!q && !bookYear) {
             setBookResults(null);
             return;
           }
-          const data = await apiGet<Book[]>(
-            `/api/books?q=${encodeURIComponent(q)}`
-          );
+          const params = new URLSearchParams();
+          if (q) params.set("q", q);
+          if (bookYear) params.set("year", bookYear);
+          if (bookYear && bookMonth) params.set("month", bookMonth);
+          const data = await apiGet<Book[]>(`/api/books?${params}`);
           if (!cancelled) setBookResults(data ?? []);
         }
       },
@@ -124,7 +194,7 @@ function DiscoverContent() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [type, q, genre]);
+  }, [type, q, genre, bookYear, bookMonth]);
 
   // Pas d'API de genres pour les livres (OpenLibrary ne fournit que des
   // « subjects » bruts par résultat) : on dérive des chips à partir des
@@ -186,9 +256,12 @@ function DiscoverContent() {
     setQuery("");
     setGenre(null);
     setBookGenre(null);
+    setBookYear(null);
+    setBookMonth(null);
   };
 
   const searching = q.length > 0 || (type === "shows" && genre !== null);
+  const browsingBooks = q.length > 0 || bookYear !== null;
 
   /** Statut d'affichage (bandeau) pour une série pas forcément en cache
    * complet — utilise showCache si disponible, sinon pas de bandeau (TMDB
@@ -196,6 +269,28 @@ function DiscoverContent() {
   function showBandStatus(s: Show) {
     const cached = showCache[s.id];
     return cached ? effectiveShowStatus(cached, showStatus[s.id]) : undefined;
+  }
+
+  function bookPosterRow(b: Book) {
+    const inList = mounted && booksWatchlist.includes(b.id);
+    const read = mounted && booksRead.includes(b.id);
+    return (
+      <div key={b.id} style={{ position: "relative", flexShrink: 0 }}>
+        <Link href={`/book/${b.id}`} className="pressable">
+          <Poster item={{ ...b, status: bookStatus(inList, read) }} />
+        </Link>
+        {!read && (
+          <button
+            className={`check small${inList ? " checked" : ""}`}
+            style={{ position: "absolute", top: 8, right: 8 }}
+            aria-label={inList ? "Retirer de la liste à lire" : "Ajouter à la liste à lire"}
+            onClick={() => (inList ? toggleBookWatchlist(b.id) : addBookToWatchlist(b))}
+          >
+            {inList ? "✓" : "+"}
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -271,6 +366,52 @@ function DiscoverContent() {
               {g}
             </button>
           ))}
+        </div>
+      )}
+
+      {type === "books" && (
+        <div className="row" style={{ gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+          <select
+            className="select"
+            value={bookYear ?? ""}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              setBookYear(v);
+              if (!v) setBookMonth(null);
+            }}
+          >
+            <option value="">Année</option>
+            {YEARS.map((y) => (
+              <option key={y} value={String(y)}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <select
+            className="select"
+            value={bookMonth ?? ""}
+            disabled={!bookYear}
+            onChange={(e) => setBookMonth(e.target.value || null)}
+          >
+            <option value="">Mois</option>
+            {MONTHS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          {(bookYear || bookMonth) && (
+            <button
+              className="chip pressable"
+              style={{ width: "auto", minWidth: "auto" }}
+              onClick={() => {
+                setBookYear(null);
+                setBookMonth(null);
+              }}
+            >
+              ✕ Effacer
+            </button>
+          )}
         </div>
       )}
 
@@ -506,8 +647,34 @@ function DiscoverContent() {
       {/* 3. LIVRES RESULTS */}
       {type === "books" && (
         <>
+          {!browsingBooks && bookRecs.length > 0 && (
+            <>
+              <h2 className="section-title">✨ Pour vous</h2>
+              <div className="hscroll" style={{ marginBottom: 20 }}>
+                {bookRecs.map(bookPosterRow)}
+              </div>
+            </>
+          )}
+
+          {!browsingBooks && (
+            <>
+              <h2 className="section-title">🔥 Tendances</h2>
+              {bookTrending === null ? (
+                <div className="hscroll" style={{ marginBottom: 20 }}>
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <div key={i} className="skeleton" style={{ width: 128, aspectRatio: "2/3", borderRadius: 18, flexShrink: 0 }} />
+                  ))}
+                </div>
+              ) : (
+                <div className="hscroll" style={{ marginBottom: 20 }}>
+                  {bookTrending.map(bookPosterRow)}
+                </div>
+              )}
+            </>
+          )}
+
           <h2 className="section-title">
-            Résultats
+            {browsingBooks ? "Résultats" : "Rechercher"}
             {filteredBookResults && <small>{filteredBookResults.length}</small>}
           </h2>
 
@@ -515,8 +682,8 @@ function DiscoverContent() {
             <div className="glass empty">
               <div className="big">📚</div>
               <p className="muted">
-                Recherchez un livre par titre, auteur ou ISBN — ou scannez son
-                code-barres.
+                Recherchez un titre, un auteur, un ISBN, ou choisissez une année —
+                ou scannez un code-barres.
               </p>
             </div>
           ) : filteredBookResults.length === 0 ? (
