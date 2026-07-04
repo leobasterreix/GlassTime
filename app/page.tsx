@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import {
   airedEpisodes,
   allEpisodes,
+  bookStatus,
   DAY,
   effectiveShowStatus,
   epLabel,
@@ -22,11 +23,16 @@ import {
   nextEpisode,
   watchedCount,
 } from "@/lib/utils";
-import type { Episode, Movie, Show } from "@/lib/types";
+import type { Book, Episode, Movie, Show } from "@/lib/types";
 
 type UpcomingCard =
   | { kind: "upcoming-ep"; key: string; date: string; show: Show; ep: Episode }
   | { kind: "upcoming-movie"; key: string; date: string; movie: Movie };
+
+type CatchupCard =
+  | { kind: "catchup-show"; key: string; show: Show; ep: Episode }
+  | { kind: "catchup-movie"; key: string; movie: Movie }
+  | { kind: "catchup-book"; key: string; book: Book };
 
 const STALE_DAYS = 60;
 
@@ -40,11 +46,17 @@ export default function AgendaPage() {
     lastWatchedAt,
     showCache,
     movieWatchlist,
+    moviesWatched,
     movieCache,
+    booksWatchlist,
+    bookCache,
     showStatus,
     pushNotification,
     setShowStatus,
     toggleMovieWatchlist,
+    toggleMovieWatched,
+    toggleBookWatchlist,
+    toggleBookRead,
   } = useTrack();
   useHydrateLibrary();
 
@@ -70,12 +82,45 @@ export default function AgendaPage() {
     .map((show) => ({ show, next: nextEpisode(show, watched[show.id]) }))
     .filter((x): x is { show: Show; next: Episode } => x.next !== null);
 
+  // Films de la liste "à voir" déjà sortis (pas encore vus) et livres de la
+  // liste "à lire" : autant d'éléments "à rattraper" au même titre que les
+  // épisodes de séries.
+  const nowTs = Date.now();
+  const moviesToCatchUp = mounted
+    ? movieWatchlist
+        .map((id) => movieCache[id])
+        .filter(
+          (m): m is Movie =>
+            !!m && !moviesWatched.includes(m.id) && (!m.releaseDate || new Date(m.releaseDate).getTime() <= nowTs)
+        )
+    : [];
+  const booksToCatchUp = mounted
+    ? booksWatchlist.map((id) => bookCache[id]).filter((b): b is Book => !!b)
+    : [];
+
   const pendingEpisodes = activeShows.reduce(
     (acc, s) =>
       acc +
       Math.max(0, airedEpisodes(s).length - watchedCount(s, watched[s.id])),
     0
   );
+
+  const catchupCards: CatchupCard[] = [
+    ...toCatchUp.map(
+      ({ show, next }): CatchupCard => ({
+        kind: "catchup-show",
+        key: `catchup-${show.id}-${next.s}:${next.e}`,
+        show,
+        ep: next,
+      })
+    ),
+    ...moviesToCatchUp.map(
+      (movie): CatchupCard => ({ kind: "catchup-movie", key: `catchup-movie-${movie.id}`, movie })
+    ),
+    ...booksToCatchUp.map(
+      (book): CatchupCard => ({ kind: "catchup-book", key: `catchup-book-${book.id}`, book })
+    ),
+  ];
 
   // Prochaines diffusions : épisodes des séries suivies + sorties des films à
   // voir, sans limite de date (on affiche tout ce qui est programmé).
@@ -136,6 +181,26 @@ export default function AgendaPage() {
   function dropShow(show: Show) {
     setShowStatus(show.id, "dropped");
     toast(`${show.title} marquée comme abandonnée`, "🏳️");
+  }
+
+  function markMovieDone(m: Movie) {
+    toggleMovieWatched(m.id);
+    toast(`${m.title} vu !`, "🎬");
+  }
+
+  function removeMovieFromWatchlist(m: Movie) {
+    toggleMovieWatchlist(m.id);
+    toast(`${m.title} retiré de la liste à voir`, "🗑");
+  }
+
+  function markBookDone(b: Book) {
+    toggleBookRead(b.id);
+    toast(`${b.title} lu !`, "📖");
+  }
+
+  function removeBookFromWatchlist(b: Book) {
+    toggleBookWatchlist(b.id);
+    toast(`${b.title} retiré de la liste à lire`, "🗑");
   }
 
   useEffect(() => {
@@ -237,26 +302,28 @@ export default function AgendaPage() {
 
           <div className="glass segmented" style={{ marginBottom: 16 }}>
             <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
-              À rattraper{toCatchUp.length > 0 ? ` · ${toCatchUp.length}` : ""}
+              À rattraper{catchupCards.length > 0 ? ` · ${catchupCards.length}` : ""}
             </button>
             <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
               Prochaines diffusions{upcomingCards.length > 0 ? ` · ${upcomingCards.length}` : ""}
             </button>
           </div>
 
-          {tab === "rattraper" && (toCatchUp.length === 0 ? (
+          {tab === "rattraper" && (catchupCards.length === 0 ? (
             <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
               <span className="muted">Tout est rattrapé, bravo !</span>
             </div>
           ) : (
             <div className="stack" style={{ marginBottom: 20 }}>
-              {toCatchUp.map(({ show, next }) => {
+              {catchupCards.map((card) => {
+                if (card.kind === "catchup-show") {
+                  const { show, ep } = card;
                   const badge = catchupBadge(show);
                   return (
                     <SwipeableRow
-                      key={`catchup-${show.id}-${next.s}:${next.e}`}
+                      key={card.key}
                       onTap={() => router.push(`/show/${show.id}`)}
-                      onSwipeRight={() => markEpisodeWatched(show, next)}
+                      onSwipeRight={() => markEpisodeWatched(show, ep)}
                       onSwipeLeft={() => dropShow(show)}
                       leftIcon="🏳️"
                     >
@@ -275,18 +342,18 @@ export default function AgendaPage() {
                             )}
                           </div>
                           <div className="muted" style={{ marginTop: 2 }}>
-                            {epLabel(next)} — {next.title}
+                            {epLabel(ep)} — {ep.title}
                           </div>
                           <div className="tiny" style={{ marginTop: 2 }}>
-                            diffusé {fmtRelativeOrDate(next.airDate!)}
+                            diffusé {fmtRelativeOrDate(ep.airDate!)}
                           </div>
                         </div>
                         <button
                           className="check"
-                          aria-label={`Marquer ${epLabel(next)} comme vu`}
+                          aria-label={`Marquer ${epLabel(ep)} comme vu`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            markEpisodeWatched(show, next);
+                            markEpisodeWatched(show, ep);
                           }}
                         >
                           ✓
@@ -294,7 +361,64 @@ export default function AgendaPage() {
                       </div>
                     </SwipeableRow>
                   );
-                })}
+                }
+                if (card.kind === "catchup-movie") {
+                  const { movie } = card;
+                  return (
+                    <SwipeableRow
+                      key={card.key}
+                      onTap={() => router.push(`/movie/${movie.id}`)}
+                      onSwipeRight={() => markMovieDone(movie)}
+                      onSwipeLeft={() => removeMovieFromWatchlist(movie)}
+                    >
+                      <div className="glass agenda-card pressable">
+                        <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
+                        <div className="agenda-body">
+                          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
+                          <div className="muted" style={{ marginTop: 2 }}>🎬 Film à voir</div>
+                        </div>
+                        <button
+                          className="check"
+                          aria-label={`Marquer ${movie.title} comme vu`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markMovieDone(movie);
+                          }}
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    </SwipeableRow>
+                  );
+                }
+                const { book } = card;
+                return (
+                  <SwipeableRow
+                    key={card.key}
+                    onTap={() => router.push(`/book/${book.id}`)}
+                    onSwipeRight={() => markBookDone(book)}
+                    onSwipeLeft={() => removeBookFromWatchlist(book)}
+                  >
+                    <div className="glass agenda-card pressable">
+                      <Poster item={{ ...book, status: bookStatus(true, false) }} mini />
+                      <div className="agenda-body">
+                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{book.title}</div>
+                        <div className="muted" style={{ marginTop: 2 }}>📚 Livre à lire</div>
+                      </div>
+                      <button
+                        className="check"
+                        aria-label={`Marquer ${book.title} comme lu`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markBookDone(book);
+                        }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  </SwipeableRow>
+                );
+              })}
             </div>
           ))}
 
