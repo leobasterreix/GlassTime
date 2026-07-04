@@ -24,8 +24,7 @@ import {
 } from "@/lib/utils";
 import type { Episode, Movie, Show } from "@/lib/types";
 
-type AgendaCard =
-  | { kind: "catchup"; key: string; date: string; show: Show; ep: Episode }
+type UpcomingCard =
   | { kind: "upcoming-ep"; key: string; date: string; show: Show; ep: Episode }
   | { kind: "upcoming-movie"; key: string; date: string; movie: Movie };
 
@@ -43,7 +42,7 @@ export default function AgendaPage() {
     movieCache,
     showStatus,
     pushNotification,
-    toggleFollow,
+    setShowStatus,
     toggleMovieWatchlist,
   } = useTrack();
   useHydrateLibrary();
@@ -77,9 +76,9 @@ export default function AgendaPage() {
     0
   );
 
-  // Prochaines diffusions : épisodes des séries suivies + sorties des films à voir
+  // Prochaines diffusions : épisodes des séries suivies + sorties des films à
+  // voir, sans limite de date (on affiche tout ce qui est programmé).
   const now = Date.now();
-  const horizon = now + 45 * DAY;
 
   const epEntries = agendaShows
     .flatMap((show) =>
@@ -87,39 +86,19 @@ export default function AgendaPage() {
         .filter((ep) => ep.airDate)
         .map((ep) => ({ show, ep, date: ep.airDate! }))
     )
-    .filter(({ date }) => {
-      const t = new Date(date).getTime();
-      return t > now && t <= horizon;
-    });
+    .filter(({ date }) => new Date(date).getTime() > now);
 
   const movieEntries = mounted
     ? movieWatchlist
         .map((id) => movieCache[id])
         .filter((m): m is Movie => !!m?.releaseDate)
-        .filter((m) => {
-          const t = new Date(m.releaseDate!).getTime();
-          return t > now && t <= horizon;
-        })
+        .filter((m) => new Date(m.releaseDate!).getTime() > now)
         .map((m) => ({ movie: m, date: m.releaseDate! }))
     : [];
 
-  // Une seule colonne, cartes de taille uniforme : à rattraper (dates
-  // passées) et prochaines diffusions (dates futures) triées ensemble par
-  // date — pas besoin de séparer en deux listes, l'ordre chronologique fait
-  // naturellement remonter le rattrapage en premier.
-  const agendaCards: AgendaCard[] = [
-    ...toCatchUp.map(({ show, next }): AgendaCard => ({
-      kind: "catchup",
-      // Inclut l'épisode dans la clé (pas juste la série) : après un swipe,
-      // l'épisode suivant doit remonter une carte neuve (état "removing" du
-      // swipe précédent ne doit pas persister sur la série).
-      key: `catchup-${show.id}-${next.s}:${next.e}`,
-      date: next.airDate!,
-      show,
-      ep: next,
-    })),
+  const upcomingCards: UpcomingCard[] = [
     ...epEntries.map(
-      ({ show, ep, date }): AgendaCard => ({
+      ({ show, ep, date }): UpcomingCard => ({
         kind: "upcoming-ep",
         key: `ep-${show.id}-${ep.s}:${ep.e}`,
         date,
@@ -128,7 +107,7 @@ export default function AgendaPage() {
       })
     ),
     ...movieEntries.map(
-      ({ movie, date }): AgendaCard => ({
+      ({ movie, date }): UpcomingCard => ({
         kind: "upcoming-movie",
         key: `movie-${movie.id}`,
         date,
@@ -150,9 +129,12 @@ export default function AgendaPage() {
     return null;
   }
 
-  function removeShow(show: Show) {
-    toggleFollow(show.id);
-    toast(`${show.title} retirée du suivi`, "🗑");
+  /** Swipe gauche : abandonne la série (statut « dropped ») sans la retirer
+   * du suivi — elle disparaît juste de l'agenda, contrairement à un
+   * désabonnement complet. */
+  function dropShow(show: Show) {
+    setShowStatus(show.id, "dropped");
+    toast(`${show.title} marquée comme abandonnée`, "🏳️");
   }
 
   useEffect(() => {
@@ -240,8 +222,8 @@ export default function AgendaPage() {
             </div>
           </div>
 
-          <p className="tiny" style={{ marginBottom: 10, color: "var(--text-3)" }}>
-            Glissez une carte à droite pour marquer vu, à gauche pour retirer la série.
+          <p className="tiny" style={{ marginBottom: 16, color: "var(--text-3)" }}>
+            Glissez une carte à droite pour marquer vu, à gauche pour abandonner la série.
           </p>
 
           {loadingCount > 0 && (
@@ -252,35 +234,32 @@ export default function AgendaPage() {
             </div>
           )}
 
-          {agendaCards.length === 0 ? (
-            <div className="glass card" style={{ textAlign: "center" }}>
-              <span className="muted">
-                Rien à rattraper, ni de diffusion prévue dans les 45 prochains jours.
-              </span>
-            </div>
-          ) : (
-            <div className="stack">
-              {agendaCards.map((card) => {
-                if (card.kind === "catchup") {
-                  const badge = catchupBadge(card.show);
+          {/* À rattraper */}
+          {toCatchUp.length > 0 && (
+            <>
+              <h2 className="section-title">
+                À rattraper
+                <small>{toCatchUp.length}</small>
+              </h2>
+              <div className="stack" style={{ marginBottom: 20 }}>
+                {toCatchUp.map(({ show, next }) => {
+                  const badge = catchupBadge(show);
                   return (
                     <SwipeableRow
-                      key={card.key}
-                      onTap={() => router.push(`/show/${card.show.id}`)}
-                      onSwipeRight={() => markEpisodeWatched(card.show, card.ep)}
-                      onSwipeLeft={() => removeShow(card.show)}
+                      key={`catchup-${show.id}-${next.s}:${next.e}`}
+                      onTap={() => router.push(`/show/${show.id}`)}
+                      onSwipeRight={() => markEpisodeWatched(show, next)}
+                      onSwipeLeft={() => dropShow(show)}
+                      leftIcon="🏳️"
                     >
                       <div className="glass agenda-card pressable">
                         <Poster
-                          item={{
-                            ...card.show,
-                            status: effectiveShowStatus(card.show, showStatus[card.show.id]),
-                          }}
+                          item={{ ...show, status: effectiveShowStatus(show, showStatus[show.id]) }}
                           mini
                         />
                         <div className="agenda-body">
                           <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
+                            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
                             {badge && (
                               <span className="agenda-status-pill">
                                 {badge.emoji} {badge.label}
@@ -288,18 +267,18 @@ export default function AgendaPage() {
                             )}
                           </div>
                           <div className="muted" style={{ marginTop: 2 }}>
-                            {epLabel(card.ep)} — {card.ep.title}
+                            {epLabel(next)} — {next.title}
                           </div>
                           <div className="tiny" style={{ marginTop: 2 }}>
-                            diffusé {fmtRelativeOrDate(card.date)}
+                            diffusé {fmtRelativeOrDate(next.airDate!)}
                           </div>
                         </div>
                         <button
                           className="check"
-                          aria-label={`Marquer ${epLabel(card.ep)} comme vu`}
+                          aria-label={`Marquer ${epLabel(next)} comme vu`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            markEpisodeWatched(card.show, card.ep);
+                            markEpisodeWatched(show, next);
                           }}
                         >
                           ✓
@@ -307,34 +286,45 @@ export default function AgendaPage() {
                       </div>
                     </SwipeableRow>
                   );
-                }
-                if (card.kind === "upcoming-ep") {
-                  return (
-                    <SwipeableRow
-                      key={card.key}
-                      onTap={() => router.push(`/show/${card.show.id}`)}
-                      onSwipeLeft={() => removeShow(card.show)}
-                    >
-                      <div className="glass agenda-card pressable">
-                        <Poster
-                          item={{
-                            ...card.show,
-                            status: effectiveShowStatus(card.show, showStatus[card.show.id]),
-                          }}
-                          mini
-                        />
-                        <div className="agenda-body">
-                          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
-                          <div className="muted" style={{ marginTop: 2 }}>
-                            {epLabel(card.ep)} — {card.ep.title}
-                          </div>
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Prochaines diffusions */}
+          <h2 className="section-title">Prochaines diffusions</h2>
+          {upcomingCards.length === 0 ? (
+            <div className="glass card" style={{ textAlign: "center" }}>
+              <span className="muted">Aucune diffusion prévue pour le moment.</span>
+            </div>
+          ) : (
+            <div className="stack">
+              {upcomingCards.map((card) =>
+                card.kind === "upcoming-ep" ? (
+                  <SwipeableRow
+                    key={card.key}
+                    onTap={() => router.push(`/show/${card.show.id}`)}
+                    onSwipeLeft={() => dropShow(card.show)}
+                    leftIcon="🏳️"
+                  >
+                    <div className="glass agenda-card pressable">
+                      <Poster
+                        item={{
+                          ...card.show,
+                          status: effectiveShowStatus(card.show, showStatus[card.show.id]),
+                        }}
+                        mini
+                      />
+                      <div className="agenda-body">
+                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
+                        <div className="muted" style={{ marginTop: 2 }}>
+                          {epLabel(card.ep)} — {card.ep.title}
                         </div>
-                        <span className="badge-pill">{fmtRelative(card.date)}</span>
                       </div>
-                    </SwipeableRow>
-                  );
-                }
-                return (
+                      <span className="badge-pill">{fmtRelative(card.date)}</span>
+                    </div>
+                  </SwipeableRow>
+                ) : (
                   <SwipeableRow
                     key={card.key}
                     onTap={() => router.push(`/movie/${card.movie.id}`)}
@@ -349,8 +339,8 @@ export default function AgendaPage() {
                       <span className="badge-pill">{fmtRelative(card.date)}</span>
                     </div>
                   </SwipeableRow>
-                );
-              })}
+                )
+              )}
             </div>
           )}
         </>
