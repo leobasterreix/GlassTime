@@ -126,16 +126,24 @@ export default function BookDetailPage({
         body: JSON.stringify({ rating: formRating, content: formContent.trim() }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur de sauvegarde");
+      if (response.ok) {
+        const res = await apiGet<Review[]>(`/api/reviews/book/${id}?source=site`);
+        if (res) setSiteReviews(res);
+        setFormContent("");
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          // Pas connecté : comportement attendu, on sauvegarde localement sans bruit.
+          setLocalReview("book", id, formRating, formContent.trim());
+          setFormContent("");
+        } else {
+          // Vraie erreur serveur (ex. colonne item_id incompatible) : on la
+          // montre au lieu de la masquer derrière une sauvegarde locale muette.
+          setErrorMsg(errData.error || "Une erreur est survenue.");
+        }
       }
-
-      const saved = await response.json();
-      setSiteReviews((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
-      setFormContent("");
     } catch (err) {
-      console.warn("Sauvegarde de secours dans Zustand store (mode local) :", err);
-      // Save local backup review
+      // Échec réseau : on sauvegarde localement en secours.
       setLocalReview("book", id, formRating, formContent.trim());
       setFormContent("");
     } finally {

@@ -3,28 +3,38 @@ import { getShowReviews, getMovieReviews } from "@/lib/catalog";
 import { createClient } from "@/lib/supabaseServer";
 import type { Review } from "@/lib/types";
 
+const VALID_TYPES = ["movie", "show", "book"] as const;
+type ReviewType = (typeof VALID_TYPES)[number];
+
+/** Les IDs TMDB (films/séries) sont numériques, les IDs OpenLibrary (livres,
+ * ex. "OL82563W") sont des chaînes — jamais convertir en Number pour un livre
+ * sous peine de NaN. */
+function parseItemId(type: ReviewType, id: string): number | string {
+  return type === "book" ? id : Number(id);
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
   const { type, id } = await params;
-  const itemId = Number(id);
 
   const { searchParams } = new URL(req.url);
   const source = searchParams.get("source"); // "site" | "tmdb" | null
 
-  if (type !== "movie" && type !== "show") {
+  if (!VALID_TYPES.includes(type as ReviewType)) {
     return NextResponse.json({ error: "Type invalide" }, { status: 400 });
   }
+  const itemId = parseItemId(type as ReviewType, id);
 
-  // 1. Récupérer les avis TMDB
+  // 1. Récupérer les avis TMDB (aucune source équivalente pour les livres)
   const getTmdb = async (): Promise<Review[]> => {
-    if (source === "site") return [];
+    if (source === "site" || type === "book") return [];
     try {
       if (type === "show") {
-        return await getShowReviews(itemId);
+        return await getShowReviews(itemId as number);
       } else {
-        return await getMovieReviews(itemId);
+        return await getMovieReviews(itemId as number);
       }
     } catch (err) {
       console.error("Erreur de récupération des avis TMDB :", err);
@@ -87,11 +97,11 @@ export async function POST(
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
   const { type, id } = await params;
-  const itemId = Number(id);
 
-  if (type !== "movie" && type !== "show") {
+  if (!VALID_TYPES.includes(type as ReviewType)) {
     return NextResponse.json({ error: "Type invalide" }, { status: 400 });
   }
+  const itemId = parseItemId(type as ReviewType, id);
 
   try {
     const { rating, content } = await req.json();
@@ -129,9 +139,16 @@ export async function POST(
 
     if (upsertError) {
       console.error("Erreur d'enregistrement de l'avis :", upsertError);
+      // Cas fréquent pour les livres : la colonne item_id est en integer côté
+      // Supabase (héritée de l'époque films/séries uniquement) et refuse un
+      // ID OpenLibrary alphanumérique ("OL82563W").
+      const looksLikeIntegerColumn =
+        type === "book" && /invalid input syntax for type (integer|bigint)/i.test(upsertError.message);
       return NextResponse.json(
         {
-          error: "Impossible d'enregistrer l'avis. Avez-vous créé la table user_reviews dans votre console Supabase ?",
+          error: looksLikeIntegerColumn
+            ? "La colonne item_id de user_reviews doit être en texte pour accepter les ID de livres. Exécutez : ALTER TABLE user_reviews ALTER COLUMN item_id TYPE text;"
+            : "Impossible d'enregistrer l'avis. Avez-vous créé la table user_reviews dans votre console Supabase ?",
           details: upsertError.message,
         },
         { status: 500 }

@@ -372,6 +372,8 @@ export default function ProfilePage() {
     favoriteBooks,
     myPlatforms,
     toggleMyPlatform,
+    lastSeenActivityAt,
+    setLastSeenActivityAt,
   } = useTrack();
   useHydrateLibrary();
 
@@ -783,6 +785,17 @@ export default function ProfilePage() {
     }
   }
 
+  // Recharge le flux d'amis à chaque ouverture de l'onglet Communauté, pas
+  // seulement au chargement de la page (sinon les nouvelles activités des
+  // amis restent invisibles jusqu'au rechargement complet de l'appli).
+  useEffect(() => {
+    if (activeTab === "community" && userInfo) {
+      loadSocialData(userInfo.id);
+      setLastSeenActivityAt(Date.now());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, userInfo?.id]);
+
   async function toggleFollow(targetUserId: string, isFollowing: boolean) {
     if (!userInfo) return;
     try {
@@ -932,6 +945,9 @@ export default function ProfilePage() {
       friend
     }));
   }).sort((a: any, b: any) => b.timestamp - a.timestamp);
+  const hasNewFriendActivity =
+    activeTab !== "community" &&
+    friendActivities.some((a: any) => a.timestamp > lastSeenActivityAt);
   const moviesToWatch = movieWatchlist.map((id) => movieCache[id]).filter(Boolean);
   const moviesSeen = moviesWatched.map((id) => movieCache[id]).filter(Boolean);
   const booksToRead = booksWatchlist.map((id) => bookCache[id]).filter(Boolean);
@@ -1228,8 +1244,23 @@ export default function ProfilePage() {
           <button
             className={activeTab === "community" ? "active" : ""}
             onClick={() => setActiveTab("community")}
+            style={{ position: "relative" }}
           >
             👥 Communauté
+            {hasNewFriendActivity && (
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: 4,
+                  right: 6,
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "var(--danger, #ff4757)",
+                }}
+              />
+            )}
           </button>
         </div>
       </div>
@@ -1553,7 +1584,7 @@ export default function ProfilePage() {
                   <input
                     type="color"
                     className="accent-picker"
-                    value={accent ?? "#d9503a"}
+                    value={accent ?? ACCENT_PRESETS[0].swatch}
                     onChange={(e) => setAccent(e.target.value)}
                     style={
                       isCustomAccent
@@ -1702,7 +1733,17 @@ export default function ProfilePage() {
         <div className="stack" style={{ gap: 24 }}>
           {/* Flux d'activité des amis */}
           <div>
-            <h2 className="section-title">Flux d'activité des amis 👥</h2>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className="section-title" style={{ marginBottom: 0 }}>Flux d'activité des amis 👥</h2>
+              <button
+                className="tiny pressable"
+                style={{ fontWeight: 700 }}
+                disabled={socialLoading}
+                onClick={() => userInfo && loadSocialData(userInfo.id)}
+              >
+                {socialLoading ? "…" : "↻ Actualiser"}
+              </button>
+            </div>
             {friendActivities.length === 0 ? (
               <div className="glass card" style={{ textAlign: "center", padding: 30 }}>
                 <span className="muted" style={{ fontSize: 14 }}>

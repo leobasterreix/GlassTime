@@ -9,11 +9,11 @@ export type AccentPreset = {
   name: string;
   /** Pastille affichée dans le sélecteur. */
   swatch: string;
-  /** Valeur stockée : null = corail par défaut du thème. */
+  /** Valeur stockée : null = Indigo par défaut du thème (--accent CSS). */
   value: string | null;
 };
 
-/** 4 teintes proposées ; la 1re (null) restaure le corail par défaut. */
+/** 4 teintes proposées ; la 1re (null) restaure l'Indigo par défaut. */
 export const ACCENT_PRESETS: AccentPreset[] = [
   { name: "Indigo", swatch: "#6366f1", value: null },
   { name: "Corail", swatch: "#d9503a", value: "#d9503a" },
@@ -46,7 +46,7 @@ function mix(
 
 /**
  * Applique (ou retire) l'accent personnalisé sur la racine du document.
- * `color` null → on retire les surcharges, le corail par défaut du CSS reprend.
+ * `color` null → on retire les surcharges, l'Indigo par défaut du CSS reprend.
  */
 export function applyAccent(
   color: string | null,

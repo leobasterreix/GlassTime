@@ -127,7 +127,7 @@ type TrackState = {
   clearAll: () => void;
   theme: "system" | "light" | "dark";
   toggleTheme: () => void;
-  /** Couleur d'accent personnalisée (hex). null = corail par défaut. */
+  /** Couleur d'accent personnalisée (hex). null = Indigo par défaut. */
   accent: string | null;
   setAccent: (color: string | null) => void;
   localReviews: Record<string, { rating: number; content: string; createdAt: string }>;
@@ -154,6 +154,9 @@ type TrackState = {
   episodeReviews: Record<string, { rating?: number; emotion?: string; comment?: string; spoiler?: boolean; timestamp: number }>;
   saveEpisodeReview: (showId: number, s: number, e: number, review: { rating?: number; emotion?: string; comment?: string; spoiler?: boolean }) => void;
   recentActivities: Array<{ id: string; timestamp: number; type: string; mediaId: any; mediaTitle: string; mediaPoster?: string | null; details?: string }>;
+  /** Horodatage de la dernière consultation du flux d'activité des amis (pastille "nouveau"). */
+  lastSeenActivityAt: number;
+  setLastSeenActivityAt: (t: number) => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -225,7 +228,10 @@ export const useTrack = create<TrackState>()(
       bookProgress: {},
       episodeReviews: {},
       recentActivities: [],
+      lastSeenActivityAt: 0,
       updatedAt: 0,
+
+      setLastSeenActivityAt: (t) => set({ lastSeenActivityAt: t }),
 
       toggleFollow: (id) =>
         set((st) => ({
@@ -705,6 +711,7 @@ export const useTrack = create<TrackState>()(
           bookProgress: {},
           episodeReviews: {},
           recentActivities: [],
+          lastSeenActivityAt: 0,
           updatedAt: Date.now(),
         }),
     }),

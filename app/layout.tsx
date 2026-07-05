@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    // Texte sombre sur fond clair (thème papier par défaut)
+    // Texte sombre sur fond clair (thème SaaS/Tech clair par défaut)
     statusBarStyle: "default",
     title: "GlassTime",
   },
@@ -27,10 +27,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  // Couleur de la barre du navigateur selon le thème système (papier / espresso)
+  // Couleur de la barre du navigateur selon le thème système — doit rester
+  // synchro avec --bg dans globals.css (Zinc/Slate clair et sombre).
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3efe7" },
-    { media: "(prefers-color-scheme: dark)", color: "#17140f" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
 };
 
