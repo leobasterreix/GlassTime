@@ -6,7 +6,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/auth/callback",
   "/manifest.json",
-  "/icon.svg",
+  "/logo.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
   "/favicon.ico",
 ];
 

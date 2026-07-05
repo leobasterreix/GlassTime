@@ -46,7 +46,7 @@ export function notifyTodayEpisodes(entries: { show: Show; ep: Episode }[]) {
       ? `${epLabel(first.ep)} et ${rest.length} autre${rest.length > 1 ? "s" : ""} épisode${rest.length > 1 ? "s" : ""} sortent aujourd'hui`
       : `${epLabel(first.ep)} — ${first.ep.title} sort aujourd'hui`;
   try {
-    new Notification(`📺 ${first.show.title}`, { body, icon: "/icon.svg" });
+    new Notification(`📺 ${first.show.title}`, { body, icon: "/icon-512.png" });
   } catch {
     // Safari iOS exige un service worker : on ignore silencieusement
   }

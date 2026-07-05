@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "Suivez vos séries, films et livres préférés : épisodes vus, agenda des diffusions, statistiques.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon-512.png",
     apple: "/apple-touch-icon.png",
   },
   appleWebApp: {

@@ -141,19 +141,12 @@ export default function LoginPage() {
         style={{ padding: 28, width: "100%", maxWidth: 420, margin: "0 auto" }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 48 }}>📺</div>
-          <h1
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 28,
-              fontWeight: 600,
-              letterSpacing: "-0.01em",
-              marginTop: 8,
-            }}
-          >
-            GlassTime
-          </h1>
-          <p className="muted" style={{ marginTop: 6, marginBottom: 22 }}>
+          <img
+            src="/logo.png"
+            alt="GlassTime"
+            style={{ width: 96, height: 96, borderRadius: 22, margin: "0 auto" }}
+          />
+          <p className="muted" style={{ marginTop: 14, marginBottom: 22 }}>
             {mode === "signin"
               ? "Connectez-vous pour retrouver vos séries, films et livres."
               : "Créez un compte pour synchroniser vos suivis sur tous vos appareils."}
