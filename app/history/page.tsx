@@ -5,19 +5,29 @@ import Link from "next/link";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
-import { allEpisodes, epLabel, fmtRelativeOrDate } from "@/lib/utils";
+import { allEpisodes, epKey, epLabel, fmtRelativeOrDate } from "@/lib/utils";
 import type { Episode, Show } from "@/lib/types";
 
 type HistoryCard =
-  | { kind: "episode"; key: string; date: string; show: Show; ep: Episode }
-  | { kind: "movie"; key: string; date: string; title: string; poster?: string | null; movieId: number }
-  | { kind: "book"; key: string; date: string; title: string; poster?: string | null; bookId: string };
+  | { kind: "episode"; key: string; date: string | null; show: Show; ep: Episode }
+  | { kind: "movie"; key: string; date: string | null; title: string; poster?: string | null; movieId: number }
+  | { kind: "book"; key: string; date: string | null; title: string; poster?: string | null; bookId: string };
 
 export default function HistoryPage() {
   const router = useRouter();
   const mounted = useMounted();
-  const { showCache, movieCache, bookCache, episodeWatchedAt, moviesWatchedDates, booksReadDates } =
-    useTrack();
+  const {
+    watched,
+    showCache,
+    movieWatchlist,
+    moviesWatched,
+    movieCache,
+    booksRead,
+    bookCache,
+    episodeWatchedAt,
+    moviesWatchedDates,
+    booksReadDates,
+  } = useTrack();
   useHydrateLibrary();
 
   if (!mounted) {
@@ -33,52 +43,62 @@ export default function HistoryPage() {
     );
   }
 
-  const episodeCards: HistoryCard[] = Object.entries(episodeWatchedAt)
-    .map(([key, date]) => {
-      const [showIdStr, sStr, eStr] = key.split(":");
-      const show = showCache[Number(showIdStr)];
-      if (!show) return null;
-      const ep = allEpisodes(show).find(
-        (x) => x.s === Number(sStr) && x.e === Number(eStr)
-      );
-      if (!ep) return null;
-      return { kind: "episode", key: `ep-${key}`, date, show, ep } as HistoryCard;
-    })
-    .filter((x): x is HistoryCard => x !== null);
+  // Tous les épisodes déjà marqués vus, pas seulement ceux marqués depuis
+  // l'ajout de l'horodatage — la date reste inconnue pour les plus anciens,
+  // mais ils comptent quand même comme « vus » et doivent apparaître.
+  const episodeCards: HistoryCard[] = Object.keys(watched).flatMap((showIdStr) => {
+    const show = showCache[Number(showIdStr)];
+    if (!show) return [];
+    return allEpisodes(show)
+      .filter((ep) => watched[show.id]?.[epKey(ep.s, ep.e)])
+      .map((ep): HistoryCard => ({
+        kind: "episode",
+        key: `ep-${show.id}-${ep.s}:${ep.e}`,
+        date: episodeWatchedAt[`${show.id}:${ep.s}:${ep.e}`] ?? null,
+        show,
+        ep,
+      }));
+  });
 
-  const movieCards: HistoryCard[] = Object.entries(moviesWatchedDates)
-    .map(([id, date]) => {
-      const movie = movieCache[Number(id)];
+  const movieCards: HistoryCard[] = moviesWatched
+    .map((id): HistoryCard | null => {
+      const movie = movieCache[id];
       if (!movie) return null;
       return {
         kind: "movie",
         key: `movie-${id}`,
-        date,
+        date: moviesWatchedDates[id] ?? null,
         title: movie.title,
         poster: movie.poster,
         movieId: movie.id,
-      } as HistoryCard;
+      };
     })
     .filter((x): x is HistoryCard => x !== null);
 
-  const bookCards: HistoryCard[] = Object.entries(booksReadDates)
-    .map(([id, date]) => {
+  const bookCards: HistoryCard[] = booksRead
+    .map((id): HistoryCard | null => {
       const book = bookCache[id];
       if (!book) return null;
       return {
         kind: "book",
         key: `book-${id}`,
-        date,
+        date: booksReadDates[id] ?? null,
         title: book.title,
         poster: book.poster,
         bookId: book.id,
-      } as HistoryCard;
+      };
     })
     .filter((x): x is HistoryCard => x !== null);
 
-  const history = [...episodeCards, ...movieCards, ...bookCards].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Date connue d'abord (plus récent en premier), puis le reste dans l'ordre
+  // où on les a construits (par série, dans l'ordre des épisodes) — à défaut
+  // de date, c'est le meilleur ordre disponible.
+  const history = [...episodeCards, ...movieCards, ...bookCards].sort((a, b) => {
+    if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (a.date && !b.date) return -1;
+    if (!a.date && b.date) return 1;
+    return 0;
+  });
 
   return (
     <main className="page">
@@ -94,9 +114,7 @@ export default function HistoryPage() {
         <div className="glass empty">
           <div className="big">📜</div>
           <p className="muted">
-            Rien pour le moment — l'historique se remplit à partir de vos
-            prochains marquages (les épisodes déjà vus avant cette
-            fonctionnalité n'ont pas de date connue).
+            Rien de vu ou lu pour le moment.
           </p>
         </div>
       ) : (
@@ -116,7 +134,7 @@ export default function HistoryPage() {
                       {epLabel(card.ep)} — {card.ep.title}
                     </div>
                   </div>
-                  <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>
+                  {card.date && <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>}
                 </div>
               );
             }
@@ -132,7 +150,7 @@ export default function HistoryPage() {
                     <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.title}</div>
                     <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
                   </div>
-                  <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>
+                  {card.date && <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>}
                 </div>
               );
             }
@@ -147,7 +165,7 @@ export default function HistoryPage() {
                   <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.title}</div>
                   <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
                 </div>
-                <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>
+                {card.date && <span className="badge-pill">{fmtRelativeOrDate(card.date)}</span>}
               </div>
             );
           })}
