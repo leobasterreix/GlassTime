@@ -860,7 +860,12 @@ export default function ProfilePage() {
           {/* Activité récente */}
           {hasActivity && (
             <>
-              <h2 className="section-title">Activité · 8 semaines</h2>
+              <h2 className="section-title">
+                Activité · 8 semaines{" "}
+                <Link href="/history" className="tiny" style={{ fontWeight: 700 }}>
+                  📜 Historique →
+                </Link>
+              </h2>
               <div className="glass card">
                 <div className="row" style={{ alignItems: "flex-end", gap: 8, height: 90 }}>
                   {weeks.map((w, i) => (

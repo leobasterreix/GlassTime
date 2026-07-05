@@ -82,6 +82,10 @@ type TrackState = {
   watched: Record<number, Record<string, true>>;
   /** Dernière date (YYYY-MM-DD) où un épisode de la série a été marqué vu. */
   lastWatchedAt: Record<number, string>;
+  /** Horodatage par épisode marqué vu, clé "showId:s:e" — sert à l'historique
+   * (page /history). N'existe qu'à partir de l'ajout de cette fonctionnalité :
+   * les épisodes déjà marqués avant n'ont pas de date rétroactive. */
+  episodeWatchedAt: Record<string, string>;
   movieWatchlist: number[];
   moviesWatched: number[];
   /** Date de visionnage des films (YYYY-MM-DD), comme booksReadDates. */
@@ -174,6 +178,7 @@ export const useTrack = create<TrackState>()(
       followed: [],
       watched: {},
       lastWatchedAt: {},
+      episodeWatchedAt: {},
       movieWatchlist: [],
       moviesWatched: [],
       moviesWatchedDates: {},
@@ -279,8 +284,13 @@ export const useTrack = create<TrackState>()(
           if (value) map[epKey(s, e)] = true;
           else delete map[epKey(s, e)];
           const delta = value && !had ? 1 : !value && had ? -1 : 0;
+          const episodeWatchedAt = { ...st.episodeWatchedAt };
+          const histKey = `${showId}:${s}:${e}`;
+          if (value) episodeWatchedAt[histKey] = new Date().toISOString();
+          else delete episodeWatchedAt[histKey];
           return {
             watched: { ...st.watched, [showId]: map },
+            episodeWatchedAt,
             // Horodatage complet (pas juste le jour) : sert aussi à faire
             // remonter la série en tête de « À rattraper » juste après un
             // marquage, pas seulement à calculer l'ancienneté en jours.
@@ -295,19 +305,25 @@ export const useTrack = create<TrackState>()(
       setEpisodes: (showId, eps, value) =>
         set((st) => {
           const map = { ...(st.watched[showId] ?? {}) };
+          const episodeWatchedAt = { ...st.episodeWatchedAt };
+          const now = new Date().toISOString();
           let delta = 0;
           for (const { s, e } of eps) {
             const had = !!map[epKey(s, e)];
+            const histKey = `${showId}:${s}:${e}`;
             if (value) {
               map[epKey(s, e)] = true;
+              episodeWatchedAt[histKey] = now;
               if (!had) delta++;
             } else {
               delete map[epKey(s, e)];
+              delete episodeWatchedAt[histKey];
               if (had) delta--;
             }
           }
           return {
             watched: { ...st.watched, [showId]: map },
+            episodeWatchedAt,
             // Horodatage complet (pas juste le jour) : sert aussi à faire
             // remonter la série en tête de « À rattraper » juste après un
             // marquage, pas seulement à calculer l'ancienneté en jours.
@@ -539,6 +555,7 @@ export const useTrack = create<TrackState>()(
           followed: [],
           watched: {},
           lastWatchedAt: {},
+          episodeWatchedAt: {},
           movieWatchlist: [],
           moviesWatched: [],
           moviesWatchedDates: {},
