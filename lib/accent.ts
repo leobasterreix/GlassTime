@@ -15,8 +15,8 @@ export type AccentPreset = {
 
 /** 4 teintes proposées ; la 1re (null) restaure le corail par défaut. */
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { name: "Corail", swatch: "#d9503a", value: null },
-  { name: "Indigo", swatch: "#5566d6", value: "#5566d6" },
+  { name: "Indigo", swatch: "#6366f1", value: null },
+  { name: "Corail", swatch: "#d9503a", value: "#d9503a" },
   { name: "Vert", swatch: "#2f9e6f", value: "#2f9e6f" },
   { name: "Ambre", swatch: "#cf8a2e", value: "#cf8a2e" },
 ];

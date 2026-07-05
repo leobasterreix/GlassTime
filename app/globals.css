@@ -197,8 +197,8 @@ input {
 }
 
 .glass:hover {
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: var(--shadow-card), 0 0 20px rgba(99, 102, 241, 0.05);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: var(--shadow-card), 0 0 20px color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .glass-strong {

@@ -84,9 +84,20 @@ export default function SwipeableRow({
   }
 
   function handleClick(e: React.MouseEvent) {
-    if (wasDragged.current) {
+    if (wasDragged.current || removing !== null || Math.abs(dragXRef.current) > 5) {
       e.preventDefault();
       e.stopPropagation();
+      return;
+    }
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest("input") ||
+      target.closest("select") ||
+      target.closest("textarea") ||
+      target.classList.contains("pressable") ||
+      target.closest(".pressable")
+    ) {
       return;
     }
     onTap?.();

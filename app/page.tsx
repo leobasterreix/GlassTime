@@ -994,7 +994,8 @@ export default function AgendaPage() {
                                     <button
                                       className="btn btn-primary pressable"
                                       style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, fontWeight: 700 }}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         updateBookProgress(book.id, editPageVal, editTotalVal);
                                         setEditingBookId(null);
                                       }}
@@ -1010,7 +1011,10 @@ export default function AgendaPage() {
                                         background: "transparent",
                                         border: "1px solid var(--glass-border)"
                                       }}
-                                      onClick={() => setEditingBookId(null)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingBookId(null);
+                                      }}
                                     >
                                       ✕
                                     </button>
