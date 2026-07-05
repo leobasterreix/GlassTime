@@ -36,21 +36,30 @@ type CatchupCard =
   | { kind: "catchup-movie"; key: string; movie: Movie }
   | { kind: "catchup-book"; key: string; book: Book };
 
+type HistoryCard =
+  | { kind: "history-ep"; key: string; date: string | null; show: Show; ep: Episode }
+  | { kind: "history-movie"; key: string; date: string | null; movie: Movie }
+  | { kind: "history-book"; key: string; date: string | null; book: Book };
+
 const STALE_DAYS = 60;
 
 export default function AgendaPage() {
   const router = useRouter();
   const mounted = useMounted();
-  const [tab, setTab] = useState<"rattraper" | "prochaines">("rattraper");
+  const [tab, setTab] = useState<"rattraper" | "prochaines" | "historique">("rattraper");
   const {
     followed,
     watched,
     lastWatchedAt,
+    episodeWatchedAt,
     showCache,
     movieWatchlist,
     moviesWatched,
+    moviesWatchedDates,
     movieCache,
     booksWatchlist,
+    booksRead,
+    booksReadDates,
     bookCache,
     showStatus,
     pushNotification,
@@ -172,6 +181,48 @@ export default function AgendaPage() {
       })
     ),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Historique : tout ce qui a déjà été vu/lu, pas seulement ce qui a été
+  // marqué depuis l'ajout de l'horodatage — la date reste inconnue pour les
+  // plus anciens (pas de badge), mais ils comptent quand même comme « vus »
+  // et doivent apparaître.
+  const historyEpisodeCards: HistoryCard[] = Object.keys(watched).flatMap((showIdStr) => {
+    const show = showCache[Number(showIdStr)];
+    if (!show) return [];
+    return allEpisodes(show)
+      .filter((ep) => watched[show.id]?.[epKey(ep.s, ep.e)])
+      .map((ep): HistoryCard => ({
+        kind: "history-ep",
+        key: `hist-ep-${show.id}-${ep.s}:${ep.e}`,
+        date: episodeWatchedAt[`${show.id}:${ep.s}:${ep.e}`] ?? null,
+        show,
+        ep,
+      }));
+  });
+  const historyMovieCards: HistoryCard[] = moviesWatched
+    .map((id): HistoryCard | null => {
+      const movie = movieCache[id];
+      if (!movie) return null;
+      return { kind: "history-movie", key: `hist-movie-${id}`, date: moviesWatchedDates[id] ?? null, movie };
+    })
+    .filter((x): x is HistoryCard => x !== null);
+  const historyBookCards: HistoryCard[] = booksRead
+    .map((id): HistoryCard | null => {
+      const book = bookCache[id];
+      if (!book) return null;
+      return { kind: "history-book", key: `hist-book-${id}`, date: booksReadDates[id] ?? null, book };
+    })
+    .filter((x): x is HistoryCard => x !== null);
+  // Date connue d'abord (plus récent en premier), puis le reste dans l'ordre
+  // de construction (par série, dans l'ordre des épisodes) à défaut de mieux.
+  const historyCards = [...historyEpisodeCards, ...historyMovieCards, ...historyBookCards].sort(
+    (a, b) => {
+      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      return 0;
+    }
+  );
 
   /** Statuts de suivi affichés sur les cartes à rattraper : jamais commencée,
    * ou plus touchée depuis longtemps (delaissée sans être abandonnée). */
@@ -348,6 +399,9 @@ export default function AgendaPage() {
             <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
               Prochaines diffusions{upcomingCards.length > 0 ? ` · ${upcomingCards.length}` : ""}
             </button>
+            <button className={tab === "historique" ? "active" : ""} onClick={() => setTab("historique")}>
+              Historique{historyCards.length > 0 ? ` · ${historyCards.length}` : ""}
+            </button>
           </div>
 
           {tab === "rattraper" && (catchupCards.length === 0 ? (
@@ -511,6 +565,65 @@ export default function AgendaPage() {
                   </SwipeableRow>
                 )
               )}
+            </div>
+          ))}
+
+          {tab === "historique" && (historyCards.length === 0 ? (
+            <div className="glass card" style={{ textAlign: "center" }}>
+              <span className="muted">Rien de vu ou lu pour le moment.</span>
+            </div>
+          ) : (
+            <div className="stack">
+              {historyCards.map((card) => {
+                if (card.kind === "history-ep") {
+                  return (
+                    <div
+                      key={card.key}
+                      className="glass agenda-card pressable"
+                      onClick={() => router.push(`/show/${card.show.id}`)}
+                    >
+                      <Poster item={card.show} mini />
+                      <div className="agenda-body">
+                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
+                        <div className="muted" style={{ marginTop: 2 }}>
+                          {epLabel(card.ep)} — {card.ep.title}
+                        </div>
+                      </div>
+                      {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+                    </div>
+                  );
+                }
+                if (card.kind === "history-movie") {
+                  return (
+                    <div
+                      key={card.key}
+                      className="glass agenda-card pressable"
+                      onClick={() => router.push(`/movie/${card.movie.id}`)}
+                    >
+                      <Poster item={card.movie} mini />
+                      <div className="agenda-body">
+                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.movie.title}</div>
+                        <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
+                      </div>
+                      {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={card.key}
+                    className="glass agenda-card pressable"
+                    onClick={() => router.push(`/book/${card.book.id}`)}
+                  >
+                    <Poster item={card.book} mini />
+                    <div className="agenda-body">
+                      <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.book.title}</div>
+                      <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
+                    </div>
+                    {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </>
