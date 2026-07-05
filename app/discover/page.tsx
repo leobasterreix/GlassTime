@@ -189,7 +189,7 @@ function DiscoverContent() {
           if (!cancelled) setBookResults(data ?? []);
         }
       },
-      q ? 350 : 0
+      q ? 220 : 0
     );
     return () => {
       cancelled = true;
