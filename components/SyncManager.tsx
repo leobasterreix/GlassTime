@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTrack } from "@/lib/store";
 import { applyAccent } from "@/lib/accent";
 import { supabase } from "@/lib/supabaseClient";
+import { syncStatus } from "@/lib/syncStatus";
 
 // Synchronisation multi-appareils via Supabase.
 // Au chargement/connexion : le plus récent (local ou serveur) gagne, d'après updatedAt.
@@ -79,6 +80,7 @@ export default function SyncManager() {
 
     async function pushState(userId: string, session: any) {
       try {
+        syncStatus.set("syncing");
         const state = snapshot();
         await supabase.from("user_states").upsert({
           user_id: userId,
@@ -165,8 +167,10 @@ export default function SyncManager() {
           public_state: publicState,
           updated_at: new Date().toISOString(),
         });
+        syncStatus.set("synced");
       } catch (err) {
         console.error("Erreur de sauvegarde Supabase :", err);
+        syncStatus.set("error");
       }
     }
 

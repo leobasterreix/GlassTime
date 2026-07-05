@@ -688,13 +688,39 @@ input {
 
 .empty {
   text-align: center;
-  padding: 36px 20px;
+  padding: 40px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 4%, var(--card-bg)), var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--glass-border));
+  position: relative;
+  overflow: hidden;
+}
+.empty::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 17px;
+  padding: 1px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 25%, transparent), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .empty .big {
-  font-size: 40px;
-  margin-bottom: 10px;
+  font-size: 48px;
+  margin-bottom: 12px;
+  animation: float-emoji 3s ease-in-out infinite;
+  display: inline-block;
 }
+
+@keyframes float-emoji {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
 
 details.season {
   border-bottom: 1px solid var(--hairline);
@@ -960,6 +986,16 @@ a.provider-pill:hover {
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes sync-pop {
+  from { opacity: 0; transform: scale(0.85) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ===== Toasts ===== */

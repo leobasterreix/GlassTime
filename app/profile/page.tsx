@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Poster from "@/components/Poster";
+import SyncIndicator from "@/components/SyncIndicator";
 import { useHydrateLibrary, apiGet } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { ACCENT_PRESETS } from "@/lib/accent";
@@ -98,6 +99,250 @@ function formatDateRead(dateStr?: string): string {
     return `${months[Number(m) - 1] ?? ""} ${y}`;
   }
   return dateStr;
+}
+
+/* ─── Interactive Heatmap sub-component ─── */
+function HeatmapInteractive({
+  heatmapColumns,
+  watchedLog,
+}: {
+  heatmapColumns: string[][];
+  watchedLog: Record<string, number>;
+}) {
+  const [selected, setSelected] = useState<{ day: string; count: number; rect: DOMRect } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!selected) return;
+    const close = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSelected(null);
+      }
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [selected]);
+
+  const handleCellClick = (day: string, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const count = watchedLog[day] || 0;
+    setSelected((prev) => (prev?.day === day ? null : { day, count, rect }));
+  };
+
+  const formatDay = (iso: string) => {
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  };
+
+  return (
+    <div ref={containerRef} className="glass card stack" style={{ padding: 18, gap: 12, position: "relative" }}>
+      <div style={{ display: "flex", gap: 3.5, overflowX: "auto", paddingBottom: 6 }}>
+        {heatmapColumns.map((col, cIdx) => (
+          <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+            {col.map((day) => {
+              const count = watchedLog[day] || 0;
+              let bg = "var(--glass-border)";
+              let opacity = 1;
+              if (count > 0) {
+                bg = "var(--accent)";
+                if (count === 1) opacity = 0.25;
+                else if (count <= 3) opacity = 0.55;
+                else if (count <= 5) opacity = 0.8;
+                else opacity = 1;
+              }
+              const isSelected = selected?.day === day;
+              return (
+                <div
+                  key={day}
+                  onClick={(e) => handleCellClick(day, e)}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 2,
+                    background: bg,
+                    opacity,
+                    cursor: "pointer",
+                    outline: isSelected ? "2px solid var(--accent)" : "none",
+                    outlineOffset: 1,
+                    transition: "background 0.2s, opacity 0.2s, outline 0.15s",
+                  }}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Floating tooltip */}
+      {selected && containerRef.current && (() => {
+        const containerRect = containerRef.current!.getBoundingClientRect();
+        const left = selected.rect.left - containerRect.left + selected.rect.width / 2;
+        const top = selected.rect.top - containerRect.top - 8;
+        return (
+          <div
+            style={{
+              position: "absolute",
+              left: Math.max(50, Math.min(left, containerRect.width - 50)),
+              top,
+              transform: "translate(-50%, -100%)",
+              background: "var(--card-bg)",
+              border: "1px solid var(--glass-border)",
+              borderRadius: 10,
+              padding: "8px 14px",
+              zIndex: 20,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+              animation: "tooltip-in 0.2s ease",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-1)", marginBottom: 2 }}>
+              {formatDay(selected.day)}
+            </div>
+            <div style={{ fontSize: 11, color: selected.count > 0 ? "var(--accent)" : "var(--text-3)" }}>
+              {selected.count > 0
+                ? `${selected.count} activité${selected.count > 1 ? "s" : ""}`
+                : "Aucune activité"}
+            </div>
+          </div>
+        );
+      })()}
+
+      <div className="row" style={{ justifyContent: "space-between", fontSize: 11, color: "var(--text-3)" }}>
+        <span>Il y a 20 semaines</span>
+        <div className="row" style={{ gap: 4, alignItems: "center" }}>
+          <span>Moins</span>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--glass-border)" }} />
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.25 }} />
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.55 }} />
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.8 }} />
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 1 }} />
+          <span>Plus</span>
+        </div>
+        <span>Aujourd'hui</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Interactive Donut sub-component ─── */
+type DonutSlice = {
+  name: string;
+  count: number;
+  percent: number;
+  color: string;
+  strokeLength: number;
+  strokeOffset: number;
+};
+
+function DonutInteractive({ donutSlices }: { donutSlices: DonutSlice[] }) {
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+
+  const active = activeIdx !== null ? donutSlices[activeIdx] : null;
+
+  return (
+    <div
+      className="glass card row"
+      style={{ gap: 24, padding: 20, alignItems: "center", justifyContent: "space-around", flexWrap: "wrap" }}
+    >
+      <div
+        style={{ display: "flex", justifyContent: "center", position: "relative" }}
+        onMouseLeave={() => setActiveIdx(null)}
+      >
+        <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", borderRadius: "50%" }}>
+          <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--hairline)" strokeWidth="12" />
+          {donutSlices.map((slice, idx) => (
+            <circle
+              key={idx}
+              cx="50"
+              cy="50"
+              r="40"
+              fill="transparent"
+              stroke={slice.color}
+              strokeWidth={activeIdx === idx ? 16 : 12}
+              strokeDasharray={`${slice.strokeLength} 251.2`}
+              strokeDashoffset={slice.strokeOffset}
+              strokeLinecap="round"
+              style={{
+                transition: "stroke-width 0.25s ease, opacity 0.25s ease",
+                opacity: activeIdx !== null && activeIdx !== idx ? 0.35 : 1,
+                cursor: "pointer",
+              }}
+              onMouseEnter={() => setActiveIdx(idx)}
+              onClick={() => setActiveIdx((p) => (p === idx ? null : idx))}
+            />
+          ))}
+        </svg>
+        {/* Center label */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            textAlign: "center",
+            pointerEvents: "none",
+            transition: "opacity 0.2s",
+          }}
+        >
+          {active ? (
+            <>
+              <div style={{ fontSize: 18, fontWeight: 800, color: active.color, lineHeight: 1.1 }}>
+                {active.percent}%
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-2)", marginTop: 2, maxWidth: 60, lineHeight: 1.2 }}>
+                {active.name}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 500 }}>
+              Survoler
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 10, flex: 1, minWidth: 160 }}>
+        {donutSlices.map((slice, idx) => (
+          <div
+            key={idx}
+            className="row"
+            style={{
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: 13.5,
+              padding: "4px 8px",
+              borderRadius: 8,
+              cursor: "pointer",
+              background: activeIdx === idx ? "var(--glass-bg)" : "transparent",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={() => setActiveIdx(idx)}
+            onMouseLeave={() => setActiveIdx(null)}
+            onClick={() => setActiveIdx((p) => (p === idx ? null : idx))}
+          >
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <div
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  background: slice.color,
+                  transition: "transform 0.2s",
+                  transform: activeIdx === idx ? "scale(1.3)" : "scale(1)",
+                }}
+              />
+              <span style={{ fontWeight: 600 }}>{slice.name}</span>
+            </div>
+            <span className="muted" style={{ fontSize: 12.5 }}>
+              {slice.count} ({slice.percent}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -900,11 +1145,12 @@ export default function ProfilePage() {
           paddingRight: 18,
         }}
       >
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div>
             <h1 className="page-title" style={{ margin: 0, fontSize: 28 }}>Profil</h1>
             <p className="page-sub" style={{ margin: 0, marginTop: 2 }}>Vos statistiques</p>
           </div>
+          <SyncIndicator />
         </div>
 
         <div
@@ -999,95 +1245,15 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Heatmap d'activité */}
+          {/* Heatmap d'activité — interactive */}
           <h2 className="section-title">Calendrier d'activité 🗓️</h2>
-          <div className="glass card stack" style={{ padding: 18, gap: 12 }}>
-            <div style={{ display: "flex", gap: 3.5, overflowX: "auto", paddingBottom: 6 }}>
-              {heatmapColumns.map((col, cIdx) => (
-                <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
-                  {col.map((day) => {
-                    const count = watchedLog[day] || 0;
-                    let bg = "var(--glass-border)";
-                    let opacity = 1;
-                    let titleText = `${day} : aucune activité`;
-                    if (count > 0) {
-                      titleText = `${day} : ${count} activité${count > 1 ? "s" : ""}`;
-                      bg = "var(--accent)";
-                      if (count === 1) opacity = 0.25;
-                      else if (count <= 3) opacity = 0.55;
-                      else if (count <= 5) opacity = 0.8;
-                      else opacity = 1;
-                    }
-                    return (
-                      <div
-                        key={day}
-                        title={titleText}
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 2,
-                          background: bg,
-                          opacity,
-                          transition: "background 0.2s, opacity 0.2s"
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <div className="row" style={{ justifyContent: "space-between", fontSize: 11, color: "var(--text-3)" }}>
-              <span>Il y a 20 semaines</span>
-              <div className="row" style={{ gap: 4, alignItems: "center" }}>
-                <span>Moins</span>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--glass-border)" }} />
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.25 }} />
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.55 }} />
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.8 }} />
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 1 }} />
-                <span>Plus</span>
-              </div>
-              <span>Aujourd'hui</span>
-            </div>
-          </div>
+          <HeatmapInteractive heatmapColumns={heatmapColumns} watchedLog={watchedLog} />
 
           {/* Genres favoris */}
           {totalGenreCount > 0 && (
             <>
               <h2 className="section-title">Genres favoris 📊</h2>
-              <div className="glass card row" style={{ gap: 24, padding: 20, alignItems: "center", justifyContent: "space-around", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", borderRadius: "50%" }}>
-                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--hairline)" strokeWidth="12" />
-                    {donutSlices.map((slice, idx) => (
-                      <circle
-                        key={idx}
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke={slice.color}
-                        strokeWidth="12"
-                        strokeDasharray={`${slice.strokeLength} 251.2`}
-                        strokeDashoffset={slice.strokeOffset}
-                        strokeLinecap="round"
-                        style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                      />
-                    ))}
-                  </svg>
-                </div>
-                <div className="stack" style={{ gap: 10, flex: 1, minWidth: 160 }}>
-                  {donutSlices.map((slice, idx) => (
-                    <div key={idx} className="row" style={{ justifyContent: "space-between", alignItems: "center", fontSize: 13.5 }}>
-                      <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: slice.color }} />
-                        <span style={{ fontWeight: 600 }}>{slice.name}</span>
-                      </div>
-                      <span className="muted" style={{ fontSize: 12.5 }}>{slice.count} ({slice.percent}%)</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <DonutInteractive donutSlices={donutSlices} />
             </>
           )}
 

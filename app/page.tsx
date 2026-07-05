@@ -594,11 +594,16 @@ export default function AgendaPage() {
       {category === "series" && followed.length === 0 && (
         <div className="glass empty">
           <div className="big">📺</div>
-          <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucune série suivie</h2>
-          <p className="muted" style={{ marginBottom: 18 }}>
-            Ajoutez vos séries préférées pour retrouver ici les épisodes à voir et les prochaines diffusions.
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucune série suivie</h2>
+          <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
+            Ajoutez vos séries préférées pour suivre les épisodes à voir et les prochaines diffusions.
           </p>
-          <Link href="/discover" className="btn btn-primary pressable">
+          <Link
+            href="/discover"
+            className="btn btn-primary pressable"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 22px", borderRadius: 12, fontWeight: 700 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Découvrir des séries
           </Link>
         </div>
@@ -607,11 +612,16 @@ export default function AgendaPage() {
       {category === "movies" && movieWatchlist.length === 0 && (
         <div className="glass empty">
           <div className="big">🎬</div>
-          <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucun film à voir</h2>
-          <p className="muted" style={{ marginBottom: 18 }}>
-            Ajoutez des films à votre liste pour retrouver ici les films à voir et les prochaines sorties.
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucun film à voir</h2>
+          <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
+            Créez votre watchlist et retrouvez ici vos films à voir et les prochaines sorties.
           </p>
-          <Link href="/discover" className="btn btn-primary pressable">
+          <Link
+            href="/discover"
+            className="btn btn-primary pressable"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 22px", borderRadius: 12, fontWeight: 700 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Découvrir des films
           </Link>
         </div>
@@ -620,11 +630,16 @@ export default function AgendaPage() {
       {category === "books" && booksWatchlist.length === 0 && (
         <div className="glass empty">
           <div className="big">📚</div>
-          <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucun livre à lire</h2>
-          <p className="muted" style={{ marginBottom: 18 }}>
-            Ajoutez des livres à votre liste pour retrouver ici les livres à lire.
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucun livre à lire</h2>
+          <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
+            Ajoutez des livres à votre liste pour suivre votre progression de lecture.
           </p>
-          <Link href="/discover" className="btn btn-primary pressable">
+          <Link
+            href="/discover"
+            className="btn btn-primary pressable"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 22px", borderRadius: 12, fontWeight: 700 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Découvrir des livres
           </Link>
         </div>
