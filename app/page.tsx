@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
-import { useHydrateLibrary } from "@/lib/client";
+import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
 import { markEpisodeWatched } from "@/lib/watch";
@@ -16,6 +16,7 @@ import {
   bookStatus,
   DAY,
   effectiveShowStatus,
+  epKey,
   epLabel,
   fmtRelative,
   fmtRelativeOrDateWithTime,
@@ -203,6 +204,36 @@ export default function AgendaPage() {
     toggleBookWatchlist(b.id);
     toast(`${b.title} retiré de la liste à lire`, "🗑");
   }
+
+  const agendaShowIds = agendaShows.map((s) => s.id).join(",");
+
+  // Rafraîchit les horaires réels (Trakt) des séries déjà en cache : celles
+  // suivies avant l'ajout de cette fonctionnalité n'ont que la date TMDB,
+  // sans heure — ce fetch les met à niveau sans attendre une revisite de
+  // leur fiche complète.
+  useEffect(() => {
+    if (!mounted || !agendaShowIds) return;
+    apiGet<Record<number, Record<string, string>>>(
+      `/api/shows/air-times?ids=${agendaShowIds}`
+    ).then((data) => {
+      if (!data) return;
+      for (const show of agendaShows) {
+        const times = data[show.id];
+        if (!times || !show.seasons) continue;
+        useTrack.getState().cacheShow({
+          ...show,
+          seasons: show.seasons.map((season) => ({
+            ...season,
+            episodes: season.episodes.map((ep) => {
+              const t = times[epKey(ep.s, ep.e)];
+              return t ? { ...ep, airDate: t } : ep;
+            }),
+          })),
+        });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, agendaShowIds]);
 
   useEffect(() => {
     if (!mounted) return;
