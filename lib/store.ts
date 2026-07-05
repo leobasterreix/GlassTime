@@ -1,10 +1,52 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { useEffect, useState } from "react";
 import type { Movie, Show, Book } from "./types";
 import { epKey } from "./utils";
+
+/** N'écrit jamais en levant : Safari a un quota localStorage bien plus
+ * restrictif que Chrome, et un cache qui grossit avec beaucoup de séries/
+ * films suivis peut le dépasser — sans ce filet, ça plantait toute l'appli
+ * (QuotaExceededError pendant la réconciliation initiale de zustand/persist). */
+const safeStorage = {
+  getItem: (name: string) => {
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (err) {
+      console.error("Stockage local plein, sauvegarde ignorée :", err);
+    }
+  },
+  removeItem: (name: string) => {
+    try {
+      localStorage.removeItem(name);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+/** Les fiches détaillées (cast, bande-annonce, plateformes, résumé) ne sont
+ * jamais relues depuis le cache — les pages détail refetchent toujours en
+ * direct au montage. Les garder en mémoire pendant la session est utile,
+ * mais les persister ne fait que gonfler le quota localStorage pour rien. */
+function trimShowForStorage(s: Show): Show {
+  return { ...s, overview: "", cast: undefined, trailerKey: undefined, providers: undefined, backdrop: undefined };
+}
+function trimMovieForStorage(m: Movie): Movie {
+  return { ...m, overview: "", cast: undefined, trailerKey: undefined, providers: undefined };
+}
+function trimBookForStorage(b: Book): Book {
+  return { ...b, overview: "" };
+}
 
 export type ShowFollowStatus = "active" | "paused" | "dropped";
 
@@ -512,7 +554,22 @@ export const useTrack = create<TrackState>()(
           updatedAt: Date.now(),
         }),
     }),
-    { name: "glasstime-store" }
+    {
+      name: "glasstime-store",
+      storage: createJSONStorage(() => safeStorage),
+      partialize: (state) => ({
+        ...state,
+        showCache: Object.fromEntries(
+          Object.entries(state.showCache).map(([id, s]) => [id, trimShowForStorage(s)])
+        ),
+        movieCache: Object.fromEntries(
+          Object.entries(state.movieCache).map(([id, m]) => [id, trimMovieForStorage(m)])
+        ),
+        bookCache: Object.fromEntries(
+          Object.entries(state.bookCache).map(([id, b]) => [id, trimBookForStorage(b)])
+        ),
+      }),
+    }
   )
 );
 
