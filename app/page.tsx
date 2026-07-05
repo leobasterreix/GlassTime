@@ -82,6 +82,7 @@ export default function AgendaPage() {
     toggleBookRead,
     bookProgress,
     updateBookProgress,
+    setEpisode,
   } = useTrack();
   useHydrateLibrary();
 
@@ -295,6 +296,29 @@ export default function AgendaPage() {
             </div>
           </div>
           {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+          <button
+            className="pressable"
+            aria-label="Supprimer de l'historique"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm("Supprimer cet épisode de votre historique ?")) {
+                setEpisode(card.show.id, card.ep.s, card.ep.e, false);
+              }
+            }}
+            style={{
+              padding: 6,
+              marginLeft: 6,
+              borderRadius: "50%",
+              color: "var(--text-3)",
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent"
+            }}
+          >
+            ✕
+          </button>
         </div>
       );
     }
@@ -311,6 +335,29 @@ export default function AgendaPage() {
             <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
           </div>
           {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+          <button
+            className="pressable"
+            aria-label="Supprimer de l'historique"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm("Supprimer ce film de votre historique ?")) {
+                toggleMovieWatched(card.movie.id);
+              }
+            }}
+            style={{
+              padding: 6,
+              marginLeft: 6,
+              borderRadius: "50%",
+              color: "var(--text-3)",
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent"
+            }}
+          >
+            ✕
+          </button>
         </div>
       );
     }
@@ -326,6 +373,29 @@ export default function AgendaPage() {
           <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
         </div>
         {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+        <button
+          className="pressable"
+          aria-label="Supprimer de l'historique"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("Supprimer ce livre de votre historique ?")) {
+              toggleBookRead(card.book.id);
+            }
+          }}
+          style={{
+            padding: 6,
+            marginLeft: 6,
+            borderRadius: "50%",
+            color: "var(--text-3)",
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent"
+          }}
+        >
+          ✕
+        </button>
       </div>
     );
   }
