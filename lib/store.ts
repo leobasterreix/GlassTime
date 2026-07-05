@@ -281,8 +281,11 @@ export const useTrack = create<TrackState>()(
           const delta = value && !had ? 1 : !value && had ? -1 : 0;
           return {
             watched: { ...st.watched, [showId]: map },
+            // Horodatage complet (pas juste le jour) : sert aussi à faire
+            // remonter la série en tête de « À rattraper » juste après un
+            // marquage, pas seulement à calculer l'ancienneté en jours.
             lastWatchedAt: value
-              ? { ...st.lastWatchedAt, [showId]: todayISO() }
+              ? { ...st.lastWatchedAt, [showId]: new Date().toISOString() }
               : st.lastWatchedAt,
             watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),
@@ -305,8 +308,11 @@ export const useTrack = create<TrackState>()(
           }
           return {
             watched: { ...st.watched, [showId]: map },
+            // Horodatage complet (pas juste le jour) : sert aussi à faire
+            // remonter la série en tête de « À rattraper » juste après un
+            // marquage, pas seulement à calculer l'ancienneté en jours.
             lastWatchedAt: value
-              ? { ...st.lastWatchedAt, [showId]: todayISO() }
+              ? { ...st.lastWatchedAt, [showId]: new Date().toISOString() }
               : st.lastWatchedAt,
             watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
             updatedAt: Date.now(),

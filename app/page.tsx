@@ -80,9 +80,18 @@ export default function AgendaPage() {
   );
   const loadingCount = mounted ? followed.length - shows.length : 0;
 
+  // La série la plus récemment marquée remonte en tête : pouvoir enchaîner
+  // les épisodes d'une série en swipant sans avoir à re-scroller jusqu'à sa
+  // position d'origine à chaque fois. Les séries jamais marquées gardent
+  // leur ordre d'origine entre elles (tri stable).
   const toCatchUp = activeShows
     .map((show) => ({ show, next: nextEpisode(show, watched[show.id]) }))
-    .filter((x): x is { show: Show; next: Episode } => x.next !== null);
+    .filter((x): x is { show: Show; next: Episode } => x.next !== null)
+    .sort((a, b) => {
+      const ta = lastWatchedAt[a.show.id] ? new Date(lastWatchedAt[a.show.id]).getTime() : 0;
+      const tb = lastWatchedAt[b.show.id] ? new Date(lastWatchedAt[b.show.id]).getTime() : 0;
+      return tb - ta;
+    });
 
   // Films de la liste "à voir" déjà sortis (pas encore vus) et livres de la
   // liste "à lire" : autant d'éléments "à rattraper" au même titre que les
