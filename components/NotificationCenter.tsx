@@ -13,7 +13,8 @@ export default function NotificationCenter() {
     useTrack();
   const [open, setOpen] = useState(false);
 
-  if (pathname === "/login") return null;
+  const isMainPage = pathname === "/" || pathname === "/discover" || pathname === "/profile";
+  if (!isMainPage) return null;
 
   const unread = mounted ? notifications.filter((n) => !n.read).length : 0;
 
@@ -23,6 +24,8 @@ export default function NotificationCenter() {
         className="notif-bell pressable"
         aria-label="Notifications"
         onClick={() => setOpen((v) => !v)}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />

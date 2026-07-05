@@ -315,141 +315,161 @@ function DiscoverContent() {
   }
 
   return (
-    <main className="page">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <h1 className="page-title">Découvrir</h1>
-          <p className="page-sub">Séries, films et livres</p>
-        </div>
-        {type === "books" && (
-          <button
-            className="btn btn-primary pressable row"
-            style={{ padding: "10px 16px", borderRadius: 999, fontSize: 13.5, gap: 6, fontWeight: 700 }}
-            onClick={() => setScannerOpen(true)}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
-              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
-              <path d="M7 12h10" />
-            </svg>
-            Scanner
-          </button>
-        )}
-      </div>
-
-      <div className="glass segmented" style={{ marginBottom: 16 }}>
-        <button
-          className={type === "shows" ? "active" : ""}
-          onClick={() => handleTypeChange("shows")}
-        >
-          Séries
-        </button>
-        <button
-          className={type === "movies" ? "active" : ""}
-          onClick={() => handleTypeChange("movies")}
-        >
-          Films
-        </button>
-        <button
-          className={type === "books" ? "active" : ""}
-          onClick={() => handleTypeChange("books")}
-        >
-          Livres
-        </button>
-      </div>
-
-      <div className="glass search" style={{ marginBottom: 16 }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-3)" }}>
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" />
-        </svg>
-        <input
-          placeholder={
-            type === "shows"
-              ? "Rechercher une série…"
-              : type === "movies"
-                ? "Rechercher un film…"
-                : "Rechercher un titre, un auteur, un ISBN…"
-          }
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
-
-      {type === "shows" && genres.length > 0 && (
-        <div className="hscroll" style={{ paddingBottom: 8, marginBottom: 12 }}>
-          {genres.map((g) => (
+    <main className="page" style={{ paddingTop: 0 }}>
+      {/* En-tête collant (sticky) : Titre, Catégories, Barre de recherche et Filtres */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--tab-bg)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
+          paddingBottom: 12,
+          borderBottom: "1px solid var(--hairline)",
+          margin: "0 -18px 16px -18px",
+          paddingLeft: 18,
+          paddingRight: 18,
+        }}
+      >
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <div>
+            <h1 className="page-title" style={{ margin: 0, fontSize: 28 }}>Découvrir</h1>
+            <p className="page-sub" style={{ margin: 0, marginTop: 2 }}>Séries, films et livres</p>
+          </div>
+          {type === "books" && (
             <button
-              key={g}
-              className={`chip pressable${genre === g ? " active" : ""}`}
-              style={{ width: "auto", minWidth: "auto" }}
-              onClick={() => setGenre(genre === g ? null : g)}
+              className="btn btn-primary pressable row"
+              style={{ padding: "10px 16px", borderRadius: 999, fontSize: 13.5, gap: 6, fontWeight: 700 }}
+              onClick={() => setScannerOpen(true)}
             >
-              {g}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {type === "books" && (
-        <div className="row" style={{ gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <select
-            className="select"
-            value={bookYear ?? ""}
-            onChange={(e) => {
-              const v = e.target.value || null;
-              setBookYear(v);
-              if (!v) setBookMonth(null);
-            }}
-          >
-            <option value="">Année</option>
-            {YEARS.map((y) => (
-              <option key={y} value={String(y)}>
-                {y}
-              </option>
-            ))}
-          </select>
-          <select
-            className="select"
-            value={bookMonth ?? ""}
-            disabled={!bookYear}
-            onChange={(e) => setBookMonth(e.target.value || null)}
-          >
-            <option value="">Mois</option>
-            {MONTHS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          {(bookYear || bookMonth) && (
-            <button
-              className="chip pressable"
-              style={{ width: "auto", minWidth: "auto" }}
-              onClick={() => {
-                setBookYear(null);
-                setBookMonth(null);
-              }}
-            >
-              ✕ Effacer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+                <path d="M7 12h10" />
+              </svg>
+              Scanner
             </button>
           )}
         </div>
-      )}
 
-      {type === "books" && bookGenres.length > 0 && (
-        <div className="hscroll" style={{ paddingBottom: 8, marginBottom: 12 }}>
-          {bookGenres.map((g) => (
-            <button
-              key={g}
-              className={`chip pressable${bookGenre === g ? " active" : ""}`}
-              style={{ width: "auto", minWidth: "auto" }}
-              onClick={() => setBookGenre(bookGenre === g ? null : g)}
-            >
-              {g}
-            </button>
-          ))}
+        <div className="glass segmented" style={{ marginBottom: 12 }}>
+          <button
+            className={type === "shows" ? "active" : ""}
+            onClick={() => handleTypeChange("shows")}
+          >
+            Séries 📺
+          </button>
+          <button
+            className={type === "movies" ? "active" : ""}
+            onClick={() => handleTypeChange("movies")}
+          >
+            Films 🎬
+          </button>
+          <button
+            className={type === "books" ? "active" : ""}
+            onClick={() => handleTypeChange("books")}
+          >
+            Livres 📚
+          </button>
         </div>
-      )}
+
+        <div className="search" style={{ marginBottom: (type === "shows" && genres.length > 0) || type === "books" ? 12 : 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-3)" }}>
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            placeholder={
+              type === "shows"
+                ? "Rechercher une série…"
+                : type === "movies"
+                  ? "Rechercher un film…"
+                  : "Rechercher un titre, un auteur, un ISBN…"
+            }
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        {type === "shows" && genres.length > 0 && (
+          <div className="hscroll" style={{ paddingBottom: 0, marginBottom: 0 }}>
+            {genres.map((g) => (
+              <button
+                key={g}
+                className={`chip pressable${genre === g ? " active" : ""}`}
+                style={{ width: "auto", minWidth: "auto" }}
+                onClick={() => setGenre(genre === g ? null : g)}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {type === "books" && (
+          <div className="stack" style={{ gap: 8 }}>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <select
+                className="select"
+                value={bookYear ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value || null;
+                  setBookYear(v);
+                  if (!v) setBookMonth(null);
+                }}
+              >
+                <option value="">Année</option>
+                {YEARS.map((y) => (
+                  <option key={y} value={String(y)}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select"
+                value={bookMonth ?? ""}
+                disabled={!bookYear}
+                onChange={(e) => setBookMonth(e.target.value || null)}
+              >
+                <option value="">Mois</option>
+                {MONTHS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              {(bookYear || bookMonth) && (
+                <button
+                  className="chip pressable"
+                  style={{ width: "auto", minWidth: "auto" }}
+                  onClick={() => {
+                    setBookYear(null);
+                    setBookMonth(null);
+                  }}
+                >
+                  ✕ Effacer
+                </button>
+              )}
+            </div>
+
+            {bookGenres.length > 0 && (
+              <div className="hscroll" style={{ paddingBottom: 0, marginBottom: 0 }}>
+                {bookGenres.map((g) => (
+                  <button
+                    key={g}
+                    className={`chip pressable${bookGenre === g ? " active" : ""}`}
+                    style={{ width: "auto", minWidth: "auto" }}
+                    onClick={() => setBookGenre(bookGenre === g ? null : g)}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 1. SÉRIES RESULTS */}
       {type === "shows" && (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
@@ -43,10 +43,22 @@ type HistoryCard =
 
 const STALE_DAYS = 60;
 
+// Évite l'avertissement useLayoutEffect côté serveur tout en gardant un
+// ancrage de scroll sans clignotement côté client.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 export default function AgendaPage() {
   const router = useRouter();
   const mounted = useMounted();
-  const [tab, setTab] = useState<"rattraper" | "prochaines" | "historique">("rattraper");
+  const [category, setCategory] = useState<"series" | "movies" | "books">("series");
+  const [tab, setTab] = useState<"rattraper" | "prochaines">("rattraper");
+  const controlRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const catchupDividerRef = useRef<HTMLHeadingElement>(null);
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editPageVal, setEditPageVal] = useState<number>(0);
+  const [editTotalVal, setEditTotalVal] = useState<number>(300);
+
   const {
     followed,
     watched,
@@ -68,6 +80,8 @@ export default function AgendaPage() {
     toggleMovieWatched,
     toggleBookWatchlist,
     toggleBookRead,
+    bookProgress,
+    updateBookProgress,
   } = useTrack();
   useHydrateLibrary();
 
@@ -87,7 +101,18 @@ export default function AgendaPage() {
   const agendaShows = shows.filter(
     (s) => (showStatus[s.id] ?? "active") !== "dropped"
   );
-  const loadingCount = mounted ? followed.length - shows.length : 0;
+  const loadingMovies = mounted
+    ? movieWatchlist.filter((id) => !movieCache[id]).length
+    : 0;
+  const loadingBooks = mounted
+    ? booksWatchlist.filter((id) => !bookCache[id]).length
+    : 0;
+  const loadingCount =
+    category === "series"
+      ? (mounted ? followed.length - shows.length : 0)
+      : category === "movies"
+      ? loadingMovies
+      : loadingBooks;
 
   // La série la plus récemment marquée remonte en tête : pouvoir enchaîner
   // les épisodes d'une série en swipant sans avoir à re-scroller jusqu'à sa
@@ -213,16 +238,97 @@ export default function AgendaPage() {
       return { kind: "history-book", key: `hist-book-${id}`, date: booksReadDates[id] ?? null, book };
     })
     .filter((x): x is HistoryCard => x !== null);
-  // Date connue d'abord (plus récent en premier), puis le reste dans l'ordre
-  // de construction (par série, dans l'ordre des épisodes) à défaut de mieux.
-  const historyCards = [...historyEpisodeCards, ...historyMovieCards, ...historyBookCards].sort(
-    (a, b) => {
+  // Historiques séparés par type de média (TV Time style)
+  const historyEpisodeAscending = [...historyEpisodeCards]
+    .sort((a, b) => {
       if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
       if (a.date && !b.date) return -1;
       if (!a.date && b.date) return 1;
       return 0;
+    })
+    .reverse();
+
+  const historyMovieAscending = [...historyMovieCards]
+    .sort((a, b) => {
+      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      return 0;
+    })
+    .reverse();
+
+  const historyBookAscending = [...historyBookCards]
+    .sort((a, b) => {
+      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      return 0;
+    })
+    .reverse();
+
+  // Layout effect pour ancrer le scroll sous le header fixe
+  useIsoLayoutEffect(() => {
+    if (!mounted) return;
+    const divider = catchupDividerRef.current;
+    if (!divider) {
+      window.scrollTo(0, 0);
+      return;
     }
-  );
+    const headerH = headerRef.current?.offsetHeight ?? 185;
+    const target = Math.max(0, divider.offsetTop - headerH - 6);
+    window.scrollTo(0, target);
+  }, [mounted, category, tab]);
+
+  function renderHistoryCard(card: HistoryCard) {
+    if (card.kind === "history-ep") {
+      return (
+        <div
+          key={card.key}
+          className="glass agenda-card pressable"
+          onClick={() => router.push(`/show/${card.show.id}`)}
+        >
+          <Poster item={card.show} mini />
+          <div className="agenda-body">
+            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
+            <div className="muted" style={{ marginTop: 2 }}>
+              {epLabel(card.ep)} — {card.ep.title}
+            </div>
+          </div>
+          {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+        </div>
+      );
+    }
+    if (card.kind === "history-movie") {
+      return (
+        <div
+          key={card.key}
+          className="glass agenda-card pressable"
+          onClick={() => router.push(`/movie/${card.movie.id}`)}
+        >
+          <Poster item={card.movie} mini />
+          <div className="agenda-body">
+            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.movie.title}</div>
+            <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
+          </div>
+          {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+        </div>
+      );
+    }
+    return (
+      <div
+        key={card.key}
+        className="glass agenda-card pressable"
+        onClick={() => router.push(`/book/${card.book.id}`)}
+      >
+        <Poster item={card.book} mini />
+        <div className="agenda-body">
+          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.book.title}</div>
+          <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
+        </div>
+        {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+      </div>
+    );
+  }
 
   /** Statuts de suivi affichés sur les cartes à rattraper : jamais commencée,
    * ou plus touchée depuis longtemps (delaissée sans être abandonnée). */
@@ -342,46 +448,167 @@ export default function AgendaPage() {
   }
 
   return (
-    <main className="page">
-      <h1 className="page-title">Agenda</h1>
-      <p className="page-sub">{today}</p>
+    <main className="page" style={{ paddingTop: 0 }}>
+      {/* En-tête collant (sticky) : Titre, Date, Onglets de Catégorie et Sous-onglets */}
+      <div
+        ref={headerRef}
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--tab-bg)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
+          paddingBottom: 12,
+          borderBottom: "1px solid var(--hairline)",
+          margin: "0 -18px 16px -18px",
+          paddingLeft: 18,
+          paddingRight: 18,
+        }}
+      >
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
+          <div>
+            <h1 className="page-title" style={{ margin: 0, fontSize: 28 }}>Agenda</h1>
+            <p className="page-sub" style={{ margin: 0, marginTop: 2 }}>{today}</p>
+          </div>
+        </div>
 
-      {followed.length === 0 ? (
+        {/* Sélecteur de Catégorie : Séries | Films | Livres */}
+        <div className="glass segmented" style={{ marginBottom: 12 }}>
+          <button className={category === "series" ? "active" : ""} onClick={() => setCategory("series")}>
+            Séries 📺
+          </button>
+          <button className={category === "movies" ? "active" : ""} onClick={() => setCategory("movies")}>
+            Films 🎬
+          </button>
+          <button className={category === "books" ? "active" : ""} onClick={() => setCategory("books")}>
+            Livres 📚
+          </button>
+        </div>
+
+        {/* Sous-onglets dynamiques selon la catégorie active */}
+        {category === "series" && (
+          <div className="glass segmented" style={{ marginBottom: 0, scale: "0.96", transformOrigin: "center" }}>
+            <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
+              À rattraper{toCatchUp.length > 0 ? ` · ${toCatchUp.length}` : ""}
+            </button>
+            <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
+              Prochaines diffusions{epEntries.length > 0 ? ` · ${epEntries.length}` : ""}
+            </button>
+          </div>
+        )}
+        {category === "movies" && (
+          <div className="glass segmented" style={{ marginBottom: 0, scale: "0.96", transformOrigin: "center" }}>
+            <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
+              À voir{moviesToCatchUp.length > 0 ? ` · ${moviesToCatchUp.length}` : ""}
+            </button>
+            <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
+              Prochaines sorties{movieEntries.length > 0 ? ` · ${movieEntries.length}` : ""}
+            </button>
+          </div>
+        )}
+        {category === "books" && (
+          <div className="glass segmented" style={{ marginBottom: 0, scale: "0.96", transformOrigin: "center" }}>
+            <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
+              À lire{booksToCatchUp.length > 0 ? ` · ${booksToCatchUp.length}` : ""}
+            </button>
+            <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
+              Déjà lus{historyBookCards.length > 0 ? ` · ${historyBookCards.length}` : ""}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* États vides spécifiques par catégorie */}
+      {category === "series" && followed.length === 0 && (
         <div className="glass empty">
           <div className="big">📺</div>
           <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucune série suivie</h2>
           <p className="muted" style={{ marginBottom: 18 }}>
-            Ajoutez vos séries préférées pour retrouver ici les épisodes à voir
-            et les prochaines diffusions.
+            Ajoutez vos séries préférées pour retrouver ici les épisodes à voir et les prochaines diffusions.
           </p>
           <Link href="/discover" className="btn btn-primary pressable">
             Découvrir des séries
           </Link>
         </div>
-      ) : (
+      )}
+
+      {category === "movies" && movieWatchlist.length === 0 && (
+        <div className="glass empty">
+          <div className="big">🎬</div>
+          <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucun film à voir</h2>
+          <p className="muted" style={{ marginBottom: 18 }}>
+            Ajoutez des films à votre liste pour retrouver ici les films à voir et les prochaines sorties.
+          </p>
+          <Link href="/discover" className="btn btn-primary pressable">
+            Découvrir des films
+          </Link>
+        </div>
+      )}
+
+      {category === "books" && booksWatchlist.length === 0 && (
+        <div className="glass empty">
+          <div className="big">📚</div>
+          <h2 style={{ fontSize: 19, marginBottom: 8 }}>Aucun livre à lire</h2>
+          <p className="muted" style={{ marginBottom: 18 }}>
+            Ajoutez des livres à votre liste pour retrouver ici les livres à lire.
+          </p>
+          <Link href="/discover" className="btn btn-primary pressable">
+            Découvrir des livres
+          </Link>
+        </div>
+      )}
+
+      {/* Rendu des listes s'il y a du contenu */}
+      {((category === "series" && followed.length > 0) ||
+        (category === "movies" && movieWatchlist.length > 0) ||
+        (category === "books" && booksWatchlist.length > 0)) && (
         <>
+          {/* Ligne de statistiques dynamiques */}
           <div className="row" style={{ marginBottom: 20 }}>
-            <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>
-                {pendingEpisodes}
-              </div>
-              <div className="tiny">
-                épisode{pendingEpisodes > 1 ? "s" : ""} à rattraper
-              </div>
-            </div>
-            <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>
-                {followed.length}
-              </div>
-              <div className="tiny">
-                série{followed.length > 1 ? "s" : ""} suivie
-                {followed.length > 1 ? "s" : ""}
-              </div>
-            </div>
+            {category === "series" ? (
+              <>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{pendingEpisodes}</div>
+                  <div className="tiny">épisode{pendingEpisodes > 1 ? "s" : ""} à rattraper</div>
+                </div>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{followed.length}</div>
+                  <div className="tiny">série{followed.length > 1 ? "s" : ""} suivie{followed.length > 1 ? "s" : ""}</div>
+                </div>
+              </>
+            ) : category === "movies" ? (
+              <>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{moviesToCatchUp.length}</div>
+                  <div className="tiny">film{moviesToCatchUp.length > 1 ? "s" : ""} à voir</div>
+                </div>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{moviesWatched.length}</div>
+                  <div className="tiny">film{moviesWatched.length > 1 ? "s" : ""} vu{moviesWatched.length > 1 ? "s" : ""}</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{booksToCatchUp.length}</div>
+                  <div className="tiny">livre{booksToCatchUp.length > 1 ? "s" : ""} à lire</div>
+                </div>
+                <div className="glass card" style={{ flex: 1, textAlign: "center", padding: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{booksRead.length}</div>
+                  <div className="tiny">livre{booksRead.length > 1 ? "s" : ""} lu{booksRead.length > 1 ? "s" : ""}</div>
+                </div>
+              </>
+            )}
           </div>
 
           <p className="tiny" style={{ marginBottom: 16, color: "var(--text-3)" }}>
-            Glissez une carte à droite pour marquer vu, à gauche pour abandonner la série.
+            {category === "series"
+              ? "Glissez une carte à droite pour marquer vu, à gauche pour abandonner la série."
+              : category === "movies"
+              ? "Glissez une carte à droite pour marquer vu, à gauche pour retirer de la liste."
+              : "Glissez une carte à droite pour marquer lu, à gauche pour retirer de la liste."}
           </p>
 
           {loadingCount > 0 && (
@@ -392,240 +619,384 @@ export default function AgendaPage() {
             </div>
           )}
 
-          <div className="glass segmented" style={{ marginBottom: 16 }}>
-            <button className={tab === "rattraper" ? "active" : ""} onClick={() => setTab("rattraper")}>
-              À rattraper{catchupCards.length > 0 ? ` · ${catchupCards.length}` : ""}
-            </button>
-            <button className={tab === "prochaines" ? "active" : ""} onClick={() => setTab("prochaines")}>
-              Prochaines diffusions{upcomingCards.length > 0 ? ` · ${upcomingCards.length}` : ""}
-            </button>
-            <button className={tab === "historique" ? "active" : ""} onClick={() => setTab("historique")}>
-              Historique{historyCards.length > 0 ? ` · ${historyCards.length}` : ""}
-            </button>
-          </div>
-
-          {tab === "rattraper" && (catchupCards.length === 0 ? (
-            <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
-              <span className="muted">Tout est rattrapé, bravo !</span>
-            </div>
-          ) : (
-            <div className="stack" style={{ marginBottom: 20 }}>
-              {catchupCards.map((card) => {
-                if (card.kind === "catchup-show") {
-                  const { show, ep } = card;
-                  const badge = catchupBadge(show);
-                  return (
-                    <SwipeableRow
-                      key={card.key}
-                      onTap={() => router.push(`/show/${show.id}`)}
-                      onSwipeRight={() => markEpisodeWatched(show, ep)}
-                      onSwipeLeft={() => dropShow(show)}
-                      leftIcon="🏳️"
-                    >
-                      <div className="glass agenda-card pressable">
-                        <Poster
-                          item={{ ...show, status: effectiveShowStatus(show, showStatus[show.id]) }}
-                          mini
-                        />
-                        <div className="agenda-body">
-                          <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
-                            {badge && (
-                              <span className="agenda-status-pill">
-                                {badge.emoji} {badge.label}
-                              </span>
-                            )}
-                          </div>
-                          <div className="muted" style={{ marginTop: 2 }}>
-                            {epLabel(ep)} — {ep.title}
-                          </div>
-                          <div className="tiny" style={{ marginTop: 2 }}>
-                            diffusé {fmtRelativeOrDateWithTime(ep.airDate!)}
-                          </div>
-                        </div>
-                        <button
-                          className="check"
-                          aria-label={`Marquer ${epLabel(ep)} comme vu`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markEpisodeWatched(show, ep);
-                          }}
-                        >
-                          ✓
-                        </button>
-                      </div>
-                    </SwipeableRow>
-                  );
-                }
-                if (card.kind === "catchup-movie") {
-                  const { movie } = card;
-                  return (
-                    <SwipeableRow
-                      key={card.key}
-                      onTap={() => router.push(`/movie/${movie.id}`)}
-                      onSwipeRight={() => markMovieDone(movie)}
-                      onSwipeLeft={() => removeMovieFromWatchlist(movie)}
-                    >
-                      <div className="glass agenda-card pressable">
-                        <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
-                        <div className="agenda-body">
-                          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
-                          <div className="muted" style={{ marginTop: 2 }}>🎬 Film à voir</div>
-                        </div>
-                        <button
-                          className="check"
-                          aria-label={`Marquer ${movie.title} comme vu`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markMovieDone(movie);
-                          }}
-                        >
-                          ✓
-                        </button>
-                      </div>
-                    </SwipeableRow>
-                  );
-                }
-                const { book } = card;
-                return (
-                  <SwipeableRow
-                    key={card.key}
-                    onTap={() => router.push(`/book/${book.id}`)}
-                    onSwipeRight={() => markBookDone(book)}
-                    onSwipeLeft={() => removeBookFromWatchlist(book)}
-                  >
-                    <div className="glass agenda-card pressable">
-                      <Poster item={{ ...book, status: bookStatus(true, false) }} mini />
-                      <div className="agenda-body">
-                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{book.title}</div>
-                        <div className="muted" style={{ marginTop: 2 }}>📚 Livre à lire</div>
-                      </div>
-                      <button
-                        className="check"
-                        aria-label={`Marquer ${book.title} comme lu`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markBookDone(book);
-                        }}
-                      >
-                        ✓
-                      </button>
+          {/* SECTION SÉRIES */}
+          {category === "series" && (
+            <>
+              {tab === "rattraper" && (
+                <>
+                  {historyEpisodeAscending.length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
+                        ↑ Historique de visionnage
+                      </p>
+                      <div className="stack">{historyEpisodeAscending.map(renderHistoryCard)}</div>
                     </div>
-                  </SwipeableRow>
-                );
-              })}
-            </div>
-          ))}
+                  )}
 
-          {tab === "prochaines" && (upcomingCards.length === 0 ? (
-            <div className="glass card" style={{ textAlign: "center" }}>
-              <span className="muted">Aucune diffusion prévue pour le moment.</span>
-            </div>
-          ) : (
-            <div className="stack">
-              {upcomingCards.map((card) =>
-                card.kind === "upcoming-ep" ? (
-                  <SwipeableRow
-                    key={card.key}
-                    onTap={() => router.push(`/show/${card.show.id}`)}
-                    onSwipeLeft={() => dropShow(card.show)}
-                    leftIcon="🏳️"
-                  >
-                    <div className="glass agenda-card pressable">
-                      <Poster
-                        item={{
-                          ...card.show,
-                          status: effectiveShowStatus(card.show, showStatus[card.show.id]),
-                        }}
-                        mini
-                      />
-                      <div className="agenda-body">
-                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
-                        <div className="muted" style={{ marginTop: 2 }}>
-                          {epLabel(card.ep)} — {card.ep.title}
-                        </div>
-                      </div>
-                      <span className="badge-pill">{fmtRelativeWithTime(card.date)}</span>
+                  <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
+                    À rattraper{toCatchUp.length > 0 && <small>{toCatchUp.length}</small>}
+                  </h2>
+
+                  {toCatchUp.length === 0 ? (
+                    <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
+                      <span className="muted">Tout est rattrapé, bravo !</span>
                     </div>
-                  </SwipeableRow>
+                  ) : (
+                    <div className="stack" style={{ marginBottom: 20 }}>
+                      {toCatchUp.map(({ show, next }) => {
+                        const badge = catchupBadge(show);
+                        return (
+                          <SwipeableRow
+                            key={`catchup-${show.id}-${next.s}:${next.e}`}
+                            onTap={() => router.push(`/show/${show.id}`)}
+                            onSwipeRight={() => markEpisodeWatched(show, next)}
+                            onSwipeLeft={() => dropShow(show)}
+                            leftIcon="🏳️"
+                          >
+                            <div className="glass agenda-card pressable">
+                              <Poster
+                                item={{ ...show, status: effectiveShowStatus(show, showStatus[show.id]) }}
+                                mini
+                              />
+                              <div className="agenda-body">
+                                <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
+                                  {badge && (
+                                    <span className="agenda-status-pill">
+                                      {badge.emoji} {badge.label}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="muted" style={{ marginTop: 2 }}>
+                                  {epLabel(next)} — {next.title}
+                                </div>
+                                <div className="tiny" style={{ marginTop: 2 }}>
+                                  diffusé {fmtRelativeOrDateWithTime(next.airDate!)}
+                                </div>
+                              </div>
+                              <button
+                                className="check"
+                                aria-label={`Marquer ${epLabel(next)} comme vu`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markEpisodeWatched(show, next);
+                                }}
+                              >
+                                ✓
+                              </button>
+                            </div>
+                          </SwipeableRow>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === "prochaines" && (
+                epEntries.length === 0 ? (
+                  <div className="glass card" style={{ textAlign: "center" }}>
+                    <span className="muted">Aucune diffusion prévue pour le moment.</span>
+                  </div>
                 ) : (
-                  <SwipeableRow
-                    key={card.key}
-                    onTap={() => router.push(`/movie/${card.movie.id}`)}
-                    onSwipeLeft={() => toggleMovieWatchlist(card.movie.id)}
-                  >
-                    <div className="glass agenda-card pressable">
-                      <Poster item={{ ...card.movie, status: movieStatus(true, false) }} mini />
-                      <div className="agenda-body">
-                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.movie.title}</div>
-                        <div className="muted" style={{ marginTop: 2 }}>🎬 Sortie du film</div>
-                      </div>
-                      <span className="badge-pill">{fmtRelative(card.date)}</span>
-                    </div>
-                  </SwipeableRow>
+                  <div className="stack">
+                    {epEntries.map(({ show, ep, date }) => (
+                      <SwipeableRow
+                        key={`ep-${show.id}-${ep.s}:${ep.e}`}
+                        onTap={() => router.push(`/show/${show.id}`)}
+                        onSwipeLeft={() => dropShow(show)}
+                        leftIcon="🏳️"
+                      >
+                        <div className="glass agenda-card pressable">
+                          <Poster
+                            item={{
+                              ...show,
+                              status: effectiveShowStatus(show, showStatus[show.id]),
+                            }}
+                            mini
+                          />
+                          <div className="agenda-body">
+                            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
+                            <div className="muted" style={{ marginTop: 2 }}>
+                              {epLabel(ep)} — {ep.title}
+                            </div>
+                          </div>
+                          <span className="badge-pill">{fmtRelativeWithTime(date)}</span>
+                        </div>
+                      </SwipeableRow>
+                    ))}
+                  </div>
                 )
               )}
-            </div>
-          ))}
+            </>
+          )}
 
-          {tab === "historique" && (historyCards.length === 0 ? (
-            <div className="glass card" style={{ textAlign: "center" }}>
-              <span className="muted">Rien de vu ou lu pour le moment.</span>
-            </div>
-          ) : (
-            <div className="stack">
-              {historyCards.map((card) => {
-                if (card.kind === "history-ep") {
-                  return (
-                    <div
-                      key={card.key}
-                      className="glass agenda-card pressable"
-                      onClick={() => router.push(`/show/${card.show.id}`)}
-                    >
-                      <Poster item={card.show} mini />
-                      <div className="agenda-body">
-                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.show.title}</div>
-                        <div className="muted" style={{ marginTop: 2 }}>
-                          {epLabel(card.ep)} — {card.ep.title}
-                        </div>
-                      </div>
-                      {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+          {/* SECTION FILMS */}
+          {category === "movies" && (
+            <>
+              {tab === "rattraper" && (
+                <>
+                  {historyMovieAscending.length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
+                        ↑ Historique de visionnage
+                      </p>
+                      <div className="stack">{historyMovieAscending.map(renderHistoryCard)}</div>
                     </div>
-                  );
-                }
-                if (card.kind === "history-movie") {
-                  return (
-                    <div
-                      key={card.key}
-                      className="glass agenda-card pressable"
-                      onClick={() => router.push(`/movie/${card.movie.id}`)}
-                    >
-                      <Poster item={card.movie} mini />
-                      <div className="agenda-body">
-                        <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.movie.title}</div>
-                        <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
-                      </div>
-                      {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+                  )}
+
+                  <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
+                    À voir{moviesToCatchUp.length > 0 && <small>{moviesToCatchUp.length}</small>}
+                  </h2>
+
+                  {moviesToCatchUp.length === 0 ? (
+                    <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
+                      <span className="muted">Aucun film à voir.</span>
                     </div>
-                  );
-                }
-                return (
-                  <div
-                    key={card.key}
-                    className="glass agenda-card pressable"
-                    onClick={() => router.push(`/book/${card.book.id}`)}
-                  >
-                    <Poster item={card.book} mini />
-                    <div className="agenda-body">
-                      <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.book.title}</div>
-                      <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
+                  ) : (
+                    <div className="stack" style={{ marginBottom: 20 }}>
+                      {moviesToCatchUp.map((movie) => (
+                        <SwipeableRow
+                          key={`catchup-movie-${movie.id}`}
+                          onTap={() => router.push(`/movie/${movie.id}`)}
+                          onSwipeRight={() => markMovieDone(movie)}
+                          onSwipeLeft={() => removeMovieFromWatchlist(movie)}
+                        >
+                          <div className="glass agenda-card pressable">
+                            <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
+                            <div className="agenda-body">
+                              <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
+                              <div className="muted" style={{ marginTop: 2 }}>🎬 Film à voir</div>
+                            </div>
+                            <button
+                              className="check"
+                              aria-label={`Marquer ${movie.title} comme vu`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markMovieDone(movie);
+                              }}
+                            >
+                              ✓
+                            </button>
+                          </div>
+                        </SwipeableRow>
+                      ))}
                     </div>
-                    {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
+                  )}
+                </>
+              )}
+
+              {tab === "prochaines" && (
+                movieEntries.length === 0 ? (
+                  <div className="glass card" style={{ textAlign: "center" }}>
+                    <span className="muted">Aucune sortie prévue pour le moment.</span>
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                ) : (
+                  <div className="stack">
+                    {movieEntries.map(({ movie, date }) => (
+                      <SwipeableRow
+                        key={`movie-${movie.id}`}
+                        onTap={() => router.push(`/movie/${movie.id}`)}
+                        onSwipeLeft={() => toggleMovieWatchlist(movie.id)}
+                      >
+                        <div className="glass agenda-card pressable">
+                          <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
+                          <div className="agenda-body">
+                            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
+                            <div className="muted" style={{ marginTop: 2 }}>🎬 Sortie du film</div>
+                          </div>
+                          <span className="badge-pill">{fmtRelative(date)}</span>
+                        </div>
+                      </SwipeableRow>
+                    ))}
+                  </div>
+                )
+              )}
+            </>
+          )}
+
+          {/* SECTION LIVRES */}
+          {category === "books" && (
+            <>
+              {tab === "rattraper" && (
+                <>
+                  {historyBookAscending.length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
+                        ↑ Historique de lecture
+                      </p>
+                      <div className="stack">{historyBookAscending.map(renderHistoryCard)}</div>
+                    </div>
+                  )}
+
+                  <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
+                    À lire{booksToCatchUp.length > 0 && <small>{booksToCatchUp.length}</small>}
+                  </h2>
+
+                  {booksToCatchUp.length === 0 ? (
+                    <div className="glass card" style={{ textAlign: "center", marginBottom: 20 }}>
+                      <span className="muted">Aucun livre à lire.</span>
+                    </div>
+                  ) : (
+                    <div className="stack" style={{ marginBottom: 20 }}>
+                      {booksToCatchUp.map((book) => {
+                        const progress = bookProgress?.[book.id] || { current: 0, total: book.pages || 300 };
+                        const percent = Math.min(100, Math.round((progress.current / progress.total) * 100));
+                        const isEditing = editingBookId === book.id;
+
+                        return (
+                          <SwipeableRow
+                            key={`catchup-book-${book.id}`}
+                            onTap={() => router.push(`/book/${book.id}`)}
+                            onSwipeRight={() => markBookDone(book)}
+                            onSwipeLeft={() => removeBookFromWatchlist(book)}
+                          >
+                            <div className="glass agenda-card pressable" style={{ flexDirection: "column", alignItems: "stretch", gap: 10, padding: 12 }}>
+                              <div className="row" style={{ gap: 12, alignItems: "flex-start" }}>
+                                <Poster item={{ ...book, status: bookStatus(true, false) }} mini />
+                                <div className="agenda-body" style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 15.5, lineHeight: 1.2 }}>{book.title}</div>
+                                  <div className="muted" style={{ marginTop: 2, fontSize: 13 }}>📚 Livre à lire</div>
+                                </div>
+                                <button
+                                  className="check"
+                                  aria-label={`Marquer ${book.title} comme lu`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markBookDone(book);
+                                  }}
+                                  style={{ alignSelf: "center" }}
+                                >
+                                  ✓
+                                </button>
+                              </div>
+
+                              {isEditing ? (
+                                <div
+                                  className="row"
+                                  style={{
+                                    gap: 8,
+                                    padding: "8px 10px",
+                                    background: "var(--accent-wash)",
+                                    borderRadius: 8,
+                                    border: "1px solid var(--accent)",
+                                    alignItems: "center",
+                                    flexWrap: "wrap"
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <span style={{ fontSize: 13, fontWeight: 600 }}>Page</span>
+                                  <input
+                                    type="number"
+                                    className="input"
+                                    style={{
+                                      width: 65,
+                                      padding: "4px 8px",
+                                      fontSize: 13,
+                                      background: "var(--surface)",
+                                      border: "1px solid var(--glass-border)",
+                                      borderRadius: 6,
+                                      color: "var(--text-1)"
+                                    }}
+                                    value={editPageVal}
+                                    min={0}
+                                    max={editTotalVal}
+                                    onChange={(e) => setEditPageVal(Number(e.target.value))}
+                                  />
+                                  <span style={{ fontSize: 13 }}>sur</span>
+                                  <input
+                                    type="number"
+                                    className="input"
+                                    style={{
+                                      width: 65,
+                                      padding: "4px 8px",
+                                      fontSize: 13,
+                                      background: "var(--surface)",
+                                      border: "1px solid var(--glass-border)",
+                                      borderRadius: 6,
+                                      color: "var(--text-1)"
+                                    }}
+                                    value={editTotalVal}
+                                    min={1}
+                                    onChange={(e) => setEditTotalVal(Number(e.target.value))}
+                                  />
+                                  <div className="row" style={{ gap: 6, marginLeft: "auto" }}>
+                                    <button
+                                      className="btn btn-primary pressable"
+                                      style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, fontWeight: 700 }}
+                                      onClick={() => {
+                                        updateBookProgress(book.id, editPageVal, editTotalVal);
+                                        setEditingBookId(null);
+                                      }}
+                                    >
+                                      Valider
+                                    </button>
+                                    <button
+                                      className="btn pressable"
+                                      style={{
+                                        padding: "4px 10px",
+                                        fontSize: 12,
+                                        borderRadius: 6,
+                                        background: "transparent",
+                                        border: "1px solid var(--glass-border)"
+                                      }}
+                                      onClick={() => setEditingBookId(null)}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ width: "100%", padding: "4px 0" }} onClick={(e) => e.stopPropagation()}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, color: "var(--text-3)" }}>
+                                    <span>Page {progress.current} sur {progress.total}</span>
+                                    <button
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--accent)",
+                                        padding: 0,
+                                        font: "inherit",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        textDecoration: "underline"
+                                      }}
+                                      onClick={() => {
+                                        setEditingBookId(book.id);
+                                        setEditPageVal(progress.current);
+                                        setEditTotalVal(progress.total);
+                                      }}
+                                    >
+                                      Mettre à jour
+                                    </button>
+                                  </div>
+                                  <div style={{ height: 6, background: "var(--hairline)", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${percent}%`, background: "var(--accent)", borderRadius: 3 }} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </SwipeableRow>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === "prochaines" && (
+                historyBookAscending.length === 0 ? (
+                  <div className="glass card" style={{ textAlign: "center" }}>
+                    <span className="muted">Aucun livre lu pour le moment.</span>
+                  </div>
+                ) : (
+                  <div className="stack">
+                    {[...historyBookAscending].reverse().map(renderHistoryCard)}
+                  </div>
+                )
+              )}
+            </>
+          )}
         </>
       )}
     </main>

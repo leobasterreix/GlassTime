@@ -9,6 +9,7 @@ import { useMounted, useTrack, type ShowFollowStatus } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { markEpisodeWatched, markWatchedUpTo } from "@/lib/watch";
 import type { Episode, Show, Review } from "@/lib/types";
+import { supabase } from "@/lib/supabaseClient";
 import {
   airedEpisodes,
   effectiveShowStatus,
@@ -48,6 +49,8 @@ export default function ShowPage() {
     favoriteShows,
     toggleFavoriteShow,
     myPlatforms,
+    episodeReviews,
+    saveEpisodeReview,
   } = useTrack();
   // Proposition de rattrapage après avoir coché un épisode « en avance »
   const [catchUp, setCatchUp] = useState<{ ep: Episode; count: number } | null>(null);
@@ -91,10 +94,45 @@ export default function ShowPage() {
       if (data) setTmdbReviews(data);
       setTmdbLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
   }, [id]);
+
+  const [activeReviewEp, setActiveReviewEp] = useState<Episode | null>(null);
+  const [reviewRating, setReviewRating] = useState<number>(0);
+  const [reviewEmotion, setReviewEmotion] = useState<string>("");
+  const [reviewComment, setReviewComment] = useState<string>("");
+  const [reviewSpoiler, setReviewSpoiler] = useState<boolean>(false);
+  const [friendsProfiles, setFriendsProfiles] = useState<any[]>([]);
+  const [revealedSpoilers, setRevealedSpoilers] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    async function loadFriends() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        const { data } = await supabase
+          .from("follows")
+          .select("followed:profiles (id, first_name, last_name, avatar_url, public_state)")
+          .eq("follower_id", session.user.id);
+        if (data) {
+          setFriendsProfiles(data.map((f: any) => f.followed).filter(Boolean));
+        }
+      } catch (e) {
+        console.error("Error loading friends profiles:", e);
+      }
+    }
+    loadFriends();
+  }, []);
+
+  function openEpisodeReviewModal(ep: Episode) {
+    if (!show) return;
+    const key = `${show.id}:${ep.s}:${ep.e}`;
+    const existing = (episodeReviews || {})[key] || {};
+    setReviewRating(existing.rating || 0);
+    setReviewEmotion(existing.emotion || "");
+    setReviewComment(existing.comment || "");
+    setReviewSpoiler(existing.spoiler || false);
+    setActiveReviewEp(ep);
+  }
 
   async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -467,6 +505,26 @@ export default function ShowPage() {
                                 : `${fmtDate(ep.airDate)} · ${fmtRelative(ep.airDate)}`}
                           </div>
                         </div>
+                        {aired_ && (
+                          <button
+                            className="pressable"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: 16,
+                              padding: "4px 8px",
+                              marginRight: 6,
+                              color: episodeReviews[`${show.id}:${ep.s}:${ep.e}`] ? "var(--accent)" : "var(--text-3)",
+                              display: "flex",
+                              alignItems: "center"
+                            }}
+                            title="Laisser un avis ou émotion"
+                            onClick={() => openEpisodeReviewModal(ep)}
+                          >
+                            {episodeReviews[`${show.id}:${ep.s}:${ep.e}`]?.emotion || "💬"}
+                          </button>
+                        )}
                         <button
                           className={`check small${seen_ ? " checked" : ""}`}
                           disabled={!aired_}
@@ -671,6 +729,227 @@ export default function ShowPage() {
                 Non
               </button>
             </span>
+          </div>
+        </div>
+      )}
+
+      {activeReviewEp && show && (
+        <div className="notif-scrim" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 100 }} onClick={() => setActiveReviewEp(null)}>
+          <div className="glass card stack" style={{ width: "100%", maxWidth: 500, padding: 20, gap: 16, zIndex: 101, maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800 }}>Avis Épisode</h3>
+                <p className="page-sub" style={{ margin: 0, fontSize: 13 }}>Saison {activeReviewEp.s} · Épisode {activeReviewEp.e} — {activeReviewEp.title}</p>
+              </div>
+              <button
+                className="btn pressable"
+                style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, background: "transparent", border: "1px solid var(--glass-border)" }}
+                onClick={() => setActiveReviewEp(null)}
+              >
+                Fermer
+              </button>
+            </div>
+
+            {/* Émotion ressentie */}
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 8 }}>Émotion ressentie</label>
+              <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { emoji: "😍", label: "Adoré" },
+                  { emoji: "😀", label: "Amusé" },
+                  { emoji: "😮", label: "Surpris" },
+                  { emoji: "😢", label: "Triste" },
+                  { emoji: "😡", label: "En colère" },
+                  { emoji: "😴", label: "Ennuyé" }
+                ].map((item) => (
+                  <button
+                    key={item.emoji}
+                    type="button"
+                    className="pressable"
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: "1px solid var(--glass-border)",
+                      background: reviewEmotion === item.emoji ? "var(--accent-wash)" : "var(--surface)",
+                      borderColor: reviewEmotion === item.emoji ? "var(--accent)" : "var(--glass-border)",
+                      color: "var(--text-1)",
+                      fontSize: 13,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                    onClick={() => setReviewEmotion(reviewEmotion === item.emoji ? "" : item.emoji)}
+                  >
+                    <span>{item.emoji}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: reviewEmotion === item.emoji ? 700 : 500 }}>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Note par étoiles */}
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>
+                Note : {reviewRating || "aucune"} / 5
+              </label>
+              <div className="row" style={{ gap: 6 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: 22,
+                      cursor: "pointer",
+                      padding: 2,
+                      filter: star <= reviewRating ? "none" : "grayscale(100%) opacity(30%)",
+                      transition: "filter 0.15s",
+                    }}
+                  >
+                    ⭐
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Commentaire */}
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>Mon commentaire</label>
+              <textarea
+                className="input"
+                style={{
+                  width: "100%",
+                  minHeight: 80,
+                  fontSize: 14,
+                  padding: 10,
+                  background: "var(--surface)",
+                  border: "1px solid var(--glass-border)",
+                  borderRadius: 10,
+                  color: "var(--text-1)",
+                  resize: "vertical"
+                }}
+                placeholder="Partagez vos impressions sur cet épisode..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+              />
+            </div>
+
+            {/* Case spoiler */}
+            <label className="row" style={{ gap: 8, cursor: "pointer", userSelect: "none", fontSize: 13.5 }}>
+              <input
+                type="checkbox"
+                checked={reviewSpoiler}
+                onChange={(e) => setReviewSpoiler(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              <span>Cet avis contient des spoilers ⚠️</span>
+            </label>
+
+            {/* Bouton de sauvegarde */}
+            <button
+              className="btn btn-primary pressable"
+              style={{ width: "100%", padding: 12, borderRadius: 12, fontWeight: 700 }}
+              onClick={() => {
+                saveEpisodeReview(show.id, activeReviewEp.s, activeReviewEp.e, {
+                  rating: reviewRating,
+                  emotion: reviewEmotion,
+                  comment: reviewComment,
+                  spoiler: reviewSpoiler
+                });
+                setActiveReviewEp(null);
+              }}
+            >
+              Enregistrer mon avis
+            </button>
+
+            {/* Avis de la communauté (amis suivis) */}
+            <div style={{ borderTop: "1px solid var(--glass-border)", paddingTop: 16, marginTop: 4 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Avis de vos amis</h4>
+              {(() => {
+                const epKeyVal = `${activeReviewEp.s}:${activeReviewEp.e}`;
+                const fullEpKey = `${show.id}:${activeReviewEp.s}:${activeReviewEp.e}`;
+                const friendReviews = friendsProfiles.map((friend) => {
+                  const rev = friend.public_state?.episodeReviews?.[fullEpKey];
+                  if (!rev) return null;
+                  return { friend, rev };
+                }).filter(Boolean);
+
+                if (friendReviews.length === 0) {
+                  return <p className="muted" style={{ fontSize: 13, textAlign: "center", margin: "10px 0" }}>Aucun ami n'a encore commenté cet épisode.</p>;
+                }
+
+                return (
+                  <div className="stack" style={{ gap: 12 }}>
+                    {friendReviews.map(({ friend, rev }: any) => {
+                      const isSpoiler = rev.spoiler;
+                      const hasWatched = !!watched[show.id]?.[epKey(activeReviewEp.s, activeReviewEp.e)];
+                      const isBlurred = isSpoiler && !hasWatched && !revealedSpoilers[`${friend.id}:${fullEpKey}`];
+
+                      return (
+                        <div key={friend.id} className="glass card" style={{ padding: 12, borderRadius: 12 }}>
+                          <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                            <div className="row" style={{ gap: 8 }}>
+                              {friend.avatar_url && (friend.avatar_url.startsWith("http") || friend.avatar_url.includes("/")) ? (
+                                <img
+                                  src={friend.avatar_url}
+                                  alt="Avatar"
+                                  style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid var(--glass-border)" }}
+                                />
+                              ) : (
+                                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent-wash)", border: "1px solid var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+                                  {friend.avatar_url || "🍿"}
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>{friend.first_name} {friend.last_name}</div>
+                                <div className="tiny" style={{ fontSize: 10 }}>{new Date(rev.timestamp).toLocaleDateString("fr-FR")}</div>
+                              </div>
+                            </div>
+                            <div className="row" style={{ gap: 4 }}>
+                              {rev.emotion && <span style={{ fontSize: 16 }} title="Émotion">{rev.emotion}</span>}
+                              {rev.rating && <span className="badge-pill" style={{ fontSize: 11 }}>★ {rev.rating}/5</span>}
+                            </div>
+                          </div>
+
+                          {isBlurred ? (
+                            <div
+                              style={{
+                                padding: "10px 12px",
+                                background: "rgba(0,0,0,0.03)",
+                                border: "1px dashed var(--accent)",
+                                borderRadius: 8,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 6,
+                                textAlign: "center"
+                              }}
+                            >
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)" }}>⚠️ Cet avis contient un spoiler</span>
+                              <button
+                                className="chip pressable active"
+                                style={{ fontSize: 11, padding: "2px 8px" }}
+                                onClick={() => setRevealedSpoilers({ ...revealedSpoilers, [`${friend.id}:${fullEpKey}`]: true })}
+                              >
+                                Révéler l'avis
+                              </button>
+                            </div>
+                          ) : (
+                            rev.comment && (
+                              <p className="muted" style={{ fontSize: 13, margin: 0, whiteSpace: "pre-line", lineHeight: 1.4 }}>
+                                {rev.comment}
+                              </p>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

@@ -9,7 +9,7 @@ const NATIVE_APP_UA_MARKER = "GlassTimeNativeApp";
 const TAB_ORDER = ["/", "/discover", "/profile"];
 const THRESHOLD = 120; // bien plus large qu'un swipe de carte, pour ne pas se déclencher par accident
 const IGNORE_SELECTOR =
-  ".hscroll, .grid-posters, button, a, input, textarea, select, [role='button']";
+  ".hscroll, .grid-posters, .agenda-card, .swipe-row, button, a, input, textarea, select, option, [role='button'], .BarcodeScanner, .scanner-container, .fav-btn, .notif-bell, .notif-panel";
 
 /**
  * Swipe horizontal sur toute la page (pas sur une carte) pour changer

@@ -149,6 +149,11 @@ type TrackState = {
   discoverPrefs: DiscoverPrefs;
   setDiscoverPrefs: (p: Partial<DiscoverPrefs>) => void;
   migrateDemoIds: () => void;
+  bookProgress: Record<string, { current: number; total: number; updatedAt: number }>;
+  updateBookProgress: (id: string, current: number, total: number) => void;
+  episodeReviews: Record<string, { rating?: number; emotion?: string; comment?: string; spoiler?: boolean; timestamp: number }>;
+  saveEpisodeReview: (showId: number, s: number, e: number, review: { rating?: number; emotion?: string; comment?: string; spoiler?: boolean }) => void;
+  recentActivities: Array<{ id: string; timestamp: number; type: string; mediaId: any; mediaTitle: string; mediaPoster?: string | null; details?: string }>;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -170,6 +175,26 @@ function bumpLog(log: Record<string, number>, n: number): Record<string, number>
   const next = { ...log, [day]: Math.max(0, (log[day] ?? 0) + n) };
   if (next[day] === 0) delete next[day];
   return next;
+}
+
+function appendActivity(
+  list: Array<any>,
+  type: string,
+  mediaId: any,
+  mediaTitle: string,
+  mediaPoster?: string | null,
+  details?: string
+) {
+  const newEvent = {
+    id: Math.random().toString(36).slice(2, 9),
+    timestamp: Date.now(),
+    type,
+    mediaId,
+    mediaTitle,
+    mediaPoster,
+    details,
+  };
+  return [newEvent, ...(list || [])].slice(0, 20);
 }
 
 export const useTrack = create<TrackState>()(
@@ -197,6 +222,9 @@ export const useTrack = create<TrackState>()(
       myPlatforms: [],
       notifications: [],
       discoverPrefs: DEFAULT_DISCOVER_PREFS,
+      bookProgress: {},
+      episodeReviews: {},
+      recentActivities: [],
       updatedAt: 0,
 
       toggleFollow: (id) =>
@@ -258,6 +286,69 @@ export const useTrack = create<TrackState>()(
           updatedAt: Date.now(),
         })),
 
+      updateBookProgress: (id, current, total) =>
+        set((st) => {
+          const nextProgress = { ...st.bookProgress };
+          nextProgress[id] = { current, total, updatedAt: Date.now() };
+
+          // Si on a atteint la fin du livre, on le marque comme lu automatiquement !
+          const nextRead = [...(st.booksRead || [])];
+          let booksReadDates = { ...st.booksReadDates };
+          let booksWatchlist = [...st.booksWatchlist];
+          let watchedLog = st.watchedLog;
+          let recentActivities = st.recentActivities || [];
+
+          if (current >= total && !nextRead.includes(id)) {
+            nextRead.push(id);
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            booksReadDates[id] = `${yyyy}-${mm}-${dd}`;
+            booksWatchlist = booksWatchlist.filter((x) => x !== id);
+            watchedLog = bumpLog(st.watchedLog, 1);
+            
+            const book = st.bookCache[id];
+            recentActivities = appendActivity(recentActivities, "read-book", id, book?.title || `Livre #${id}`, book?.poster);
+          } else {
+            // Log d'avancement
+            const book = st.bookCache[id];
+            const details = `Progression : page ${current} sur ${total} (${Math.round((current / total) * 100)}%)`;
+            recentActivities = appendActivity(recentActivities, "read-progress", id, book?.title || `Livre #${id}`, book?.poster, details);
+          }
+
+          return {
+            bookProgress: nextProgress,
+            booksRead: nextRead,
+            booksReadDates,
+            booksWatchlist,
+            watchedLog,
+            recentActivities,
+            updatedAt: Date.now(),
+          };
+        }),
+
+      saveEpisodeReview: (showId, s, e, review) =>
+        set((st) => {
+          const key = `${showId}:${s}:${e}`;
+          const nextReviews = { ...st.episodeReviews };
+          nextReviews[key] = {
+            ...review,
+            timestamp: Date.now(),
+          };
+
+          // Ajouter une activité recente
+          const show = st.showCache[showId];
+          const details = `Épisode S${String(s).padStart(2, "0")}E${String(e).padStart(2, "0")} : ${review.emotion ? review.emotion + " " : ""}${review.rating ? `(${review.rating}/5)` : ""}`;
+          const recentActivities = appendActivity(st.recentActivities || [], "review-episode", showId, show?.title || `Série #${showId}`, show?.poster, details);
+
+          return {
+            episodeReviews: nextReviews,
+            recentActivities,
+            updatedAt: Date.now(),
+          };
+        }),
+
       cacheShow: (show) =>
         set((st) => ({
           showCache: {
@@ -288,6 +379,15 @@ export const useTrack = create<TrackState>()(
           const histKey = `${showId}:${s}:${e}`;
           if (value) episodeWatchedAt[histKey] = new Date().toISOString();
           else delete episodeWatchedAt[histKey];
+
+          // Activité récente
+          let recentActivities = st.recentActivities || [];
+          if (value && !had) {
+            const show = st.showCache[showId];
+            const details = `Épisode S${String(s).padStart(2, "0")}E${String(e).padStart(2, "0")}`;
+            recentActivities = appendActivity(recentActivities, "watch-episode", showId, show?.title || `Série #${showId}`, show?.poster, details);
+          }
+
           return {
             watched: { ...st.watched, [showId]: map },
             episodeWatchedAt,
@@ -298,6 +398,7 @@ export const useTrack = create<TrackState>()(
               ? { ...st.lastWatchedAt, [showId]: new Date().toISOString() }
               : st.lastWatchedAt,
             watchedLog: delta ? bumpLog(st.watchedLog, delta) : st.watchedLog,
+            recentActivities,
             updatedAt: Date.now(),
           };
         }),
@@ -348,11 +449,20 @@ export const useTrack = create<TrackState>()(
           const nextDates = { ...st.moviesWatchedDates };
           if (nowWatched) nextDates[id] = todayISO();
           else delete nextDates[id];
+
+          // Activité récente
+          let recentActivities = st.recentActivities || [];
+          if (nowWatched) {
+            const movie = st.movieCache[id];
+            recentActivities = appendActivity(recentActivities, "watch-movie", id, movie?.title || `Film #${id}`, movie?.poster);
+          }
+
           return {
             moviesWatched: nextWatched,
             moviesWatchedDates: nextDates,
             movieWatchlist: st.movieWatchlist.filter((x) => x !== id),
             watchedLog: bumpLog(st.watchedLog, nowWatched ? 1 : -1),
+            recentActivities,
             updatedAt: Date.now(),
           };
         }),
@@ -387,21 +497,40 @@ export const useTrack = create<TrackState>()(
       toggleBookRead: (id) =>
         set((st) => {
           const nextRead = toggleInStr(st.booksRead, id);
+          const isRead = nextRead.includes(id);
           const nextDates = { ...st.booksReadDates };
-          if (nextRead.includes(id)) {
+          const nextProgress = { ...st.bookProgress };
+
+          if (isRead) {
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             nextDates[id] = `${yyyy}-${mm}-${dd}`;
+            
+            // Si le livre est marqué lu, on met sa progression à 100%
+            const book = st.bookCache[id];
+            const total = book?.pages || 100;
+            nextProgress[id] = { current: total, total, updatedAt: Date.now() };
           } else {
             delete nextDates[id];
+            delete nextProgress[id];
           }
+
+          // Activité récente
+          let recentActivities = st.recentActivities || [];
+          if (isRead) {
+            const book = st.bookCache[id];
+            recentActivities = appendActivity(recentActivities, "read-book", id, book?.title || `Livre #${id}`, book?.poster);
+          }
+
           return {
             booksRead: nextRead,
             booksReadDates: nextDates,
+            bookProgress: nextProgress,
             booksWatchlist: st.booksWatchlist.filter((x) => x !== id),
-            watchedLog: bumpLog(st.watchedLog, nextRead.includes(id) ? 1 : -1),
+            watchedLog: bumpLog(st.watchedLog, isRead ? 1 : -1),
+            recentActivities,
             updatedAt: Date.now(),
           };
         }),
@@ -573,7 +702,9 @@ export const useTrack = create<TrackState>()(
           favoriteBooks: [],
           myPlatforms: [],
           notifications: [],
-          discoverPrefs: DEFAULT_DISCOVER_PREFS,
+          bookProgress: {},
+          episodeReviews: {},
+          recentActivities: [],
           updatedAt: Date.now(),
         }),
     }),

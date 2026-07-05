@@ -29,6 +29,7 @@ export default function SwipeableRow({
   // Miroir synchrone de dragX : évite de dépendre du timing de re-render de
   // React pour lire la position au relâchement (setState seul est asynchrone).
   const dragXRef = useRef(0);
+  const wasDragged = useRef(false);
 
   function setDrag(x: number) {
     dragXRef.current = x;
@@ -40,6 +41,7 @@ export default function SwipeableRow({
     start.current = { x: e.clientX, y: e.clientY };
     active.current = true;
     axis.current = null;
+    wasDragged.current = false;
   }
 
   function handlePointerMove(e: React.PointerEvent) {
@@ -49,6 +51,7 @@ export default function SwipeableRow({
     if (!axis.current) {
       if (Math.abs(dx) < TAP_SLOP && Math.abs(dy) < TAP_SLOP) return;
       axis.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      wasDragged.current = true;
       if (axis.current === "x") setDragging(true);
     }
     if (axis.current === "y") return; // laisse défiler la page verticalement
@@ -80,9 +83,13 @@ export default function SwipeableRow({
     }
   }
 
-  function handleClick() {
-    // Un clic natif (souris, sans drag détecté) équivaut à un tap.
-    if (dragXRef.current === 0) onTap?.();
+  function handleClick(e: React.MouseEvent) {
+    if (wasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onTap?.();
   }
 
   return (

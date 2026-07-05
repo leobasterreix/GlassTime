@@ -496,7 +496,7 @@ export default function ProfilePage() {
       const [followsRes, followersRes] = await Promise.all([
         supabase
           .from("follows")
-          .select("followed_id, followed:profiles (id, email, first_name, last_name, avatar_url)")
+          .select("followed_id, followed:profiles (id, email, first_name, last_name, avatar_url, public_state)")
           .eq("follower_id", myUserId),
         supabase
           .from("follows")
@@ -680,6 +680,13 @@ export default function ProfilePage() {
       })),
   ];
   const myShows = followed.map((id) => showCache[id]).filter(Boolean);
+  const friendActivities = (myFollows || []).flatMap((friend: any) => {
+    const activities = friend.public_state?.recentActivities || [];
+    return activities.map((act: any) => ({
+      ...act,
+      friend
+    }));
+  }).sort((a: any, b: any) => b.timestamp - a.timestamp);
   const moviesToWatch = movieWatchlist.map((id) => movieCache[id]).filter(Boolean);
   const moviesSeen = moviesWatched.map((id) => movieCache[id]).filter(Boolean);
   const booksToRead = booksWatchlist.map((id) => bookCache[id]).filter(Boolean);
@@ -735,115 +742,250 @@ export default function ProfilePage() {
   const maxWeek = Math.max(1, ...weeks.map((w) => w.n));
   const hasActivity = weeks.some((w) => w.n > 0);
 
-  return (
-    <main className="page">
-      <h1 className="page-title">Profil</h1>
-      <p className="page-sub">Vos statistiques</p>
+  function renderActivityCard(act: any) {
+    const friend = act.friend;
+    const dateStr = new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date(act.timestamp));
 
-      <div
-        className="glass card row"
-        style={{ marginBottom: 20, gap: 16, padding: 20, alignItems: "center" }}
-      >
-        {userInfo?.avatar && (userInfo.avatar.startsWith("http") || userInfo.avatar.includes("/")) ? (
-          <img
-            src={userInfo.avatar}
-            alt="Avatar"
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              border: "1px solid var(--glass-border)",
-              objectFit: "cover",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 30,
-              background: "var(--accent-wash)",
-              border: "1px solid var(--accent)",
-            }}
-          >
-            {userInfo?.avatar || "🍿"}
+    let icon = "🔔";
+    let text = "";
+    if (act.type === "watch-episode") {
+      icon = "📺";
+      text = `a regardé un épisode de ${act.mediaTitle}`;
+    } else if (act.type === "watch-movie") {
+      icon = "🎬";
+      text = `a regardé le film ${act.mediaTitle}`;
+    } else if (act.type === "read-book") {
+      icon = "📖";
+      text = `a terminé le livre ${act.mediaTitle}`;
+    } else if (act.type === "read-progress") {
+      icon = "📚";
+      text = `lit le livre ${act.mediaTitle}`;
+    } else if (act.type === "review-episode") {
+      icon = "💬";
+      text = `a donné son avis sur un épisode de ${act.mediaTitle}`;
+    }
+
+    return (
+      <div key={act.id} className="glass card row" style={{ gap: 12, padding: 14, alignItems: "flex-start" }}>
+        {/* Avatar du copain */}
+        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--accent-wash)", border: "1px solid var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+          {friend.avatar_url && (friend.avatar_url.startsWith("http") || friend.avatar_url.includes("/")) ? (
+            <img src={friend.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+          ) : (
+            friend.avatar_url || "🍿"
+          )}
+        </div>
+
+        {/* Détails de l'activité */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-1)" }}>
+            {friend.first_name ? `${friend.first_name} ${friend.last_name || ""}`.trim() : "Un ami"}
           </div>
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>{userInfo?.name ?? "Mon espace"}</div>
-          <div className="muted" style={{ fontSize: 13 }}>
-            {userInfo?.email ? `${userInfo.email} · ` : ""}
-            {minutesHuman(showMinutes + movieMinutes) || "0 min"} au total
+          <div style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 15 }}>{icon}</span>
+            <span>{text}</span>
+          </div>
+          {act.details && (
+            <div style={{
+              background: "var(--surface)",
+              border: "1px solid var(--glass-border)",
+              borderRadius: 8,
+              padding: "6px 10px",
+              fontSize: 12.5,
+              marginTop: 6,
+              color: "var(--text-2)",
+              fontStyle: "italic",
+              lineHeight: 1.3
+            }}>
+              {act.details}
+            </div>
+          )}
+          <div className="tiny" style={{ marginTop: 6, color: "var(--text-3)", fontSize: 11 }}>
+            {dateStr}
           </div>
         </div>
-        {syncOn && (
-          <button
-            onClick={openEditModal}
-            className="glass card pressable"
-            style={{
-              padding: "8px 14px",
-              fontSize: 13,
-              fontWeight: 700,
-              margin: 0,
-              background: "var(--accent-wash)",
-              borderColor: "var(--accent)",
-              color: "var(--accent)",
-            }}
-          >
-            ✏️ Modifier
-          </button>
+
+        {/* Poster de l'œuvre à droite */}
+        {act.mediaPoster && (
+          <div style={{ width: 42, height: 60, borderRadius: 6, overflow: "hidden", border: "1px solid var(--glass-border)", flexShrink: 0 }}>
+            <img src={act.mediaPoster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
         )}
       </div>
-      <div className="row" style={{ marginBottom: 20, gap: 10 }}>
-        <button
-          onClick={() => setActiveTab("stats")}
-          className="glass card pressable"
-          style={{
-            flex: 1,
-            padding: "10px",
-            textAlign: "center",
-            fontWeight: 700,
-            background: activeTab === "stats" ? "var(--accent-wash)" : "transparent",
-            borderColor: activeTab === "stats" ? "var(--accent)" : "var(--hairline)",
-            color: activeTab === "stats" ? "var(--accent)" : "inherit",
-          }}
+    );
+  }
+
+  // Heatmap calculation
+  const heatmapDays: string[] = [];
+  const startDay = new Date();
+  startDay.setDate(startDay.getDate() - 139); // 140 jours (20 semaines)
+  for (let i = 0; i < 140; i++) {
+    const current = new Date(startDay);
+    current.setDate(startDay.getDate() + i);
+    const yyyy = current.getFullYear();
+    const mm = String(current.getMonth() + 1).padStart(2, "0");
+    const dd = String(current.getDate()).padStart(2, "0");
+    heatmapDays.push(`${yyyy}-${mm}-${dd}`);
+  }
+
+  const heatmapColumns: string[][] = [];
+  for (let c = 0; c < 20; c++) {
+    heatmapColumns.push(heatmapDays.slice(c * 7, (c + 1) * 7));
+  }
+
+  // Genres calculation
+  const genreCounts: Record<string, number> = {};
+  myShows.forEach((s) => {
+    (s.genres || []).forEach((g: string) => {
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    });
+  });
+  moviesSeen.forEach((m) => {
+    (m.genres || []).forEach((g: string) => {
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    });
+  });
+  const sortedGenres = Object.entries(genreCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a: any, b: any) => b.count - a.count)
+    .slice(0, 5);
+
+  const totalGenreCount = sortedGenres.reduce((acc, g) => acc + g.count, 0);
+
+  const DONUT_COLORS = [
+    "var(--accent)",
+    "#ff4757",
+    "#2ed573",
+    "#ffa502",
+    "#1e90ff"
+  ];
+
+  let cumulativePercent = 0;
+  const donutSlices = sortedGenres.map((g, i) => {
+    const percent = totalGenreCount > 0 ? (g.count / totalGenreCount) * 100 : 0;
+    const strokeLength = (percent / 100) * 251.2;
+    const strokeOffset = (cumulativePercent / 100) * 251.2;
+    cumulativePercent += percent;
+    return {
+      name: g.name,
+      count: g.count,
+      percent: Math.round(percent),
+      color: DONUT_COLORS[i % DONUT_COLORS.length],
+      strokeLength,
+      strokeOffset: -strokeOffset
+    };
+  });
+
+  return (
+    <main className="page" style={{ paddingTop: 0 }}>
+      {/* En-tête collant (sticky) : Titre, Infos Profil et Onglets segmentés */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--tab-bg)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
+          paddingBottom: 12,
+          borderBottom: "1px solid var(--hairline)",
+          margin: "0 -18px 16px -18px",
+          paddingLeft: 18,
+          paddingRight: 18,
+        }}
+      >
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
+          <div>
+            <h1 className="page-title" style={{ margin: 0, fontSize: 28 }}>Profil</h1>
+            <p className="page-sub" style={{ margin: 0, marginTop: 2 }}>Vos statistiques</p>
+          </div>
+        </div>
+
+        <div
+          className="glass card row"
+          style={{ marginBottom: 12, gap: 16, padding: "12px 16px", alignItems: "center" }}
         >
-          📊 Stats
-        </button>
-        <button
-          onClick={() => setActiveTab("settings")}
-          className="glass card pressable"
-          style={{
-            flex: 1,
-            padding: "10px",
-            textAlign: "center",
-            fontWeight: 700,
-            background: activeTab === "settings" ? "var(--accent-wash)" : "transparent",
-            borderColor: activeTab === "settings" ? "var(--accent)" : "var(--hairline)",
-            color: activeTab === "settings" ? "var(--accent)" : "inherit",
-          }}
-        >
-          ⚙️ Préférences
-        </button>
-        <button
-          onClick={() => setActiveTab("community")}
-          className="glass card pressable"
-          style={{
-            flex: 1,
-            padding: "10px",
-            textAlign: "center",
-            fontWeight: 700,
-            background: activeTab === "community" ? "var(--accent-wash)" : "transparent",
-            borderColor: activeTab === "community" ? "var(--accent)" : "var(--hairline)",
-            color: activeTab === "community" ? "var(--accent)" : "inherit",
-          }}
-        >
-          👥 Communauté
-        </button>
+          {userInfo?.avatar && (userInfo.avatar.startsWith("http") || userInfo.avatar.includes("/")) ? (
+            <img
+              src={userInfo.avatar}
+              alt="Avatar"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "1px solid var(--glass-border)",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                background: "var(--accent-wash)",
+                border: "1px solid var(--accent)",
+              }}
+            >
+              {userInfo?.avatar || "🍿"}
+            </div>
+          )}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>{userInfo?.name ?? "Mon espace"}</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              {userInfo?.email ? `${userInfo.email} · ` : ""}
+              {minutesHuman(showMinutes + movieMinutes) || "0 min"} au total
+            </div>
+          </div>
+          {syncOn && (
+            <button
+              onClick={openEditModal}
+              className="glass card pressable"
+              style={{
+                padding: "6px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                margin: 0,
+                background: "var(--accent-wash)",
+                borderColor: "var(--accent)",
+                color: "var(--accent)",
+              }}
+            >
+              ✏️ Modifier
+            </button>
+          )}
+        </div>
+
+        <div className="glass segmented" style={{ marginBottom: 0 }}>
+          <button
+            className={activeTab === "stats" ? "active" : ""}
+            onClick={() => setActiveTab("stats")}
+          >
+            📊 Stats
+          </button>
+          <button
+            className={activeTab === "settings" ? "active" : ""}
+            onClick={() => setActiveTab("settings")}
+          >
+            ⚙️ Préférences
+          </button>
+          <button
+            className={activeTab === "community" ? "active" : ""}
+            onClick={() => setActiveTab("community")}
+          >
+            👥 Communauté
+          </button>
+        </div>
       </div>
 
       {activeTab === "stats" ? (
@@ -856,6 +998,98 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+
+          {/* Heatmap d'activité */}
+          <h2 className="section-title">Calendrier d'activité 🗓️</h2>
+          <div className="glass card stack" style={{ padding: 18, gap: 12 }}>
+            <div style={{ display: "flex", gap: 3.5, overflowX: "auto", paddingBottom: 6 }}>
+              {heatmapColumns.map((col, cIdx) => (
+                <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+                  {col.map((day) => {
+                    const count = watchedLog[day] || 0;
+                    let bg = "var(--glass-border)";
+                    let opacity = 1;
+                    let titleText = `${day} : aucune activité`;
+                    if (count > 0) {
+                      titleText = `${day} : ${count} activité${count > 1 ? "s" : ""}`;
+                      bg = "var(--accent)";
+                      if (count === 1) opacity = 0.25;
+                      else if (count <= 3) opacity = 0.55;
+                      else if (count <= 5) opacity = 0.8;
+                      else opacity = 1;
+                    }
+                    return (
+                      <div
+                        key={day}
+                        title={titleText}
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 2,
+                          background: bg,
+                          opacity,
+                          transition: "background 0.2s, opacity 0.2s"
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <div className="row" style={{ justifyContent: "space-between", fontSize: 11, color: "var(--text-3)" }}>
+              <span>Il y a 20 semaines</span>
+              <div className="row" style={{ gap: 4, alignItems: "center" }}>
+                <span>Moins</span>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--glass-border)" }} />
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.25 }} />
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.55 }} />
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 0.8 }} />
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--accent)", opacity: 1 }} />
+                <span>Plus</span>
+              </div>
+              <span>Aujourd'hui</span>
+            </div>
+          </div>
+
+          {/* Genres favoris */}
+          {totalGenreCount > 0 && (
+            <>
+              <h2 className="section-title">Genres favoris 📊</h2>
+              <div className="glass card row" style={{ gap: 24, padding: 20, alignItems: "center", justifyContent: "space-around", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", borderRadius: "50%" }}>
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--hairline)" strokeWidth="12" />
+                    {donutSlices.map((slice, idx) => (
+                      <circle
+                        key={idx}
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="transparent"
+                        stroke={slice.color}
+                        strokeWidth="12"
+                        strokeDasharray={`${slice.strokeLength} 251.2`}
+                        strokeDashoffset={slice.strokeOffset}
+                        strokeLinecap="round"
+                        style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                      />
+                    ))}
+                  </svg>
+                </div>
+                <div className="stack" style={{ gap: 10, flex: 1, minWidth: 160 }}>
+                  {donutSlices.map((slice, idx) => (
+                    <div key={idx} className="row" style={{ justifyContent: "space-between", alignItems: "center", fontSize: 13.5 }}>
+                      <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: slice.color }} />
+                        <span style={{ fontWeight: 600 }}>{slice.name}</span>
+                      </div>
+                      <span className="muted" style={{ fontSize: 12.5 }}>{slice.count} ({slice.percent}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Activité récente */}
           {hasActivity && (
@@ -1300,6 +1534,22 @@ export default function ProfilePage() {
         </>
       ) : (
         <div className="stack" style={{ gap: 24 }}>
+          {/* Flux d'activité des amis */}
+          <div>
+            <h2 className="section-title">Flux d'activité des amis 👥</h2>
+            {friendActivities.length === 0 ? (
+              <div className="glass card" style={{ textAlign: "center", padding: 30 }}>
+                <span className="muted" style={{ fontSize: 14 }}>
+                  Aucune activité récente de vos amis. Suivez des amis pour voir leur progression !
+                </span>
+              </div>
+            ) : (
+              <div className="stack" style={{ gap: 12 }}>
+                {friendActivities.map(renderActivityCard)}
+              </div>
+            )}
+          </div>
+
           {/* Communauté */}
           <div className="glass card stack" style={{ gap: 14, padding: 20 }}>
             <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)" }}>

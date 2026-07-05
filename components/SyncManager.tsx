@@ -86,14 +86,70 @@ export default function SyncManager() {
           updated_at: new Date().toISOString(),
         });
 
-        // Version publique simplifiée pour les abonnements
+        // Version publique simplifiée pour les abonnements (élaguée pour ne pas saturer la base de données)
+        const prunedShowCache: Record<number, any> = {};
+        if (state.showCache) {
+          for (const [idStr, show] of Object.entries(state.showCache)) {
+            const s = show as any;
+            if (s) {
+              prunedShowCache[Number(idStr)] = {
+                id: s.id,
+                title: s.title,
+                poster: s.poster,
+                year: s.year,
+                status: s.status,
+                genres: s.genres,
+                rating: s.rating,
+              };
+            }
+          }
+        }
+
+        const prunedMovieCache: Record<number, any> = {};
+        if (state.movieCache) {
+          for (const [idStr, movie] of Object.entries(state.movieCache)) {
+            const m = movie as any;
+            if (m) {
+              prunedMovieCache[Number(idStr)] = {
+                id: m.id,
+                title: m.title,
+                poster: m.poster,
+                year: m.year,
+                genres: m.genres,
+                rating: m.rating,
+              };
+            }
+          }
+        }
+
+        const prunedBookCache: Record<string, any> = {};
+        if (state.bookCache) {
+          for (const [id, book] of Object.entries(state.bookCache)) {
+            const b = book as any;
+            if (b) {
+              prunedBookCache[id] = {
+                id: b.id,
+                title: b.title,
+                poster: b.poster,
+                authors: b.authors,
+                publishedDate: b.publishedDate,
+              };
+            }
+          }
+        }
+
         const publicState = {
           followed: state.followed || [],
           moviesWatched: state.moviesWatched || [],
           booksRead: state.booksRead || [],
-          showCache: state.showCache || {},
-          movieCache: state.movieCache || {},
-          bookCache: state.bookCache || {},
+          showCache: prunedShowCache,
+          movieCache: prunedMovieCache,
+          bookCache: prunedBookCache,
+          favoriteShows: state.favoriteShows || [],
+          favoriteMovies: state.favoriteMovies || [],
+          favoriteBooks: state.favoriteBooks || [],
+          recentActivities: state.recentActivities || [],
+          episodeReviews: state.episodeReviews || {},
         };
 
         const firstName = session?.user?.user_metadata?.first_name || "";

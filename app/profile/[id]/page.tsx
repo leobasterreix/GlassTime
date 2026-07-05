@@ -120,6 +120,25 @@ export default function FriendProfilePage() {
   const movies = (pState.moviesWatched || []).map((id: number) => pState.movieCache?.[id]).filter(Boolean);
   const books = (pState.booksRead || []).map((id: string) => pState.bookCache?.[id]).filter(Boolean);
 
+  const favShows = (pState.favoriteShows || []).map((id: number) => pState.showCache?.[id]).filter(Boolean);
+  const favMovies = (pState.favoriteMovies || []).map((id: number) => pState.movieCache?.[id]).filter(Boolean);
+  const favBooks = (pState.favoriteBooks || []).map((id: string) => pState.bookCache?.[id]).filter(Boolean);
+
+  const favoriteItems = [
+    ...favShows.map((s: any) => ({
+      key: `fav-show-${s.id}`,
+      item: s,
+    })),
+    ...favMovies.map((m: any) => ({
+      key: `fav-movie-${m.id}`,
+      item: m,
+    })),
+    ...favBooks.map((b: any) => ({
+      key: `fav-book-${b.id}`,
+      item: b,
+    })),
+  ];
+
   const name = profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Membre GlassTime";
 
   return (
@@ -191,6 +210,20 @@ export default function FriendProfilePage() {
 
       {/* Listes sans détail */}
       <div className="stack" style={{ gap: 24 }}>
+        {/* Favoris */}
+        {favoriteItems.length > 0 && (
+          <div>
+            <h2 className="section-title">❤️ Favoris ({favoriteItems.length})</h2>
+            <div className="hscroll">
+              {favoriteItems.map(({ key, item }) => (
+                <div key={key} style={{ opacity: 0.9 }}>
+                  <Poster item={item} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Séries suivies */}
         <div>
           <h2 className="section-title">📺 Séries suivies ({shows.length})</h2>
