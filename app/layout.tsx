@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import NotificationCenter from "@/components/NotificationCenter";
+import SwipeNav from "@/components/SwipeNav";
 import SyncManager from "@/components/SyncManager";
 import TabBar from "@/components/TabBar";
 import Toaster from "@/components/Toaster";
@@ -43,7 +44,7 @@ export default function RootLayout({
       <body>
         <div className="aurora" />
         <SyncManager />
-        {children}
+        <SwipeNav>{children}</SwipeNav>
         <Toaster />
         <NotificationCenter />
         <TabBar />

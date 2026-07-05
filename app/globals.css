@@ -1307,10 +1307,11 @@ a.provider-pill:active {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 96px;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  font-size: 21px;
+  font-size: 22px;
   color: #fff;
   opacity: 0;
   transition: opacity 0.15s;
@@ -1321,17 +1322,15 @@ a.provider-pill:active {
 }
 
 .swipe-action.right {
-  left: 0;
   background: #22c55e;
   justify-content: flex-start;
-  padding-left: 22px;
+  padding-left: 26px;
 }
 
 .swipe-action.left {
-  right: 0;
   background: #e5484d;
   justify-content: flex-end;
-  padding-right: 22px;
+  padding-right: 26px;
 }
 
 .swipe-content {

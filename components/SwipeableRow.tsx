@@ -52,6 +52,9 @@ export default function SwipeableRow({
       if (axis.current === "x") setDragging(true);
     }
     if (axis.current === "y") return; // laisse défiler la page verticalement
+    // Un swipe horizontal confirmé sur la carte ne doit pas aussi déclencher
+    // la navigation par swipe de page (SwipeNav, au niveau du layout).
+    e.stopPropagation();
     let next = dx;
     if (next > 0 && !onSwipeRight) next = Math.min(next, 24);
     if (next < 0 && !onSwipeLeft) next = Math.max(next, -24);
