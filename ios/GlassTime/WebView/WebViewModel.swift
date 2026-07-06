@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Foundation
 import WebKit
 import UIKit
@@ -26,6 +27,10 @@ final class WebViewModel: NSObject, ObservableObject {
     /// Empêche de recharger la page racine si l'onglet a déjà été ouvert une fois.
     private var hasStartedLoading = false
     weak var refreshControl: UIRefreshControl?
+
+    /// Référence forte le temps du flux OAuth Google, sinon la session est
+    /// désallouée avant la fin (voir startGoogleAuthSession).
+    private var authSession: ASWebAuthenticationSession?
 
     init(tab: AppTab) {
         self.tab = tab
@@ -92,6 +97,55 @@ final class WebViewModel: NSObject, ObservableObject {
         if nsError.code == NSURLErrorCancelled { return }
         loadError = "Impossible de charger GlassTime. Vérifiez votre connexion internet."
     }
+
+    /// Google refuse de s'authentifier dans une WKWebView (« disallowed_useragent »)
+    /// et exige un navigateur système. On intercepte donc la redirection vers
+    /// l'endpoint d'autorisation Supabase et on l'ouvre dans une
+    /// ASWebAuthenticationSession, avec un schéma personnalisé comme callback
+    /// (`glasstime://auth-callback`, voir app/login/page.tsx et Info.plist) :
+    /// ce schéma est intercepté par la session AVANT toute requête réseau, donc
+    /// le code d'autorisation n'est jamais consommé par le mauvais magasin de
+    /// cookies. On rejoue ensuite ce code sur /auth/callback dans NOTRE
+    /// WebView, pour que le cookie de session soit posé dans son propre
+    /// WKWebsiteDataStore (partagé par les 3 onglets).
+    private func startGoogleAuthSession(authorizeURL: URL) {
+        let session = ASWebAuthenticationSession(
+            url: authorizeURL,
+            callbackURLScheme: "glasstime"
+        ) { [weak self] callbackURL, error in
+            guard
+                let self,
+                let callbackURL,
+                error == nil,
+                let code = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?
+                    .queryItems?.first(where: { $0.name == "code" })?.value
+            else { return }
+
+            var components = URLComponents(
+                url: Constants.baseURL.appendingPathComponent("auth/callback"),
+                resolvingAgainstBaseURL: false
+            )
+            components?.queryItems = [URLQueryItem(name: "code", value: code)]
+            if let replayURL = components?.url {
+                self.webView.load(URLRequest(url: replayURL))
+            }
+        }
+        session.presentationContextProvider = self
+        session.prefersEphemeralWebBrowserSession = false
+        authSession = session
+        session.start()
+    }
+}
+
+// MARK: - ASWebAuthenticationPresentationContextProviding
+
+extension WebViewModel: ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
 }
 
 // MARK: - WKNavigationDelegate
@@ -111,6 +165,9 @@ extension WebViewModel: WKNavigationDelegate {
 
         if host == Constants.allowedHost {
             decisionHandler(.allow)
+        } else if url.path.hasSuffix("/auth/v1/authorize") {
+            decisionHandler(.cancel)
+            startGoogleAuthSession(authorizeURL: url)
         } else {
             UIApplication.shared.open(url)
             decisionHandler(.cancel)

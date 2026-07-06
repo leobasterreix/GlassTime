@@ -25,7 +25,7 @@
 		3548615EE7348127BDBB71E6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		439C618C4210671049946EF3 /* LiquidTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidTabBar.swift; sourceTree = "<group>"; };
 		5435EC53468A685D967E5EF3 /* AppTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTab.swift; sourceTree = "<group>"; };
-		83CD9D8ABD9BAF4538F655D2 /* GlassTime.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GlassTime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		83CD9D8ABD9BAF4538F655D2 /* GlassTime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GlassTime.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B085B3BDBC4F8D2CB753337 /* GlassTimeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassTimeApp.swift; sourceTree = "<group>"; };
 		9236D9F82E32E450B119E086 /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
 		E8A34DF575C2D12E5C27C968 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -125,8 +125,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = C5BECFC8112BE1FE1AC364B3 /* Build configuration list for PBXProject "GlassTime" */;
 			developmentRegion = en;
@@ -240,6 +238,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8SDWXG4836;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GlassTime/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -327,6 +326,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8SDWXG4836;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GlassTime/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;

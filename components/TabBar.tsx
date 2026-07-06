@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
-/** Doit correspondre à Constants.nativeAppUserAgent côté app iOS. */
-const NATIVE_APP_UA_MARKER = "GlassTimeNativeApp";
+import { isNativeApp as detectNativeApp } from "@/lib/nativeApp";
 
 const TABS = [
   {
@@ -48,7 +46,7 @@ export default function TabBar() {
   // d'erreur d'hydratation : le premier rendu reste identique au serveur.
   const [isNativeApp, setIsNativeApp] = useState(false);
   useEffect(() => {
-    setIsNativeApp(navigator.userAgent.includes(NATIVE_APP_UA_MARKER));
+    setIsNativeApp(detectNativeApp());
   }, []);
 
   if (pathname === "/login" || isNativeApp) return null;

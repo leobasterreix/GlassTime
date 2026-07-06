@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { isNativeApp } from "@/lib/nativeApp";
 
 type Mode = "signin" | "signup";
 
@@ -115,9 +116,17 @@ export default function LoginPage() {
       // Définir le cookie remember_me pour le serveur
       document.cookie = `remember_me=${rememberMe}; path=/; max-age=${365 * 24 * 3600}; SameSite=Lax`;
 
+      // Dans l'app native, Google refuse de s'authentifier dans une WKWebView :
+      // on redirige vers un schéma personnalisé intercepté par une session
+      // d'authentification système (voir WebViewModel.swift côté iOS), plutôt
+      // que vers l'URL https habituelle.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: isNativeApp()
+            ? "glasstime://auth-callback"
+            : `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) throw error;
     } catch (err: unknown) {

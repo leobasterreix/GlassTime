@@ -2,9 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
-/** Doit correspondre à Constants.nativeAppUserAgent côté app iOS (TabBar). */
-const NATIVE_APP_UA_MARKER = "GlassTimeNativeApp";
+import { isNativeApp as detectNativeApp } from "@/lib/nativeApp";
 
 const TAB_ORDER = ["/", "/discover", "/profile"];
 const THRESHOLD = 120; // bien plus large qu'un swipe de carte, pour ne pas se déclencher par accident
@@ -28,7 +26,7 @@ export default function SwipeNav({ children }: { children: React.ReactNode }) {
   const skip = useRef(false);
 
   useEffect(() => {
-    setIsNativeApp(navigator.userAgent.includes(NATIVE_APP_UA_MARKER));
+    setIsNativeApp(detectNativeApp());
   }, []);
 
   function reset() {
