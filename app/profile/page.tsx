@@ -17,6 +17,7 @@ import {
 import {
   airedEpisodes,
   bookStatus,
+  computeStreaks,
   DAY,
   effectiveShowStatus,
   KNOWN_PLATFORMS,
@@ -361,6 +362,8 @@ export default function ProfilePage() {
     bookCache,
     showStatus,
     watchedLog,
+    localReviews,
+    episodeReviews,
     importState,
     clearAll,
     theme,
@@ -895,13 +898,27 @@ export default function ProfilePage() {
     .slice(0, 5);
   const maxGenre = topGenres[0]?.[1] ?? 1;
 
+  // Streaks : jours consécutifs avec au moins un marquage (épisode, film ou
+  // livre) — le journal watchedLog couvre déjà les trois types de contenu.
+  const streaks = computeStreaks(watchedLog);
+  const reviewsCount =
+    Object.keys(localReviews ?? {}).length + Object.keys(episodeReviews ?? {}).length;
+
   const badges = [
     { emoji: "🎬", label: "Premier épisode", done: episodesSeen >= 1 },
     { emoji: "📚", label: "5 séries suivies", done: followed.length >= 5 },
     { emoji: "🏃", label: "Marathonien · 100 épisodes", done: episodesSeen >= 100 },
+    { emoji: "🚀", label: "Boulimique · 500 épisodes", done: episodesSeen >= 500 },
     { emoji: "🏆", label: "Série terminée", done: completed >= 1 },
     { emoji: "🍿", label: "Cinéphile · 10 films", done: moviesWatched.length >= 10 },
+    { emoji: "📖", label: "Premier livre lu", done: booksRead.length >= 1 },
+    { emoji: "✍️", label: "Premier avis publié", done: reviewsCount >= 1 },
+    { emoji: "🧭", label: "Explorateur · 5 genres", done: genreCount.size >= 5 },
     { emoji: "⏰", label: "24 h de visionnage", done: showMinutes + movieMinutes >= 1440 },
+    { emoji: "📆", label: "7 jours de visionnage", done: showMinutes + movieMinutes >= 10080 },
+    { emoji: "🔥", label: "Streak · 3 jours", done: streaks.best >= 3 },
+    { emoji: "🧨", label: "Streak · 7 jours", done: streaks.best >= 7 },
+    { emoji: "🌋", label: "Streak · 30 jours", done: streaks.best >= 30 },
   ];
 
   // Collections (fiches disponibles dans le cache local)
@@ -1276,6 +1293,36 @@ export default function ProfilePage() {
             ))}
           </div>
 
+          {/* Streak — jours consécutifs avec activité */}
+          <div
+            className="glass card row"
+            style={{
+              gap: 14,
+              alignItems: "center",
+              marginTop: 14,
+              ...(streaks.current > 0
+                ? { background: "var(--accent-wash)", borderColor: "var(--accent)" }
+                : {}),
+            }}
+          >
+            <span style={{ fontSize: 34, filter: streaks.current > 0 ? "none" : "grayscale(1)", opacity: streaks.current > 0 ? 1 : 0.6 }}>
+              🔥
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 17, fontWeight: 800 }}>
+                {streaks.current > 0
+                  ? `${streaks.current} jour${streaks.current > 1 ? "s" : ""} d'affilée`
+                  : "Pas de streak en cours"}
+              </div>
+              <div className="tiny" style={{ marginTop: 2 }}>
+                {streaks.current > 0
+                  ? "Marque quelque chose chaque jour pour garder ta flamme."
+                  : "Marque un épisode, un film ou un livre pour lancer une streak."}
+                {streaks.best > 1 && ` Record : ${streaks.best} jours.`}
+              </div>
+            </div>
+          </div>
+
           {/* Heatmap d'activité — interactive */}
           <h2 className="section-title">Calendrier d'activité 🗓️</h2>
           <HeatmapInteractive heatmapColumns={heatmapColumns} watchedLog={watchedLog} />
@@ -1502,7 +1549,9 @@ export default function ProfilePage() {
             </>
           )}
 
-          <h2 className="section-title">Badges</h2>
+          <h2 className="section-title">
+            Badges<small>{badges.filter((b) => b.done).length}/{badges.length}</small>
+          </h2>
           <div className="grid-stats badges">
             {badges.map((b) => (
               <div

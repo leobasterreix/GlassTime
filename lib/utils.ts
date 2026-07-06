@@ -165,6 +165,50 @@ export function fmtRelativeOrDateWithTime(d: string, thresholdDays = 30): string
   return `${base} à ${time}`;
 }
 
+/** Index de jour local (nombre de jours depuis epoch, minuit local) — passer
+ * par Date(y, m, d) + arrondi absorbe les décalages d'heure d'été, là où une
+ * simple division de timestamps ISO donnerait des écarts de 23 h ou 25 h. */
+function localDayIndex(day: string): number {
+  const [y, m, d] = day.split("-").map(Number);
+  return Math.round(new Date(y, m - 1, d).getTime() / DAY);
+}
+
+/** Streaks calculées depuis le journal d'activité (watchedLog, clés
+ * YYYY-MM-DD locales). La streak courante ne casse pas si rien n'a encore
+ * été marqué aujourd'hui : elle repart d'hier — on ne perd sa flamme qu'en
+ * laissant passer un jour entier sans rien marquer. */
+export function computeStreaks(log: Record<string, number>): {
+  current: number;
+  best: number;
+} {
+  const indices = Object.entries(log)
+    .filter(([, n]) => n > 0)
+    .map(([day]) => localDayIndex(day))
+    .sort((a, b) => a - b);
+  if (indices.length === 0) return { current: 0, best: 0 };
+
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < indices.length; i++) {
+    run = indices[i] - indices[i - 1] === 1 ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+
+  const daySet = new Set(indices);
+  const now = new Date();
+  const todayIdx = Math.round(
+    new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / DAY
+  );
+  let cursor = daySet.has(todayIdx) ? todayIdx : todayIdx - 1;
+  let current = 0;
+  while (daySet.has(cursor)) {
+    current++;
+    cursor--;
+  }
+
+  return { current, best };
+}
+
 export function minutesHuman(min: number): string {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
+import TonightPicker, { type TonightCandidate } from "@/components/TonightPicker";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
 import { useIncremental } from "@/lib/useIncremental";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
@@ -150,6 +151,32 @@ export default function AgendaPage() {
         0
       ),
     [activeShows, watched]
+  );
+
+  // Vivier du picker « Ce soir » : prochains épisodes des séries actives et
+  // films de la watchlist déjà sortis, avec leur durée pour filtrer par
+  // temps disponible.
+  const tonightCandidates = useMemo(
+    (): TonightCandidate[] => [
+      ...toCatchUp.map(
+        ({ show, next }): TonightCandidate => ({
+          kind: "show",
+          key: `tonight-show-${show.id}`,
+          show,
+          ep: next,
+          runtime: show.runtime ?? 45,
+        })
+      ),
+      ...moviesToCatchUp.map(
+        (movie): TonightCandidate => ({
+          kind: "movie",
+          key: `tonight-movie-${movie.id}`,
+          movie,
+          runtime: movie.runtime ?? 115,
+        })
+      ),
+    ],
+    [toCatchUp, moviesToCatchUp]
   );
 
   // Les « prochaines diffusions » et « prochaines sorties » ont leur propre
@@ -517,6 +544,12 @@ export default function AgendaPage() {
           </button>
         </div>
       </div>
+
+      {/* « Ce soir, je regarde quoi ? » — pioche dans tout ce qu'il y a à
+          rattraper, toutes catégories confondues (séries + films). */}
+      {tonightCandidates.length > 0 && (
+        <TonightPicker candidates={tonightCandidates} />
+      )}
 
       {/* États vides spécifiques par catégorie */}
       {category === "series" && followed.length === 0 && (
