@@ -77,7 +77,7 @@ export function useHydrateLibrary() {
 
   useEffect(() => {
     if (!mounted) return;
-    const { showCache, movieCache, bookCache, cacheShow, cacheMovie, cacheBook } =
+    const { showCache, movieCache, bookCache, cacheShows, cacheMovies, cacheBooks } =
       useTrack.getState();
 
     // Quelques requêtes groupées par type de média (au lieu d'un fetch par
@@ -88,14 +88,14 @@ export function useHydrateLibrary() {
       (id) => !showCache[id]?.seasons?.length
     );
     fetchBatched<Show>("/api/show/batch", missingShowIds, 5).forEach((p) =>
-      p.then((shows) => shows.forEach(cacheShow))
+      p.then((shows) => cacheShows(shows))
     );
 
     const missingMovieIds = [
       ...new Set([...movieWatchlist, ...moviesWatched, ...favoriteMovies]),
     ].filter((id) => !movieCache[id]?.runtime);
     fetchBatched<Movie>("/api/movie/batch", missingMovieIds, 8).forEach((p) =>
-      p.then((movies) => movies.forEach(cacheMovie))
+      p.then((movies) => cacheMovies(movies))
     );
 
     // Le Set évite les re-fetch en boucle quand un livre reste introuvable
@@ -104,7 +104,7 @@ export function useHydrateLibrary() {
     ].filter((id) => !bookCache[id] && !fetchedBookIds.has(id));
     missingBookIds.forEach((id) => fetchedBookIds.add(id));
     fetchBatched<Book>("/api/book/batch", missingBookIds, 10).forEach((p) =>
-      p.then((books) => books.forEach(cacheBook))
+      p.then((books) => cacheBooks(books))
     );
   }, [
     mounted,
