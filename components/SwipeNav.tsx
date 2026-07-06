@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { isNativeApp as detectNativeApp } from "@/lib/nativeApp";
 
-const TAB_ORDER = ["/", "/discover", "/profile"];
+const TAB_ORDER = ["/", "/upcoming", "/discover", "/profile"];
 const THRESHOLD = 120; // bien plus large qu'un swipe de carte, pour ne pas se déclencher par accident
 const IGNORE_SELECTOR =
   ".hscroll, .grid-posters, .agenda-card, .swipe-row, button, a, input, textarea, select, option, [role='button'], .BarcodeScanner, .scanner-container, .fav-btn, .notif-bell, .notif-panel";
