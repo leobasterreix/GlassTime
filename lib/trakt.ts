@@ -23,6 +23,7 @@ async function traktFetch(path: string) {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
     next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(6000),
   });
   if (!res.ok) throw new Error(`Trakt ${res.status} sur ${path}`);
   return res.json();

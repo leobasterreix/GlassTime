@@ -81,7 +81,13 @@ async function tmdb(path: string, params: Record<string, string> = {}) {
   if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
   else url.searchParams.set("api_key", key);
   
-  const res = await fetch(url, { headers, next: { revalidate: 3600 } });
+  // Sans timeout, un seul appel TMDB qui traîne bloquerait indéfiniment tout
+  // le Promise.all d'une fiche (voire d'un batch entier de fiches).
+  const res = await fetch(url, {
+    headers,
+    next: { revalidate: 3600 },
+    signal: AbortSignal.timeout(8000),
+  });
   if (!res.ok) throw new Error(`TMDB ${res.status} sur ${path}`);
   return res.json();
 }
