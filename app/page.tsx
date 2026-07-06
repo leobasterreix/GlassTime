@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
+import { useIncremental } from "@/lib/useIncremental";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
 import { markEpisodeWatched } from "@/lib/watch";
@@ -211,14 +212,17 @@ export default function AgendaPage() {
     return byDateThenReverse(cards);
   }, [booksRead, bookCache, booksReadDates]);
 
-  // La bande d'historique de l'agenda n'affiche que les N éléments les plus
-  // récents (les listes sont triées en ordre ascendant, donc les plus récents
-  // sont en fin) : le passé complet n'a pas à peser sur le chargement de la
-  // page — c'est un aperçu, pas un journal exhaustif.
-  const HISTORY_LIMIT = 10;
-  const recentHistoryEp = historyEpisodeAscending.slice(-HISTORY_LIMIT);
-  const recentHistoryMovie = historyMovieAscending.slice(-HISTORY_LIMIT);
-  const recentHistoryBook = historyBookAscending.slice(-HISTORY_LIMIT);
+  // L'historique des épisodes peut être énorme (des milliers de lignes) et
+  // c'est lui qui pesait sur le chargement : on n'en montre que les 10 plus
+  // récents (listes triées en ordre ascendant → les plus récents en fin).
+  const EPISODE_HISTORY_LIMIT = 10;
+  const recentHistoryEp = historyEpisodeAscending.slice(-EPISODE_HISTORY_LIMIT);
+
+  // Films et livres vus sont bien moins nombreux : on garde l'historique
+  // complet, mais en rendu incrémental (le DOM ne monte qu'un paquet à la
+  // fois, la suite se révèle en remontant) pour rester léger sans rien cacher.
+  const histMovie = useIncremental(historyMovieAscending, { fromEnd: true });
+  const histBook = useIncremental(historyBookAscending, { fromEnd: true });
 
   // Layout effect pour ancrer le scroll sous le header fixe
   useIsoLayoutEffect(() => {
@@ -710,7 +714,8 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
                   </p>
-                  <div className="stack">{recentHistoryMovie.map(renderHistoryCard)}</div>
+                  {histMovie.hasMore && <div ref={histMovie.sentinelRef} aria-hidden style={{ height: 1 }} />}
+                  <div className="stack">{histMovie.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
 
@@ -765,7 +770,8 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de lecture
                   </p>
-                  <div className="stack">{recentHistoryBook.map(renderHistoryCard)}</div>
+                  {histBook.hasMore && <div ref={histBook.sentinelRef} aria-hidden style={{ height: 1 }} />}
+                  <div className="stack">{histBook.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
 
