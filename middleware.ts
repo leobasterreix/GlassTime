@@ -58,9 +58,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // getClaims() vérifie le JWT localement (via JWKS mis en cache) quand le
+  // projet utilise des clés de signature asymétriques — pas d'aller-retour
+  // réseau vers le serveur d'auth Supabase à chaque requête, contrairement à
+  // getUser(). Le gate ci-dessous ne fait qu'un routage UX (les données sont
+  // protégées côté serveur par les RLS Supabase), donc une vérif locale suffit.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: claims,
+  } = await supabase.auth.getClaims();
+  const user = claims?.claims ? { id: claims.claims.sub } : null;
 
   const { pathname } = request.nextUrl;
 

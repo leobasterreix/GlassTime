@@ -110,6 +110,9 @@ type TrackState = {
   cacheShow: (show: Show) => void;
   cacheMovie: (movie: Movie) => void;
   cacheBook: (book: Book) => void;
+  cacheShows: (shows: Show[]) => void;
+  cacheMovies: (movies: Movie[]) => void;
+  cacheBooks: (books: Book[]) => void;
   setEpisode: (showId: number, s: number, e: number, value: boolean) => void;
   setEpisodes: (
     showId: number,
@@ -493,6 +496,33 @@ export const useTrack = create<TrackState>()(
           },
           updatedAt: Date.now(),
         })),
+
+      // Versions groupées : fusionnent tout un lot de fiches en une seule
+      // mise à jour du store (donc un seul re-rendu), au lieu d'une par fiche.
+      // Utilisé par l'hydratation, où plusieurs fiches arrivent en même temps.
+      cacheShows: (shows) =>
+        set((st) => {
+          if (!shows.length) return {} as Partial<typeof st>;
+          const showCache = { ...st.showCache };
+          for (const show of shows) showCache[show.id] = { ...showCache[show.id], ...show };
+          return { showCache, updatedAt: Date.now() };
+        }),
+
+      cacheMovies: (movies) =>
+        set((st) => {
+          if (!movies.length) return {} as Partial<typeof st>;
+          const movieCache = { ...st.movieCache };
+          for (const movie of movies) movieCache[movie.id] = { ...movieCache[movie.id], ...movie };
+          return { movieCache, updatedAt: Date.now() };
+        }),
+
+      cacheBooks: (books) =>
+        set((st) => {
+          if (!books.length) return {} as Partial<typeof st>;
+          const bookCache = { ...st.bookCache };
+          for (const book of books) bookCache[book.id] = { ...bookCache[book.id], ...book };
+          return { bookCache, updatedAt: Date.now() };
+        }),
 
       toggleBookWatchlist: (id) =>
         set((st) => ({

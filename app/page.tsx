@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
+import { useIncremental } from "@/lib/useIncremental";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
 import { markEpisodeWatched } from "@/lib/watch";
@@ -26,15 +27,6 @@ import {
   watchedCount,
 } from "@/lib/utils";
 import type { Book, Episode, Movie, Show } from "@/lib/types";
-
-type UpcomingCard =
-  | { kind: "upcoming-ep"; key: string; date: string; show: Show; ep: Episode }
-  | { kind: "upcoming-movie"; key: string; date: string; movie: Movie };
-
-type CatchupCard =
-  | { kind: "catchup-show"; key: string; show: Show; ep: Episode }
-  | { kind: "catchup-movie"; key: string; movie: Movie }
-  | { kind: "catchup-book"; key: string; book: Book };
 
 type HistoryCard =
   | { kind: "history-ep"; key: string; date: string | null; show: Show; ep: Episode }
@@ -90,15 +82,18 @@ export default function AgendaPage() {
     month: "long",
   }).format(new Date());
 
-  const shows = mounted
-    ? followed.map((id) => showCache[id]).filter(Boolean)
-    : [];
+  const shows = useMemo(
+    () => (mounted ? followed.map((id) => showCache[id]).filter(Boolean) : []),
+    [mounted, followed, showCache]
+  ) as Show[];
 
-  const activeShows = shows.filter(
-    (s) => (showStatus[s.id] ?? "active") === "active"
+  const activeShows = useMemo(
+    () => shows.filter((s) => (showStatus[s.id] ?? "active") === "active"),
+    [shows, showStatus]
   );
-  const agendaShows = shows.filter(
-    (s) => (showStatus[s.id] ?? "active") !== "dropped"
+  const agendaShows = useMemo(
+    () => shows.filter((s) => (showStatus[s.id] ?? "active") !== "dropped"),
+    [shows, showStatus]
   );
   const loadingMovies = mounted
     ? movieWatchlist.filter((id) => !movieCache[id]).length
@@ -117,153 +112,135 @@ export default function AgendaPage() {
   // les épisodes d'une série en swipant sans avoir à re-scroller jusqu'à sa
   // position d'origine à chaque fois. Les séries jamais marquées gardent
   // leur ordre d'origine entre elles (tri stable).
-  const toCatchUp = activeShows
-    .map((show) => ({ show, next: nextEpisode(show, watched[show.id]) }))
-    .filter((x): x is { show: Show; next: Episode } => x.next !== null)
-    .sort((a, b) => {
-      const ta = lastWatchedAt[a.show.id] ? new Date(lastWatchedAt[a.show.id]).getTime() : 0;
-      const tb = lastWatchedAt[b.show.id] ? new Date(lastWatchedAt[b.show.id]).getTime() : 0;
-      return tb - ta;
-    });
+  const toCatchUp = useMemo(
+    () =>
+      activeShows
+        .map((show) => ({ show, next: nextEpisode(show, watched[show.id]) }))
+        .filter((x): x is { show: Show; next: Episode } => x.next !== null)
+        .sort((a, b) => {
+          const ta = lastWatchedAt[a.show.id] ? new Date(lastWatchedAt[a.show.id]).getTime() : 0;
+          const tb = lastWatchedAt[b.show.id] ? new Date(lastWatchedAt[b.show.id]).getTime() : 0;
+          return tb - ta;
+        }),
+    [activeShows, watched, lastWatchedAt]
+  );
 
   // Films de la liste "à voir" déjà sortis (pas encore vus) et livres de la
   // liste "à lire" : autant d'éléments "à rattraper" au même titre que les
   // épisodes de séries.
-  const nowTs = Date.now();
-  const moviesToCatchUp = mounted
-    ? movieWatchlist
-        .map((id) => movieCache[id])
-        .filter(
-          (m): m is Movie =>
-            !!m && !moviesWatched.includes(m.id) && (!m.releaseDate || new Date(m.releaseDate).getTime() <= nowTs)
-        )
-    : [];
-  const booksToCatchUp = mounted
-    ? booksWatchlist.map((id) => bookCache[id]).filter((b): b is Book => !!b)
-    : [];
-
-  const pendingEpisodes = activeShows.reduce(
-    (acc, s) =>
-      acc +
-      Math.max(0, airedEpisodes(s).length - watchedCount(s, watched[s.id])),
-    0
+  const moviesToCatchUp = useMemo(
+    () =>
+      mounted
+        ? movieWatchlist
+            .map((id) => movieCache[id])
+            .filter(
+              (m): m is Movie =>
+                !!m && !moviesWatched.includes(m.id) && (!m.releaseDate || new Date(m.releaseDate).getTime() <= Date.now())
+            )
+        : [],
+    [mounted, movieWatchlist, movieCache, moviesWatched]
+  );
+  const booksToCatchUp = useMemo(
+    () => (mounted ? booksWatchlist.map((id) => bookCache[id]).filter((b): b is Book => !!b) : []),
+    [mounted, booksWatchlist, bookCache]
   );
 
-  const catchupCards: CatchupCard[] = [
-    ...toCatchUp.map(
-      ({ show, next }): CatchupCard => ({
-        kind: "catchup-show",
-        key: `catchup-${show.id}-${next.s}:${next.e}`,
-        show,
-        ep: next,
-      })
-    ),
-    ...moviesToCatchUp.map(
-      (movie): CatchupCard => ({ kind: "catchup-movie", key: `catchup-movie-${movie.id}`, movie })
-    ),
-    ...booksToCatchUp.map(
-      (book): CatchupCard => ({ kind: "catchup-book", key: `catchup-book-${book.id}`, book })
-    ),
-  ];
+  const pendingEpisodes = useMemo(
+    () =>
+      activeShows.reduce(
+        (acc, s) => acc + Math.max(0, airedEpisodes(s).length - watchedCount(s, watched[s.id])),
+        0
+      ),
+    [activeShows, watched]
+  );
 
   // Prochaines diffusions : épisodes des séries suivies + sorties des films à
   // voir, sans limite de date (on affiche tout ce qui est programmé).
-  const now = Date.now();
+  const epEntries = useMemo(() => {
+    const now = Date.now();
+    return agendaShows
+      .flatMap((show) =>
+        allEpisodes(show)
+          .filter((ep) => ep.airDate)
+          .map((ep) => ({ show, ep, date: ep.airDate! }))
+      )
+      .filter(({ date }) => new Date(date).getTime() > now);
+  }, [agendaShows]);
 
-  const epEntries = agendaShows
-    .flatMap((show) =>
-      allEpisodes(show)
-        .filter((ep) => ep.airDate)
-        .map((ep) => ({ show, ep, date: ep.airDate! }))
-    )
-    .filter(({ date }) => new Date(date).getTime() > now);
-
-  const movieEntries = mounted
-    ? movieWatchlist
-        .map((id) => movieCache[id])
-        .filter((m): m is Movie => !!m?.releaseDate)
-        .filter((m) => new Date(m.releaseDate!).getTime() > now)
-        .map((m) => ({ movie: m, date: m.releaseDate! }))
-    : [];
-
-  const upcomingCards: UpcomingCard[] = [
-    ...epEntries.map(
-      ({ show, ep, date }): UpcomingCard => ({
-        kind: "upcoming-ep",
-        key: `ep-${show.id}-${ep.s}:${ep.e}`,
-        date,
-        show,
-        ep,
-      })
-    ),
-    ...movieEntries.map(
-      ({ movie, date }): UpcomingCard => ({
-        kind: "upcoming-movie",
-        key: `movie-${movie.id}`,
-        date,
-        movie,
-      })
-    ),
-  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const movieEntries = useMemo(() => {
+    if (!mounted) return [];
+    const now = Date.now();
+    return movieWatchlist
+      .map((id) => movieCache[id])
+      .filter((m): m is Movie => !!m?.releaseDate)
+      .filter((m) => new Date(m.releaseDate!).getTime() > now)
+      .map((m) => ({ movie: m, date: m.releaseDate! }));
+  }, [mounted, movieWatchlist, movieCache]);
 
   // Historique : tout ce qui a déjà été vu/lu, pas seulement ce qui a été
   // marqué depuis l'ajout de l'horodatage — la date reste inconnue pour les
   // plus anciens (pas de badge), mais ils comptent quand même comme « vus »
   // et doivent apparaître.
-  const historyEpisodeCards: HistoryCard[] = Object.keys(watched).flatMap((showIdStr) => {
-    const show = showCache[Number(showIdStr)];
-    if (!show) return [];
-    return allEpisodes(show)
-      .filter((ep) => watched[show.id]?.[epKey(ep.s, ep.e)])
-      .map((ep): HistoryCard => ({
-        kind: "history-ep",
-        key: `hist-ep-${show.id}-${ep.s}:${ep.e}`,
-        date: episodeWatchedAt[`${show.id}:${ep.s}:${ep.e}`] ?? null,
-        show,
-        ep,
-      }));
-  });
-  const historyMovieCards: HistoryCard[] = moviesWatched
-    .map((id): HistoryCard | null => {
-      const movie = movieCache[id];
-      if (!movie) return null;
-      return { kind: "history-movie", key: `hist-movie-${id}`, date: moviesWatchedDates[id] ?? null, movie };
-    })
-    .filter((x): x is HistoryCard => x !== null);
-  const historyBookCards: HistoryCard[] = booksRead
-    .map((id): HistoryCard | null => {
-      const book = bookCache[id];
-      if (!book) return null;
-      return { kind: "history-book", key: `hist-book-${id}`, date: booksReadDates[id] ?? null, book };
-    })
-    .filter((x): x is HistoryCard => x !== null);
+  // Tri par date décroissante puis inversé (ordre chronologique ascendant),
+  // les éléments sans date restant en fin. Facteur commun aux trois historiques.
+  const byDateThenReverse = (cards: HistoryCard[]) =>
+    [...cards]
+      .sort((a, b) => {
+        if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (a.date && !b.date) return -1;
+        if (!a.date && b.date) return 1;
+        return 0;
+      })
+      .reverse();
+
   // Historiques séparés par type de média (TV Time style)
-  const historyEpisodeAscending = [...historyEpisodeCards]
-    .sort((a, b) => {
-      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (a.date && !b.date) return -1;
-      if (!a.date && b.date) return 1;
-      return 0;
-    })
-    .reverse();
+  const historyEpisodeAscending = useMemo(() => {
+    const cards: HistoryCard[] = Object.keys(watched).flatMap((showIdStr) => {
+      const show = showCache[Number(showIdStr)];
+      if (!show) return [];
+      return allEpisodes(show)
+        .filter((ep) => watched[show.id]?.[epKey(ep.s, ep.e)])
+        .map((ep): HistoryCard => ({
+          kind: "history-ep",
+          key: `hist-ep-${show.id}-${ep.s}:${ep.e}`,
+          date: episodeWatchedAt[`${show.id}:${ep.s}:${ep.e}`] ?? null,
+          show,
+          ep,
+        }));
+    });
+    return byDateThenReverse(cards);
+  }, [watched, showCache, episodeWatchedAt]);
 
-  const historyMovieAscending = [...historyMovieCards]
-    .sort((a, b) => {
-      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (a.date && !b.date) return -1;
-      if (!a.date && b.date) return 1;
-      return 0;
-    })
-    .reverse();
+  const historyMovieAscending = useMemo(() => {
+    const cards: HistoryCard[] = moviesWatched
+      .map((id): HistoryCard | null => {
+        const movie = movieCache[id];
+        if (!movie) return null;
+        return { kind: "history-movie", key: `hist-movie-${id}`, date: moviesWatchedDates[id] ?? null, movie };
+      })
+      .filter((x): x is HistoryCard => x !== null);
+    return byDateThenReverse(cards);
+  }, [moviesWatched, movieCache, moviesWatchedDates]);
 
-  const historyBookAscending = [...historyBookCards]
-    .sort((a, b) => {
-      if (a.date && b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (a.date && !b.date) return -1;
-      if (!a.date && b.date) return 1;
-      return 0;
-    })
-    .reverse();
+  const historyBookAscending = useMemo(() => {
+    const cards: HistoryCard[] = booksRead
+      .map((id): HistoryCard | null => {
+        const book = bookCache[id];
+        if (!book) return null;
+        return { kind: "history-book", key: `hist-book-${id}`, date: booksReadDates[id] ?? null, book };
+      })
+      .filter((x): x is HistoryCard => x !== null);
+    return byDateThenReverse(cards);
+  }, [booksRead, bookCache, booksReadDates]);
+
+  // Rendu incrémental des listes potentiellement longues (historique complet,
+  // prochaines diffusions) : le DOM ne contient qu'un paquet de cartes à la
+  // fois, la suite se révèle au défilement. Les listes « à rattraper » sont
+  // bornées par le nombre de séries/films/livres suivis, donc pas besoin.
+  const upcomingEp = useIncremental(epEntries);
+  const histEp = useIncremental(historyEpisodeAscending, { fromEnd: true });
+  const histMovie = useIncremental(historyMovieAscending, { fromEnd: true });
+  const histBook = useIncremental(historyBookAscending, { fromEnd: true });
 
   // Layout effect pour ancrer le scroll sous le header fixe
   useIsoLayoutEffect(() => {
@@ -682,7 +659,8 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
                   </p>
-                  <div className="stack">{historyEpisodeAscending.map(renderHistoryCard)}</div>
+                  {histEp.hasMore && <div ref={histEp.sentinelRef} aria-hidden style={{ height: 1 }} />}
+                  <div className="stack">{histEp.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
 
@@ -751,7 +729,7 @@ export default function AgendaPage() {
                 </div>
               ) : (
                 <div className="stack">
-                  {epEntries.map(({ show, ep, date }) => (
+                  {upcomingEp.visible.map(({ show, ep, date }) => (
                     <SwipeableRow
                       key={`ep-${show.id}-${ep.s}:${ep.e}`}
                       onTap={() => router.push(`/show/${show.id}`)}
@@ -776,6 +754,7 @@ export default function AgendaPage() {
                       </div>
                     </SwipeableRow>
                   ))}
+                  {upcomingEp.hasMore && <div ref={upcomingEp.sentinelRef} aria-hidden style={{ height: 1 }} />}
                 </div>
               )}
             </>
@@ -789,7 +768,8 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
                   </p>
-                  <div className="stack">{historyMovieAscending.map(renderHistoryCard)}</div>
+                  {histMovie.hasMore && <div ref={histMovie.sentinelRef} aria-hidden style={{ height: 1 }} />}
+                  <div className="stack">{histMovie.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
 
@@ -869,7 +849,8 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de lecture
                   </p>
-                  <div className="stack">{historyBookAscending.map(renderHistoryCard)}</div>
+                  {histBook.hasMore && <div ref={histBook.sentinelRef} aria-hidden style={{ height: 1 }} />}
+                  <div className="stack">{histBook.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
 

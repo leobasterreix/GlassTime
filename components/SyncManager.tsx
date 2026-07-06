@@ -10,6 +10,14 @@ import { syncStatus } from "@/lib/syncStatus";
 // Au chargement/connexion : le plus récent (local ou serveur) gagne, d'après updatedAt.
 // Ensuite : chaque modification locale est poussée après 1,5 s d'inactivité.
 
+// On ne synchronise QUE les données utilisateur (ce qu'on a suivi/vu/aimé), pas
+// les caches de fiches (showCache/movieCache/bookCache). Ces caches, avec toutes
+// les saisons et épisodes de chaque série, faisaient gonfler le blob à plusieurs
+// centaines de Ko — et il fallait le télécharger en entier avant d'afficher quoi
+// que ce soit au premier login (très lent sur mobile). Les fiches sont de toute
+// façon reconstruites à la volée via les routes /api/*/batch (useHydrateLibrary),
+// donc les persister côté serveur ne faisait que ralentir chaque login et chaque
+// sauvegarde pour rien.
 const SYNC_KEYS = [
   "followed",
   "watched",
@@ -19,9 +27,6 @@ const SYNC_KEYS = [
   "booksWatchlist",
   "booksRead",
   "booksReadDates",
-  "showCache",
-  "movieCache",
-  "bookCache",
   "showStatus",
   "watchedLog",
   "accent",
@@ -88,10 +93,15 @@ export default function SyncManager() {
           updated_at: new Date().toISOString(),
         });
 
+        // Les caches ne sont plus dans le snapshot synchronisé : on les lit ici
+        // directement depuis le store (en mémoire) pour construire les affiches
+        // publiques du fil communauté.
+        const live = useTrack.getState() as unknown as Record<string, any>;
+
         // Version publique simplifiée pour les abonnements (élaguée pour ne pas saturer la base de données)
         const prunedShowCache: Record<number, any> = {};
-        if (state.showCache) {
-          for (const [idStr, show] of Object.entries(state.showCache)) {
+        if (live.showCache) {
+          for (const [idStr, show] of Object.entries(live.showCache)) {
             const s = show as any;
             if (s) {
               prunedShowCache[Number(idStr)] = {
@@ -108,8 +118,8 @@ export default function SyncManager() {
         }
 
         const prunedMovieCache: Record<number, any> = {};
-        if (state.movieCache) {
-          for (const [idStr, movie] of Object.entries(state.movieCache)) {
+        if (live.movieCache) {
+          for (const [idStr, movie] of Object.entries(live.movieCache)) {
             const m = movie as any;
             if (m) {
               prunedMovieCache[Number(idStr)] = {
@@ -125,8 +135,8 @@ export default function SyncManager() {
         }
 
         const prunedBookCache: Record<string, any> = {};
-        if (state.bookCache) {
-          for (const [id, book] of Object.entries(state.bookCache)) {
+        if (live.bookCache) {
+          for (const [id, book] of Object.entries(live.bookCache)) {
             const b = book as any;
             if (b) {
               prunedBookCache[id] = {
