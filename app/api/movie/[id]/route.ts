@@ -9,5 +9,7 @@ export async function GET(
   const movie = await getMovieDetail(Number(id));
   if (!movie)
     return NextResponse.json({ error: "Film introuvable" }, { status: 404 });
-  return NextResponse.json(movie);
+  return NextResponse.json(movie, {
+    headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" },
+  });
 }

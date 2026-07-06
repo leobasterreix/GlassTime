@@ -2,9 +2,16 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import Poster from "@/components/Poster";
-import BarcodeScanner from "@/components/BarcodeScanner";
+
+// html5-qrcode est une dépendance lourde (moteur de décodage QR/EAN) : on ne
+// la charge que lorsque le scanner est réellement ouvert, pas dans le bundle
+// initial de la page Découvrir.
+const BarcodeScanner = dynamic(() => import("@/components/BarcodeScanner"), {
+  ssr: false,
+});
 import { apiGet, followShow } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
 import { toast } from "@/lib/toast";
