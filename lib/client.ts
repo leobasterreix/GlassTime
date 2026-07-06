@@ -15,6 +15,28 @@ export async function apiGet<T>(url: string): Promise<T | null> {
   }
 }
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
+/**
+ * Récupère un lot d'IDs via une route /batch, en le découpant en petits
+ * groupes envoyés en parallèle : chaque groupe reste rapide côté serveur
+ * (peu d'appels externes en Promise.all) et un groupe lent/en échec ne
+ * bloque pas l'arrivée des autres, contrairement à un unique gros batch.
+ */
+function fetchBatched<T>(
+  path: string,
+  ids: (string | number)[],
+  chunkSize: number
+): Promise<T[]>[] {
+  return chunk(ids, chunkSize).map((group) =>
+    apiGet<T[]>(`${path}?ids=${group.join(",")}`).then((r) => r ?? [])
+  );
+}
+
 /** Suit une série et récupère sa fiche complète (saisons) en arrière-plan. */
 export function followShow(summary: Show) {
   const { followed, toggleFollow, cacheShow } = useTrack.getState();
@@ -58,37 +80,32 @@ export function useHydrateLibrary() {
     const { showCache, movieCache, bookCache, cacheShow, cacheMovie, cacheBook } =
       useTrack.getState();
 
-    // Un seul aller-retour réseau par type de média (au lieu d'un fetch par
+    // Quelques requêtes groupées par type de média (au lieu d'un fetch par
     // fiche manquante) : évite la rafale de requêtes quand la bibliothèque
-    // suivie compte plusieurs dizaines d'entrées.
+    // suivie compte plusieurs dizaines d'entrées, sans pour autant tout miser
+    // sur un seul gros batch qui bloquerait tout si un élément traîne.
     const missingShowIds = [...new Set([...followed, ...favoriteShows])].filter(
       (id) => !showCache[id]?.seasons?.length
     );
-    if (missingShowIds.length) {
-      apiGet<Show[]>(`/api/show/batch?ids=${missingShowIds.join(",")}`).then(
-        (shows) => shows?.forEach(cacheShow)
-      );
-    }
+    fetchBatched<Show>("/api/show/batch", missingShowIds, 5).forEach((p) =>
+      p.then((shows) => shows.forEach(cacheShow))
+    );
 
     const missingMovieIds = [
       ...new Set([...movieWatchlist, ...moviesWatched, ...favoriteMovies]),
     ].filter((id) => !movieCache[id]?.runtime);
-    if (missingMovieIds.length) {
-      apiGet<Movie[]>(`/api/movie/batch?ids=${missingMovieIds.join(",")}`).then(
-        (movies) => movies?.forEach(cacheMovie)
-      );
-    }
+    fetchBatched<Movie>("/api/movie/batch", missingMovieIds, 8).forEach((p) =>
+      p.then((movies) => movies.forEach(cacheMovie))
+    );
 
     // Le Set évite les re-fetch en boucle quand un livre reste introuvable
     const missingBookIds = [
       ...new Set([...booksWatchlist, ...booksRead, ...favoriteBooks]),
     ].filter((id) => !bookCache[id] && !fetchedBookIds.has(id));
-    if (missingBookIds.length) {
-      missingBookIds.forEach((id) => fetchedBookIds.add(id));
-      apiGet<Book[]>(`/api/book/batch?ids=${missingBookIds.join(",")}`).then(
-        (books) => books?.forEach(cacheBook)
-      );
-    }
+    missingBookIds.forEach((id) => fetchedBookIds.add(id));
+    fetchBatched<Book>("/api/book/batch", missingBookIds, 10).forEach((p) =>
+      p.then((books) => books.forEach(cacheBook))
+    );
   }, [
     mounted,
     followed,

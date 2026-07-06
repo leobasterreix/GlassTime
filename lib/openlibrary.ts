@@ -34,8 +34,8 @@ export async function getBookDetail(id: string): Promise<Book | null> {
     const workUrl = `https://openlibrary.org/works/${id}.json`;
 
     const [searchRes, workRes] = await Promise.all([
-      fetch(searchUrl, { next: { revalidate: 3600 } }).catch(() => null),
-      fetch(workUrl, { next: { revalidate: 3600 } }).catch(() => null),
+      fetch(searchUrl, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(workUrl, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) }).catch(() => null),
     ]);
 
     if (!searchRes || !searchRes.ok) return null;
