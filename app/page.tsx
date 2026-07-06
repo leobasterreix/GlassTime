@@ -6,7 +6,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
-import { useIncremental } from "@/lib/useIncremental";
 import { notifyTodayEpisodes, updateAppBadge } from "@/lib/notifications";
 import { useMounted, useTrack } from "@/lib/store";
 import { markEpisodeWatched } from "@/lib/watch";
@@ -19,9 +18,7 @@ import {
   effectiveShowStatus,
   epKey,
   epLabel,
-  fmtRelative,
   fmtRelativeOrDateWithTime,
-  fmtRelativeWithTime,
   movieStatus,
   nextEpisode,
   watchedCount,
@@ -154,28 +151,9 @@ export default function AgendaPage() {
     [activeShows, watched]
   );
 
-  // Prochaines diffusions : épisodes des séries suivies + sorties des films à
-  // voir, sans limite de date (on affiche tout ce qui est programmé).
-  const epEntries = useMemo(() => {
-    const now = Date.now();
-    return agendaShows
-      .flatMap((show) =>
-        allEpisodes(show)
-          .filter((ep) => ep.airDate)
-          .map((ep) => ({ show, ep, date: ep.airDate! }))
-      )
-      .filter(({ date }) => new Date(date).getTime() > now);
-  }, [agendaShows]);
-
-  const movieEntries = useMemo(() => {
-    if (!mounted) return [];
-    const now = Date.now();
-    return movieWatchlist
-      .map((id) => movieCache[id])
-      .filter((m): m is Movie => !!m?.releaseDate)
-      .filter((m) => new Date(m.releaseDate!).getTime() > now)
-      .map((m) => ({ movie: m, date: m.releaseDate! }));
-  }, [mounted, movieWatchlist, movieCache]);
+  // Les « prochaines diffusions » et « prochaines sorties » ont leur propre
+  // onglet dédié (« Avenir », /upcoming) — l'agenda ne montre plus que le
+  // passé (historique) et le présent (à rattraper / à voir / à lire).
 
   // Historique : tout ce qui a déjà été vu/lu, pas seulement ce qui a été
   // marqué depuis l'ajout de l'horodatage — la date reste inconnue pour les
@@ -233,14 +211,14 @@ export default function AgendaPage() {
     return byDateThenReverse(cards);
   }, [booksRead, bookCache, booksReadDates]);
 
-  // Rendu incrémental des listes potentiellement longues (historique complet,
-  // prochaines diffusions) : le DOM ne contient qu'un paquet de cartes à la
-  // fois, la suite se révèle au défilement. Les listes « à rattraper » sont
-  // bornées par le nombre de séries/films/livres suivis, donc pas besoin.
-  const upcomingEp = useIncremental(epEntries);
-  const histEp = useIncremental(historyEpisodeAscending, { fromEnd: true });
-  const histMovie = useIncremental(historyMovieAscending, { fromEnd: true });
-  const histBook = useIncremental(historyBookAscending, { fromEnd: true });
+  // La bande d'historique de l'agenda n'affiche que les N éléments les plus
+  // récents (les listes sont triées en ordre ascendant, donc les plus récents
+  // sont en fin) : le passé complet n'a pas à peser sur le chargement de la
+  // page — c'est un aperçu, pas un journal exhaustif.
+  const HISTORY_LIMIT = 10;
+  const recentHistoryEp = historyEpisodeAscending.slice(-HISTORY_LIMIT);
+  const recentHistoryMovie = historyMovieAscending.slice(-HISTORY_LIMIT);
+  const recentHistoryBook = historyBookAscending.slice(-HISTORY_LIMIT);
 
   // Layout effect pour ancrer le scroll sous le header fixe
   useIsoLayoutEffect(() => {
@@ -659,8 +637,7 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
                   </p>
-                  {histEp.hasMore && <div ref={histEp.sentinelRef} aria-hidden style={{ height: 1 }} />}
-                  <div className="stack">{histEp.visible.map(renderHistoryCard)}</div>
+                  <div className="stack">{recentHistoryEp.map(renderHistoryCard)}</div>
                 </div>
               )}
 
@@ -722,41 +699,6 @@ export default function AgendaPage() {
                 </div>
               )}
 
-              <h2 className="section-title">Prochaines diffusions{epEntries.length > 0 && <small>{epEntries.length}</small>}</h2>
-              {epEntries.length === 0 ? (
-                <div className="glass card" style={{ textAlign: "center" }}>
-                  <span className="muted">Aucune diffusion prévue pour le moment.</span>
-                </div>
-              ) : (
-                <div className="stack">
-                  {upcomingEp.visible.map(({ show, ep, date }) => (
-                    <SwipeableRow
-                      key={`ep-${show.id}-${ep.s}:${ep.e}`}
-                      onTap={() => router.push(`/show/${show.id}`)}
-                      onSwipeLeft={() => dropShow(show)}
-                      leftIcon="🏳️"
-                    >
-                      <div className="glass agenda-card pressable">
-                        <Poster
-                          item={{
-                            ...show,
-                            status: effectiveShowStatus(show, showStatus[show.id]),
-                          }}
-                          mini
-                        />
-                        <div className="agenda-body">
-                          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{show.title}</div>
-                          <div className="muted" style={{ marginTop: 2 }}>
-                            {epLabel(ep)} — {ep.title}
-                          </div>
-                        </div>
-                        <span className="badge-pill">{fmtRelativeWithTime(date)}</span>
-                      </div>
-                    </SwipeableRow>
-                  ))}
-                  {upcomingEp.hasMore && <div ref={upcomingEp.sentinelRef} aria-hidden style={{ height: 1 }} />}
-                </div>
-              )}
             </>
           )}
 
@@ -768,8 +710,7 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
                   </p>
-                  {histMovie.hasMore && <div ref={histMovie.sentinelRef} aria-hidden style={{ height: 1 }} />}
-                  <div className="stack">{histMovie.visible.map(renderHistoryCard)}</div>
+                  <div className="stack">{recentHistoryMovie.map(renderHistoryCard)}</div>
                 </div>
               )}
 
@@ -812,31 +753,6 @@ export default function AgendaPage() {
                 </div>
               )}
 
-              <h2 className="section-title">Prochaines sorties{movieEntries.length > 0 && <small>{movieEntries.length}</small>}</h2>
-              {movieEntries.length === 0 ? (
-                <div className="glass card" style={{ textAlign: "center" }}>
-                  <span className="muted">Aucune sortie prévue pour le moment.</span>
-                </div>
-              ) : (
-                <div className="stack">
-                  {movieEntries.map(({ movie, date }) => (
-                    <SwipeableRow
-                      key={`movie-${movie.id}`}
-                      onTap={() => router.push(`/movie/${movie.id}`)}
-                      onSwipeLeft={() => toggleMovieWatchlist(movie.id)}
-                    >
-                      <div className="glass agenda-card pressable">
-                        <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
-                        <div className="agenda-body">
-                          <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
-                          <div className="muted" style={{ marginTop: 2 }}>🎬 Sortie du film</div>
-                        </div>
-                        <span className="badge-pill">{fmtRelative(date)}</span>
-                      </div>
-                    </SwipeableRow>
-                  ))}
-                </div>
-              )}
             </>
           )}
 
@@ -849,8 +765,7 @@ export default function AgendaPage() {
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de lecture
                   </p>
-                  {histBook.hasMore && <div ref={histBook.sentinelRef} aria-hidden style={{ height: 1 }} />}
-                  <div className="stack">{histBook.visible.map(renderHistoryCard)}</div>
+                  <div className="stack">{recentHistoryBook.map(renderHistoryCard)}</div>
                 </div>
               )}
 
