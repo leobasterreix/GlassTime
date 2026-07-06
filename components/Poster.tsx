@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { isOngoingStatus, type DisplayStatus } from "@/lib/utils";
 
 type PosterItem = {
@@ -29,7 +30,13 @@ export default function Poster({
   if (item.poster) {
     return (
       <div className={`poster${mini ? " mini" : ""}`}>
-        <img className="art" src={item.poster} alt={item.title} loading="lazy" />
+        <Image
+          className="art"
+          src={item.poster}
+          alt={item.title}
+          fill
+          sizes={mini ? "52px" : "(min-width: 1024px) 16vw, (min-width: 640px) 25vw, 33vw"}
+        />
         {banner}
       </div>
     );

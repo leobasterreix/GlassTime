@@ -9,5 +9,7 @@ export async function GET(
   const show = await getShowDetail(Number(id));
   if (!show)
     return NextResponse.json({ error: "Série introuvable" }, { status: 404 });
-  return NextResponse.json(show);
+  return NextResponse.json(show, {
+    headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" },
+  });
 }

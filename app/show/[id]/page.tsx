@@ -370,7 +370,7 @@ export default function ShowPage() {
                       rel="noopener noreferrer"
                       className={`provider-pill${owned ? " owned" : ""}`}
                     >
-                      {p.logo && <img src={p.logo} alt="" />}
+                      {p.logo && <img src={p.logo} alt="" loading="lazy" />}
                       {p.name}
                     </a>
                   );

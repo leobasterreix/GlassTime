@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { isNativeApp } from "@/lib/nativeApp";
 
@@ -150,10 +151,13 @@ export default function LoginPage() {
         style={{ padding: 28, width: "100%", maxWidth: 420, margin: "0 auto" }}
       >
         <div style={{ textAlign: "center" }}>
-          <img
+          <Image
             src="/logo.png"
             alt="GlassTime"
-            style={{ width: 96, height: 96, borderRadius: 22, margin: "0 auto" }}
+            width={96}
+            height={96}
+            priority
+            style={{ borderRadius: 22, margin: "0 auto" }}
           />
           <p className="muted" style={{ marginTop: 14, marginBottom: 22 }}>
             {mode === "signin"

@@ -58,19 +58,36 @@ export function useHydrateLibrary() {
     const { showCache, movieCache, bookCache, cacheShow, cacheMovie, cacheBook } =
       useTrack.getState();
 
-    for (const id of new Set([...followed, ...favoriteShows])) {
-      if (showCache[id]?.seasons?.length) continue;
-      apiGet<Show>(`/api/show/${id}`).then((s) => s && cacheShow(s));
+    // Un seul aller-retour réseau par type de média (au lieu d'un fetch par
+    // fiche manquante) : évite la rafale de requêtes quand la bibliothèque
+    // suivie compte plusieurs dizaines d'entrées.
+    const missingShowIds = [...new Set([...followed, ...favoriteShows])].filter(
+      (id) => !showCache[id]?.seasons?.length
+    );
+    if (missingShowIds.length) {
+      apiGet<Show[]>(`/api/show/batch?ids=${missingShowIds.join(",")}`).then(
+        (shows) => shows?.forEach(cacheShow)
+      );
     }
-    for (const id of new Set([...movieWatchlist, ...moviesWatched, ...favoriteMovies])) {
-      if (movieCache[id]?.runtime) continue;
-      apiGet<Movie>(`/api/movie/${id}`).then((m) => m && cacheMovie(m));
+
+    const missingMovieIds = [
+      ...new Set([...movieWatchlist, ...moviesWatched, ...favoriteMovies]),
+    ].filter((id) => !movieCache[id]?.runtime);
+    if (missingMovieIds.length) {
+      apiGet<Movie[]>(`/api/movie/batch?ids=${missingMovieIds.join(",")}`).then(
+        (movies) => movies?.forEach(cacheMovie)
+      );
     }
+
     // Le Set évite les re-fetch en boucle quand un livre reste introuvable
-    for (const id of new Set([...booksWatchlist, ...booksRead, ...favoriteBooks])) {
-      if (bookCache[id] || fetchedBookIds.has(id)) continue;
-      fetchedBookIds.add(id);
-      apiGet<Book>(`/api/book/${id}`).then((b) => b && cacheBook(b));
+    const missingBookIds = [
+      ...new Set([...booksWatchlist, ...booksRead, ...favoriteBooks]),
+    ].filter((id) => !bookCache[id] && !fetchedBookIds.has(id));
+    if (missingBookIds.length) {
+      missingBookIds.forEach((id) => fetchedBookIds.add(id));
+      apiGet<Book[]>(`/api/book/batch?ids=${missingBookIds.join(",")}`).then(
+        (books) => books?.forEach(cacheBook)
+      );
     }
   }, [
     mounted,
