@@ -147,6 +147,11 @@ type TrackState = {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
+  /** Historique replié par défaut sur l'agenda : il s'empile au-dessus de
+   * « À rattraper » et noie ce qu'il reste à regarder — on ne le déplie
+   * qu'à la demande. Préférence persistée, pas synchronisée (pur confort UI). */
+  historyVisible: boolean;
+  toggleHistoryVisible: () => void;
   /** Dernière recherche Découvrir — survit au changement d'onglet (pas juste
    * au retour navigateur, qui lui passe par l'URL). */
   discoverPrefs: DiscoverPrefs;
@@ -227,6 +232,7 @@ export const useTrack = create<TrackState>()(
       favoriteBooks: [],
       myPlatforms: [],
       notifications: [],
+      historyVisible: false,
       discoverPrefs: DEFAULT_DISCOVER_PREFS,
       bookProgress: {},
       episodeReviews: {},
@@ -273,6 +279,9 @@ export const useTrack = create<TrackState>()(
         })),
 
       clearNotifications: () => set({ notifications: [] }),
+
+      toggleHistoryVisible: () =>
+        set((st) => ({ historyVisible: !st.historyVisible })),
 
       setDiscoverPrefs: (p) =>
         set((st) => ({ discoverPrefs: { ...st.discoverPrefs, ...p } })),

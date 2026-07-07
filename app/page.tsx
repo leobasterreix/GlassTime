@@ -72,6 +72,8 @@ export default function AgendaPage() {
     bookProgress,
     updateBookProgress,
     setEpisode,
+    historyVisible,
+    toggleHistoryVisible,
   } = useTrack();
   useHydrateLibrary();
 
@@ -251,7 +253,9 @@ export default function AgendaPage() {
   const histMovie = useIncremental(historyMovieAscending, { fromEnd: true });
   const histBook = useIncremental(historyBookAscending, { fromEnd: true });
 
-  // Layout effect pour ancrer le scroll sous le header fixe
+  // Layout effect pour ancrer le scroll sous le header fixe. Ré-ancré aussi
+  // au dépliage/repliage de l'historique : le contenu s'insère au-dessus de
+  // « À rattraper », sans ré-ancrage la vue sauterait n'importe où.
   useIsoLayoutEffect(() => {
     if (!mounted) return;
     const divider = catchupDividerRef.current;
@@ -262,7 +266,23 @@ export default function AgendaPage() {
     const headerH = headerRef.current?.offsetHeight ?? 185;
     const target = Math.max(0, divider.offsetTop - headerH - 6);
     window.scrollTo(0, target);
-  }, [mounted, category]);
+  }, [mounted, category, historyVisible]);
+
+  /** Bouton repli/dépli de l'historique, juste au-dessus de « À rattraper »
+   * — l'historique reste replié par défaut pour ne pas noyer ce qu'il reste
+   * à regarder. */
+  function historyToggleButton(count: number) {
+    if (count === 0) return null;
+    return (
+      <div style={{ textAlign: "center", marginBottom: 14 }}>
+        <button className="chip" onClick={toggleHistoryVisible}>
+          {historyVisible
+            ? "▾ Masquer l'historique"
+            : `🕰️ Afficher l'historique (${count})`}
+        </button>
+      </div>
+    );
+  }
 
   function renderHistoryCard(card: HistoryCard) {
     if (card.kind === "history-ep") {
@@ -669,7 +689,7 @@ export default function AgendaPage() {
               passé), à rattraper (maintenant), prochaines diffusions (↓ futur) */}
           {category === "series" && (
             <>
-              {historyEpisodeAscending.length > 0 && (
+              {historyVisible && historyEpisodeAscending.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
@@ -677,6 +697,7 @@ export default function AgendaPage() {
                   <div className="stack">{recentHistoryEp.map(renderHistoryCard)}</div>
                 </div>
               )}
+              {historyToggleButton(historyEpisodeAscending.length)}
 
               <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
                 À rattraper{toCatchUp.length > 0 && <small>{toCatchUp.length}</small>}
@@ -742,7 +763,7 @@ export default function AgendaPage() {
           {/* SECTION FILMS */}
           {category === "movies" && (
             <>
-              {historyMovieAscending.length > 0 && (
+              {historyVisible && historyMovieAscending.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de visionnage
@@ -751,6 +772,7 @@ export default function AgendaPage() {
                   <div className="stack">{histMovie.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
+              {historyToggleButton(historyMovieAscending.length)}
 
               <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
                 À voir{moviesToCatchUp.length > 0 && <small>{moviesToCatchUp.length}</small>}
@@ -798,7 +820,7 @@ export default function AgendaPage() {
               historique (↑ passé) puis à lire (maintenant), un seul défilement */}
           {category === "books" && (
             <>
-              {historyBookAscending.length > 0 && (
+              {historyVisible && historyBookAscending.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <p className="tiny" style={{ textAlign: "center", color: "var(--text-3)", marginBottom: 10 }}>
                     ↑ Historique de lecture
@@ -807,6 +829,7 @@ export default function AgendaPage() {
                   <div className="stack">{histBook.visible.map(renderHistoryCard)}</div>
                 </div>
               )}
+              {historyToggleButton(historyBookAscending.length)}
 
               <h2 className="section-title" ref={catchupDividerRef} style={{ scrollMarginTop: 80 }}>
                 À lire{booksToCatchUp.length > 0 && <small>{booksToCatchUp.length}</small>}
