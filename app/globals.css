@@ -225,23 +225,96 @@ input {
 
 /* ===== Personnalisation : ambiances & intensité du verre ===== */
 
-/* Fonds d'ambiance — remplacent le halo accent par des dégradés thématiques.
-   Les couleurs sont fixes (indépendantes de l'accent) pour rester lisibles
-   quel que soit le thème. */
+/* L'ambiance teinte AUSSI le fond et les surfaces : sur mobile, les cartes
+   opaques couvrent presque tout l'écran — un simple halo derrière elles est
+   invisible par construction. data-theme est toujours résolu en light/dark
+   par SyncManager, d'où les sélecteurs combinés (jamais d'ambiance sans
+   thème explicite). */
+[data-theme="light"][data-ambiance="sunset"] {
+  --bg: #fdf5ee;
+  --surface: #fffbf7;
+  --surface-2: #f8ebdf;
+  --tab-bg: rgba(255, 251, 247, 0.85);
+}
+[data-theme="dark"][data-ambiance="sunset"] {
+  --bg: #170d08;
+  --surface: #241610;
+  --surface-2: #301e15;
+  --tab-bg: rgba(36, 22, 16, 0.85);
+}
+[data-theme="light"][data-ambiance="ocean"] {
+  --bg: #f0f8fb;
+  --surface: #fafdfe;
+  --surface-2: #e6f2f7;
+  --tab-bg: rgba(250, 253, 254, 0.85);
+}
+[data-theme="dark"][data-ambiance="ocean"] {
+  --bg: #06131a;
+  --surface: #0e2029;
+  --surface-2: #152b36;
+  --tab-bg: rgba(14, 32, 41, 0.85);
+}
+[data-theme="light"][data-ambiance="forest"] {
+  --bg: #f2f9f2;
+  --surface: #fbfefb;
+  --surface-2: #e8f3e8;
+  --tab-bg: rgba(251, 254, 251, 0.85);
+}
+[data-theme="dark"][data-ambiance="forest"] {
+  --bg: #08130a;
+  --surface: #112016;
+  --surface-2: #182b1e;
+  --tab-bg: rgba(17, 32, 22, 0.85);
+}
+
+/* Fonds d'ambiance — dégradés thématiques pleine hauteur (trois lueurs :
+   haut gauche, haut droit, bas), nettement plus affirmés que le halo accent
+   par défaut. Ils ne subissent PAS --aurora-opacity (0.45-0.55), qui les
+   rendait quasi invisibles : leur opacité propre vaut 1, les alphas sont
+   calibrés directement dans les dégradés, et seul le mode verre « discret »
+   les atténue via --ambiance-opacity. */
+[data-ambiance="sunset"] .aurora,
+[data-ambiance="ocean"] .aurora,
+[data-ambiance="forest"] .aurora {
+  opacity: var(--ambiance-opacity, 1);
+}
 [data-ambiance="sunset"] .aurora {
   background:
-    radial-gradient(90% 55% at 20% -10%, rgba(251, 146, 60, 0.30), transparent 70%),
-    radial-gradient(80% 50% at 85% -5%, rgba(236, 72, 153, 0.25), transparent 70%);
+    radial-gradient(65% 45% at 12% -8%, rgba(251, 146, 60, 0.42), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(236, 72, 153, 0.36), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(244, 63, 94, 0.26), transparent 70%);
 }
 [data-ambiance="ocean"] .aurora {
   background:
-    radial-gradient(90% 55% at 25% -10%, rgba(56, 189, 248, 0.28), transparent 70%),
-    radial-gradient(80% 50% at 80% -5%, rgba(45, 212, 191, 0.22), transparent 70%);
+    radial-gradient(65% 45% at 12% -8%, rgba(56, 189, 248, 0.40), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(45, 212, 191, 0.32), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(59, 130, 246, 0.24), transparent 70%);
 }
 [data-ambiance="forest"] .aurora {
   background:
-    radial-gradient(90% 55% at 25% -10%, rgba(74, 222, 128, 0.24), transparent 70%),
-    radial-gradient(80% 50% at 80% -5%, rgba(163, 230, 53, 0.18), transparent 70%);
+    radial-gradient(65% 45% at 12% -8%, rgba(74, 222, 128, 0.36), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(163, 230, 53, 0.26), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(16, 185, 129, 0.24), transparent 70%);
+}
+/* Sur fond quasi noir, les lueurs doivent être un cran plus fortes pour
+   ressortir autant qu'en thème clair. */
+[data-theme="dark"][data-ambiance="sunset"] .aurora {
+  background:
+    radial-gradient(65% 45% at 12% -8%, rgba(251, 146, 60, 0.55), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(236, 72, 153, 0.45), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(244, 63, 94, 0.35), transparent 70%);
+}
+[data-theme="dark"][data-ambiance="ocean"] .aurora {
+  background:
+    radial-gradient(65% 45% at 12% -8%, rgba(56, 189, 248, 0.50), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(45, 212, 191, 0.40), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(59, 130, 246, 0.34), transparent 70%);
+}
+[data-theme="dark"][data-ambiance="forest"] .aurora {
+  background:
+    radial-gradient(65% 45% at 12% -8%, rgba(74, 222, 128, 0.46), transparent 70%),
+    radial-gradient(55% 40% at 92% 8%, rgba(163, 230, 53, 0.34), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(16, 185, 129, 0.32), transparent 70%);
 }
 [data-ambiance="none"] .aurora {
   display: none;
@@ -252,6 +325,7 @@ input {
    translucides avec backdrop-blur — l'effet liquid glass assumé. */
 [data-glass="subtle"] {
   --aurora-opacity: 0.22;
+  --ambiance-opacity: 0.45;
 }
 [data-glass="intense"] {
   --aurora-opacity: 0.85;
