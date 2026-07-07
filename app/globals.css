@@ -222,6 +222,51 @@ input {
   transform: scale(0.97);
 }
 
+
+/* ===== Personnalisation : ambiances & intensité du verre ===== */
+
+/* Fonds d'ambiance — remplacent le halo accent par des dégradés thématiques.
+   Les couleurs sont fixes (indépendantes de l'accent) pour rester lisibles
+   quel que soit le thème. */
+[data-ambiance="sunset"] .aurora {
+  background:
+    radial-gradient(90% 55% at 20% -10%, rgba(251, 146, 60, 0.30), transparent 70%),
+    radial-gradient(80% 50% at 85% -5%, rgba(236, 72, 153, 0.25), transparent 70%);
+}
+[data-ambiance="ocean"] .aurora {
+  background:
+    radial-gradient(90% 55% at 25% -10%, rgba(56, 189, 248, 0.28), transparent 70%),
+    radial-gradient(80% 50% at 80% -5%, rgba(45, 212, 191, 0.22), transparent 70%);
+}
+[data-ambiance="forest"] .aurora {
+  background:
+    radial-gradient(90% 55% at 25% -10%, rgba(74, 222, 128, 0.24), transparent 70%),
+    radial-gradient(80% 50% at 80% -5%, rgba(163, 230, 53, 0.18), transparent 70%);
+}
+[data-ambiance="none"] .aurora {
+  display: none;
+}
+
+/* Intensité du verre. "normal" = rendu par défaut (cartes opaques).
+   "subtle" atténue le halo d'ambiance ; "intense" rend les cartes
+   translucides avec backdrop-blur — l'effet liquid glass assumé. */
+[data-glass="subtle"] {
+  --aurora-opacity: 0.22;
+}
+[data-glass="intense"] {
+  --aurora-opacity: 0.85;
+}
+[data-glass="intense"] .glass {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+[data-glass="intense"] .glass-strong {
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
 /* ===== Chips & boutons (HeroUI style) ===== */
 
 .chip {

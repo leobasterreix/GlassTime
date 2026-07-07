@@ -66,6 +66,8 @@ export type DiscoverPrefs = {
   bookGenre: string | null;
   bookYear: string | null;
   bookMonth: string | null;
+  /** Restreindre Découvrir aux contenus dispo sur mes plateformes. */
+  onMyPlatforms: boolean;
 };
 
 const DEFAULT_DISCOVER_PREFS: DiscoverPrefs = {
@@ -75,6 +77,30 @@ const DEFAULT_DISCOVER_PREFS: DiscoverPrefs = {
   bookGenre: null,
   bookYear: null,
   bookMonth: null,
+  onMyPlatforms: false,
+};
+
+/** Fond d'ambiance (halo fixe derrière le contenu). "aurora" = halo accent
+ * historique ; les autres sont des dégradés thématiques indépendants de la
+ * couleur d'accent ; "none" le retire. */
+export type Ambiance = "aurora" | "sunset" | "ocean" | "forest" | "none";
+
+/** Intensité de l'effet verre : "normal" = rendu historique (cartes opaques),
+ * "subtle" atténue le halo, "intense" rend les cartes translucides avec
+ * backdrop-blur — le vrai liquid glass. Appliqué via [data-glass] sur <html>. */
+export type GlassIntensity = "subtle" | "normal" | "intense";
+
+/** Objectifs annuels — null = pas d'objectif pour cette catégorie. */
+export type YearlyGoals = {
+  episodes: number | null;
+  movies: number | null;
+  books: number | null;
+};
+
+const DEFAULT_YEARLY_GOALS: YearlyGoals = {
+  episodes: null,
+  movies: null,
+  books: null,
 };
 
 type TrackState = {
@@ -152,6 +178,18 @@ type TrackState = {
    * qu'à la demande. Préférence persistée, pas synchronisée (pur confort UI). */
   historyVisible: boolean;
   toggleHistoryVisible: () => void;
+  /** Fond d'ambiance derrière le contenu (halo fixe). */
+  ambiance: Ambiance;
+  setAmbiance: (a: Ambiance) => void;
+  /** Intensité de l'effet liquid glass. */
+  glassIntensity: GlassIntensity;
+  setGlassIntensity: (g: GlassIntensity) => void;
+  /** Avatar emoji local — utilisé quand aucun avatar de compte n'est défini. */
+  avatarEmoji: string | null;
+  setAvatarEmoji: (e: string | null) => void;
+  /** Objectifs annuels (épisodes/films/livres) pour l'année en cours. */
+  yearlyGoals: YearlyGoals;
+  setYearlyGoal: (kind: keyof YearlyGoals, value: number | null) => void;
   /** Dernière recherche Découvrir — survit au changement d'onglet (pas juste
    * au retour navigateur, qui lui passe par l'URL). */
   discoverPrefs: DiscoverPrefs;
@@ -233,6 +271,10 @@ export const useTrack = create<TrackState>()(
       myPlatforms: [],
       notifications: [],
       historyVisible: false,
+      ambiance: "aurora" as Ambiance,
+      glassIntensity: "normal" as GlassIntensity,
+      avatarEmoji: null,
+      yearlyGoals: DEFAULT_YEARLY_GOALS,
       discoverPrefs: DEFAULT_DISCOVER_PREFS,
       bookProgress: {},
       episodeReviews: {},
@@ -282,6 +324,19 @@ export const useTrack = create<TrackState>()(
 
       toggleHistoryVisible: () =>
         set((st) => ({ historyVisible: !st.historyVisible })),
+
+      setAmbiance: (a) => set({ ambiance: a, updatedAt: Date.now() }),
+
+      setGlassIntensity: (g) =>
+        set({ glassIntensity: g, updatedAt: Date.now() }),
+
+      setAvatarEmoji: (e) => set({ avatarEmoji: e, updatedAt: Date.now() }),
+
+      setYearlyGoal: (kind, value) =>
+        set((st) => ({
+          yearlyGoals: { ...(st.yearlyGoals ?? DEFAULT_YEARLY_GOALS), [kind]: value },
+          updatedAt: Date.now(),
+        })),
 
       setDiscoverPrefs: (p) =>
         set((st) => ({ discoverPrefs: { ...st.discoverPrefs, ...p } })),

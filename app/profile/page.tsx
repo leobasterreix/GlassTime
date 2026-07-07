@@ -346,6 +346,152 @@ function DonutInteractive({ donutSlices }: { donutSlices: DonutSlice[] }) {
   );
 }
 
+type GoalKind = "episodes" | "movies" | "books";
+
+const GOAL_DEFS: { kind: GoalKind; emoji: string; label: string }[] = [
+  { kind: "episodes", emoji: "📺", label: "Épisodes" },
+  { kind: "movies", emoji: "🎬", label: "Films" },
+  { kind: "books", emoji: "📚", label: "Livres" },
+];
+
+/** Objectifs annuels façon défi lecture Goodreads : cible par catégorie,
+ * progression sur l'année en cours et projection au rythme actuel. */
+function YearlyGoalsCard({
+  counts,
+  goals,
+  setGoal,
+}: {
+  counts: Record<GoalKind, number>;
+  goals: Record<GoalKind, number | null>;
+  setGoal: (kind: GoalKind, value: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<GoalKind, string>>({
+    episodes: "",
+    movies: "",
+    books: "",
+  });
+
+  const year = new Date().getFullYear();
+  const startOfYear = new Date(year, 0, 1).getTime();
+  const daysInYear = Math.round((new Date(year + 1, 0, 1).getTime() - startOfYear) / DAY);
+  const dayOfYear = Math.max(1, Math.floor((Date.now() - startOfYear) / DAY) + 1);
+
+  const active = GOAL_DEFS.filter((g) => (goals[g.kind] ?? 0) > 0);
+
+  function openEdit() {
+    setDraft({
+      episodes: goals.episodes ? String(goals.episodes) : "",
+      movies: goals.movies ? String(goals.movies) : "",
+      books: goals.books ? String(goals.books) : "",
+    });
+    setEditing(true);
+  }
+
+  function save() {
+    for (const g of GOAL_DEFS) {
+      const n = parseInt(draft[g.kind], 10);
+      setGoal(g.kind, Number.isFinite(n) && n > 0 ? n : null);
+    }
+    setEditing(false);
+    toast(`Objectifs ${year} enregistrés`, "🎯");
+  }
+
+  if (editing) {
+    return (
+      <div className="glass card stack" style={{ gap: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>Mes objectifs {year}</span>
+        {GOAL_DEFS.map((g) => (
+          <div key={g.kind} className="row" style={{ justifyContent: "space-between", gap: 10 }}>
+            <span style={{ fontSize: 13.5 }}>
+              {g.emoji} {g.label} sur l&apos;année
+            </span>
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              placeholder="—"
+              value={draft[g.kind]}
+              onChange={(e) => setDraft((d) => ({ ...d, [g.kind]: e.target.value }))}
+              style={{
+                width: 90,
+                padding: "8px 10px",
+                borderRadius: 10,
+                border: "1px solid var(--hairline-strong)",
+                background: "var(--surface-2)",
+                color: "var(--text)",
+                fontWeight: 700,
+                textAlign: "center",
+              }}
+            />
+          </div>
+        ))}
+        <div className="row" style={{ gap: 10 }}>
+          <button className="btn pressable" style={{ flex: 1 }} onClick={() => setEditing(false)}>
+            Annuler
+          </button>
+          <button className="btn btn-primary pressable" style={{ flex: 1 }} onClick={save}>
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (active.length === 0) {
+    return (
+      <div className="glass card" style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 30, marginBottom: 6 }}>🎯</div>
+        <div style={{ fontWeight: 800, marginBottom: 4 }}>Aucun objectif {year}</div>
+        <p className="tiny" style={{ marginBottom: 14 }}>
+          Fixe-toi un cap pour l&apos;année — épisodes, films ou livres — et suis ta progression ici.
+        </p>
+        <button className="btn btn-primary pressable" onClick={openEdit}>
+          Définir mes objectifs
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass card stack" style={{ gap: 14 }}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>Mes objectifs {year}</span>
+        <button className="tiny pressable" style={{ fontWeight: 700, color: "var(--accent)" }} onClick={openEdit}>
+          ✏️ Modifier
+        </button>
+      </div>
+      {active.map((g) => {
+        const goal = goals[g.kind]!;
+        const count = counts[g.kind];
+        const pct = Math.min(100, Math.round((count / goal) * 100));
+        const projected = Math.round((count / dayOfYear) * daysInYear);
+        const reached = count >= goal;
+        return (
+          <div key={g.kind}>
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 5 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>
+                {g.emoji} {g.label}
+              </span>
+              <span className="tiny" style={{ fontWeight: 700 }}>
+                {count} / {goal}
+              </span>
+            </div>
+            <div className="progress">
+              <div style={{ width: `${pct}%` }} />
+            </div>
+            <div className="tiny" style={{ marginTop: 4, color: reached ? "var(--accent)" : "var(--text-3)" }}>
+              {reached
+                ? "🎉 Objectif atteint, bravo !"
+                : `À ce rythme : ~${projected} d'ici fin ${year}`}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const mounted = useMounted();
   const {
@@ -364,12 +510,21 @@ export default function ProfilePage() {
     watchedLog,
     localReviews,
     episodeReviews,
+    episodeWatchedAt,
     importState,
     clearAll,
     theme,
     toggleTheme,
     accent,
     setAccent,
+    ambiance,
+    setAmbiance,
+    glassIntensity,
+    setGlassIntensity,
+    avatarEmoji,
+    setAvatarEmoji,
+    yearlyGoals,
+    setYearlyGoal,
     favoriteShows,
     favoriteMovies,
     favoriteBooks,
@@ -901,6 +1056,17 @@ export default function ProfilePage() {
   // Streaks : jours consécutifs avec au moins un marquage (épisode, film ou
   // livre) — le journal watchedLog couvre déjà les trois types de contenu.
   const streaks = computeStreaks(watchedLog);
+
+  // Progression des objectifs : comptes de l'année en cours uniquement. Les
+  // épisodes marqués avant l'ajout de l'horodatage n'ont pas de date — ils ne
+  // comptent pas ici, ce qui est le comportement voulu (objectif = activité
+  // réelle de l'année, pas le stock historique).
+  const goalYear = String(new Date().getFullYear());
+  const yearCounts = {
+    episodes: Object.values(episodeWatchedAt ?? {}).filter((d) => d.startsWith(goalYear)).length,
+    movies: Object.values(moviesWatchedDates ?? {}).filter((d) => d.startsWith(goalYear)).length,
+    books: Object.values(booksReadDates ?? {}).filter((d) => d.startsWith(goalYear)).length,
+  };
   const reviewsCount =
     Object.keys(localReviews ?? {}).length + Object.keys(episodeReviews ?? {}).length;
 
@@ -1216,7 +1382,7 @@ export default function ProfilePage() {
                 border: "1px solid var(--accent)",
               }}
             >
-              {userInfo?.avatar || "🍿"}
+              {userInfo?.avatar || avatarEmoji || "🍿"}
             </div>
           )}
           <div style={{ flex: 1 }}>
@@ -1322,6 +1488,14 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Objectifs annuels */}
+          <h2 className="section-title">Objectifs 🎯</h2>
+          <YearlyGoalsCard
+            counts={yearCounts}
+            goals={yearlyGoals ?? { episodes: null, movies: null, books: null }}
+            setGoal={setYearlyGoal}
+          />
 
           {/* Heatmap d'activité — interactive */}
           <h2 className="section-title">Calendrier d'activité 🗓️</h2>
@@ -1642,6 +1816,88 @@ export default function ProfilePage() {
                     }
                   />
                 </label>
+              </div>
+            </div>
+            {/* Fond d'ambiance */}
+            <div className="glass card stack" style={{ gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>Ambiance</span>
+              <p className="tiny">Halo de couleur en fond d&apos;écran, derrière le contenu.</p>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                {(
+                  [
+                    { value: "aurora", label: "✨ Aurora" },
+                    { value: "sunset", label: "🌇 Crépuscule" },
+                    { value: "ocean", label: "🌊 Océan" },
+                    { value: "forest", label: "🌲 Forêt" },
+                    { value: "none", label: "🚫 Aucune" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.value}
+                    className={`chip pressable${(ambiance ?? "aurora") === o.value ? " active" : ""}`}
+                    style={{ width: "auto", minWidth: "auto" }}
+                    onClick={() => setAmbiance(o.value)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Intensité de l'effet verre */}
+            <div className="glass card stack" style={{ gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>Effet verre</span>
+              <p className="tiny">« Intense » rend les cartes translucides avec flou d&apos;arrière-plan.</p>
+              <div className="glass segmented" style={{ marginBottom: 0 }}>
+                {(
+                  [
+                    { value: "subtle", label: "Discret" },
+                    { value: "normal", label: "Normal" },
+                    { value: "intense", label: "Intense" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.value}
+                    className={(glassIntensity ?? "normal") === o.value ? "active" : ""}
+                    onClick={() => setGlassIntensity(o.value)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Avatar emoji (sans compte) */}
+            <div className="glass card stack" style={{ gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>Avatar</span>
+              <p className="tiny">
+                Ton emoji d&apos;avatar, même sans compte.
+                {userInfo?.avatar ? " L'avatar de ton compte reste prioritaire." : ""}
+              </p>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                {["🍿", "📺", "🎬", "📚", "🎭", "🎮", "🚀", "🌙", "⭐", "🔥", "🦊", "🐼", "🐱", "🦄", "👾", "🤖"].map((e) => {
+                  const active = avatarEmoji === e;
+                  return (
+                    <button
+                      key={e}
+                      className="pressable"
+                      aria-label={`Avatar ${e}`}
+                      onClick={() => setAvatarEmoji(active ? null : e)}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        fontSize: 20,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        background: active ? "var(--accent-wash)" : "var(--surface-2)",
+                        border: active ? "2px solid var(--accent)" : "1px solid var(--hairline)",
+                      }}
+                    >
+                      {e}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             {/* Plateformes de streaming possédées */}

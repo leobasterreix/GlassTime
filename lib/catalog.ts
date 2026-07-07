@@ -66,6 +66,27 @@ const TV_GENRE_ID = Object.fromEntries(
   Object.entries(TV_GENRES).map(([id, name]) => [name, Number(id)])
 );
 
+/** IDs TMDB (région FR) des plateformes proposées dans le profil — mêmes
+ * noms que KNOWN_PLATFORMS côté client (lib/utils.ts). */
+const PLATFORM_TMDB_IDS: Record<string, number> = {
+  Netflix: 8,
+  "Prime Video": 119,
+  "Disney+": 337,
+  "Canal+": 381,
+  Max: 1899,
+  "Paramount+": 531,
+  "Apple TV": 350,
+  Crunchyroll: 283,
+};
+
+/** Noms de plateformes → paramètre with_watch_providers ("8|337|…"). */
+function providerParam(names: string[]): string {
+  return names
+    .map((n) => PLATFORM_TMDB_IDS[n])
+    .filter(Boolean)
+    .join("|");
+}
+
 function hasTmdb() {
   return !!process.env.TMDB_API_KEY;
 }
@@ -201,9 +222,16 @@ export async function getRecommendations(
   }
 }
 
-export async function listShows(q?: string, genre?: string): Promise<Show[]> {
+export async function listShows(
+  q?: string,
+  genre?: string,
+  providers?: string[]
+): Promise<Show[]> {
   if (!hasTmdb()) return [];
   try {
+    // L'API search TMDB ne sait pas filtrer par plateforme : le filtre ne
+    // s'applique qu'en exploration (discover), pas à la recherche par titre.
+    const providerIds = !q && providers?.length ? providerParam(providers) : "";
     let results: any[];
     if (q) {
       const data = await tmdb("/search/tv", {
@@ -211,11 +239,14 @@ export async function listShows(q?: string, genre?: string): Promise<Show[]> {
         include_adult: "false",
       });
       results = data.results ?? [];
-    } else if (genre && TV_GENRE_ID[genre]) {
-      const data = await tmdb("/discover/tv", {
-        with_genres: String(TV_GENRE_ID[genre]),
-        sort_by: "popularity.desc",
-      });
+    } else if (providerIds || (genre && TV_GENRE_ID[genre])) {
+      const params: Record<string, string> = { sort_by: "popularity.desc" };
+      if (genre && TV_GENRE_ID[genre]) params.with_genres = String(TV_GENRE_ID[genre]);
+      if (providerIds) {
+        params.with_watch_providers = providerIds;
+        params.watch_region = "FR";
+      }
+      const data = await tmdb("/discover/tv", params);
       results = data.results ?? [];
     } else {
       const data = await tmdb("/trending/tv/week");
@@ -334,12 +365,21 @@ export async function getShowsStatus(
   return Object.fromEntries(entries.filter((e): e is [number, "En cours" | "Terminée"] => e !== null));
 }
 
-export async function listMovies(q?: string): Promise<Movie[]> {
+export async function listMovies(q?: string, providers?: string[]): Promise<Movie[]> {
   if (!hasTmdb()) return [];
   try {
+    // Même limite que listShows : le filtre plateformes ne s'applique pas à
+    // la recherche par titre (non supporté par l'API search TMDB).
+    const providerIds = !q && providers?.length ? providerParam(providers) : "";
     const data = q
       ? await tmdb("/search/movie", { query: q, include_adult: "false" })
-      : await tmdb("/movie/popular");
+      : providerIds
+        ? await tmdb("/discover/movie", {
+            sort_by: "popularity.desc",
+            with_watch_providers: providerIds,
+            watch_region: "FR",
+          })
+        : await tmdb("/movie/popular");
     return (data.results ?? []).map(mapMovieSummary).filter((m: Movie) => m.title);
   } catch (err) {
     console.error("TMDB error listMovies:", err);

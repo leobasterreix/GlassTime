@@ -35,6 +35,10 @@ const SYNC_KEYS = [
   "favoriteBooks",
   "myPlatforms",
   "notifications",
+  "ambiance",
+  "glassIntensity",
+  "avatarEmoji",
+  "yearlyGoals",
   "updatedAt",
 ] as const;
 
@@ -48,6 +52,15 @@ function snapshot(): SyncState {
 export default function SyncManager() {
   const theme = useTrack((st) => st.theme);
   const accent = useTrack((st) => st.accent);
+  const ambiance = useTrack((st) => st.ambiance);
+  const glassIntensity = useTrack((st) => st.glassIntensity);
+
+  // Ambiance et intensité du verre : simples attributs sur <html>, le CSS
+  // fait le reste ([data-ambiance] / [data-glass] dans globals.css).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-ambiance", ambiance ?? "aurora");
+    document.documentElement.setAttribute("data-glass", glassIntensity ?? "normal");
+  }, [ambiance, glassIntensity]);
 
   useEffect(() => {
     // Applique le thème (clair/sombre) puis la couleur d'accent : l'accent

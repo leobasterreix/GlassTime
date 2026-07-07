@@ -67,6 +67,7 @@ function DiscoverContent() {
     toggleBookRead,
     discoverPrefs,
     setDiscoverPrefs,
+    myPlatforms,
   } = useTrack();
 
   const [type, setType] = useState<MediaType>(
@@ -84,6 +85,9 @@ function DiscoverContent() {
   );
   const [bookMonth, setBookMonth] = useState<string | null>(
     () => searchParams.get("bmonth") ?? discoverPrefs.bookMonth
+  );
+  const [onMyPlatforms, setOnMyPlatforms] = useState<boolean>(
+    () => discoverPrefs.onMyPlatforms ?? false
   );
   const [genres, setGenres] = useState<string[]>([]);
   const [showResults, setShowResults] = useState<Show[] | null>(null);
@@ -113,9 +117,9 @@ function DiscoverContent() {
     if (type === "books" && bookYear && bookMonth) params.set("bmonth", bookMonth);
     const qs = params.toString();
     router.replace(qs ? `/discover?${qs}` : "/discover", { scroll: false });
-    setDiscoverPrefs({ type, query, genre, bookGenre, bookYear, bookMonth });
+    setDiscoverPrefs({ type, query, genre, bookGenre, bookYear, bookMonth, onMyPlatforms });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, query, genre, bookGenre, bookYear, bookMonth]);
+  }, [type, query, genre, bookGenre, bookYear, bookMonth, onMyPlatforms]);
 
   // Recommendations: based on followed items
   useEffect(() => {
@@ -176,11 +180,13 @@ function DiscoverContent() {
           const params = new URLSearchParams();
           if (q) params.set("q", q);
           if (genre) params.set("genre", genre);
+          if (onMyPlatforms && myPlatforms.length) params.set("providers", myPlatforms.join(","));
           const data = await apiGet<Show[]>(`/api/shows?${params}`);
           if (!cancelled) setShowResults(data ?? []);
         } else if (type === "movies") {
           const params = new URLSearchParams();
           if (q) params.set("q", q);
+          if (onMyPlatforms && myPlatforms.length) params.set("providers", myPlatforms.join(","));
           const data = await apiGet<Movie[]>(`/api/movies?${params}`);
           if (!cancelled) setMovieResults(data ?? []);
         } else {
@@ -202,7 +208,8 @@ function DiscoverContent() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [type, q, genre, bookYear, bookMonth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, q, genre, bookYear, bookMonth, onMyPlatforms, myPlatforms.join(",")]);
 
   // Bandeau de statut sur les séries pas encore suivies : les listes TMDB ne
   // renvoient pas ce champ, on le récupère à part (appel léger, sans
@@ -284,8 +291,29 @@ function DiscoverContent() {
     setBookMonth(null);
   };
 
-  const searching = q.length > 0 || (type === "shows" && genre !== null);
+  // Filtre plateformes effectif : activé ET au moins une plateforme choisie
+  // dans le profil. Pas applicable aux livres.
+  const platformActive = onMyPlatforms && myPlatforms.length > 0 && type !== "books";
+  const searching = q.length > 0 || (type === "shows" && genre !== null) || platformActive;
   const browsingBooks = q.length > 0 || bookYear !== null;
+
+  function togglePlatformFilter() {
+    if (myPlatforms.length === 0) {
+      toast("Choisis d'abord tes plateformes dans Profil → Préférences", "📡");
+      return;
+    }
+    setOnMyPlatforms((v) => !v);
+  }
+
+  const platformChip = (
+    <button
+      className={`chip pressable${platformActive ? " active" : ""}`}
+      style={{ width: "auto", minWidth: "auto" }}
+      onClick={togglePlatformFilter}
+    >
+      📡 Sur mes plateformes
+    </button>
+  );
 
   /** Statut d'affichage (bandeau) pour une série : les listes TMDB
    * (recherche/tendances/populaires) ne renvoient pas le statut de
@@ -381,7 +409,7 @@ function DiscoverContent() {
           </button>
         </div>
 
-        <div className="search" style={{ marginBottom: (type === "shows" && genres.length > 0) || type === "books" ? 12 : 0 }}>
+        <div className="search" style={{ marginBottom: 12 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-3)" }}>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
@@ -399,8 +427,9 @@ function DiscoverContent() {
           />
         </div>
 
-        {type === "shows" && genres.length > 0 && (
+        {type === "shows" && (
           <div className="hscroll" style={{ paddingBottom: 0, marginBottom: 0 }}>
+            {platformChip}
             {genres.map((g) => (
               <button
                 key={g}
@@ -412,6 +441,18 @@ function DiscoverContent() {
               </button>
             ))}
           </div>
+        )}
+
+        {type === "movies" && (
+          <div className="hscroll" style={{ paddingBottom: 0, marginBottom: 0 }}>
+            {platformChip}
+          </div>
+        )}
+
+        {platformActive && q.length > 0 && (
+          <p className="tiny" style={{ margin: "8px 0 0", color: "var(--text-3)" }}>
+            Le filtre plateformes ne s&apos;applique pas à la recherche par titre.
+          </p>
         )}
 
         {type === "books" && (
@@ -534,7 +575,7 @@ function DiscoverContent() {
           )}
 
           <h2 className="section-title">
-            {searching ? "Résultats" : "Séries populaires"}
+            {platformActive && !q ? "📡 Sur mes plateformes" : searching ? "Résultats" : "Séries populaires"}
             {showResults && <small>{showResults.length}</small>}
           </h2>
 
@@ -609,7 +650,7 @@ function DiscoverContent() {
           )}
 
           <h2 className="section-title">
-            {searching ? "Résultats" : "Films populaires"}
+            {platformActive && !q ? "📡 Sur mes plateformes" : searching ? "Résultats" : "Films populaires"}
             {movieResults && <small>{movieResults.length}</small>}
           </h2>
 
