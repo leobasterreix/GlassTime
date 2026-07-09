@@ -5,6 +5,10 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { useEffect, useState } from "react";
 import type { Movie, Show, Book } from "./types";
 import { epKey } from "./utils";
+import { toast } from "./toast";
+
+/** Limite de séries/livres suivis en simultané pour le plan Gratuit. */
+export const FREE_FOLLOW_LIMIT = 10;
 
 /** N'écrit jamais en levant : Safari a un quota localStorage bien plus
  * restrictif que Chrome, et un cache qui grossit avec beaucoup de séries/
@@ -203,6 +207,12 @@ type TrackState = {
   /** Horodatage de la dernière consultation du flux d'activité des amis (pastille "nouveau"). */
   lastSeenActivityAt: number;
   setLastSeenActivityAt: (t: number) => void;
+  /** Statut d'abonnement — source de vérité côté serveur (colonne
+   * profiles.subscription_plan). Jamais persisté en localStorage : relu à
+   * chaque connexion par SyncManager pour éviter qu'un état local périmé ou
+   * trafiqué ne fasse illusion de statut Premium. */
+  subscriptionPlan: "free" | "premium";
+  setSubscriptionPlan: (plan: "free" | "premium") => void;
 };
 
 function toggleIn(list: number[], id: number): number[] {
@@ -281,14 +291,23 @@ export const useTrack = create<TrackState>()(
       recentActivities: [],
       lastSeenActivityAt: 0,
       updatedAt: 0,
+      subscriptionPlan: "free",
 
       setLastSeenActivityAt: (t) => set({ lastSeenActivityAt: t }),
+      setSubscriptionPlan: (plan) => set({ subscriptionPlan: plan }),
 
       toggleFollow: (id) =>
-        set((st) => ({
-          followed: toggleIn(st.followed, id),
-          updatedAt: Date.now(),
-        })),
+        set((st) => {
+          const adding = !st.followed.includes(id);
+          if (adding && st.subscriptionPlan !== "premium" && st.followed.length >= FREE_FOLLOW_LIMIT) {
+            toast(`Passez Premium pour suivre plus de ${FREE_FOLLOW_LIMIT} séries`, "🔒");
+            return {};
+          }
+          return {
+            followed: toggleIn(st.followed, id),
+            updatedAt: Date.now(),
+          };
+        }),
 
       toggleMyPlatform: (name) =>
         set((st) => ({
@@ -589,10 +608,17 @@ export const useTrack = create<TrackState>()(
         }),
 
       toggleBookWatchlist: (id) =>
-        set((st) => ({
-          booksWatchlist: toggleInStr(st.booksWatchlist, id),
-          updatedAt: Date.now(),
-        })),
+        set((st) => {
+          const adding = !st.booksWatchlist.includes(id);
+          if (adding && st.subscriptionPlan !== "premium" && st.booksWatchlist.length >= FREE_FOLLOW_LIMIT) {
+            toast(`Passez Premium pour suivre plus de ${FREE_FOLLOW_LIMIT} livres`, "🔒");
+            return {};
+          }
+          return {
+            booksWatchlist: toggleInStr(st.booksWatchlist, id),
+            updatedAt: Date.now(),
+          };
+        }),
 
       toggleBookRead: (id) =>
         set((st) => {
@@ -814,6 +840,9 @@ export const useTrack = create<TrackState>()(
       storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         ...state,
+        // Jamais persisté : relu depuis Supabase à chaque connexion (voir
+        // subscriptionPlan dans TrackState), pour rester la source de vérité.
+        subscriptionPlan: undefined,
         showCache: Object.fromEntries(
           Object.entries(state.showCache).map(([id, s]) => [id, trimShowForStorage(s)])
         ),
@@ -827,6 +856,8 @@ export const useTrack = create<TrackState>()(
     }
   )
 );
+
+export const useIsPremium = () => useTrack((s) => s.subscriptionPlan === "premium");
 
 /** Évite les erreurs d'hydratation : ne rendre l'état persisté qu'après montage. */
 export function useMounted() {

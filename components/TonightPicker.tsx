@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useIsPremium } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { Episode, Movie, Show } from "@/lib/types";
 import { epLabel } from "@/lib/utils";
 
@@ -36,9 +39,20 @@ export default function TonightPicker({
 }: {
   candidates: TonightCandidate[];
 }) {
+  const router = useRouter();
+  const isPremium = useIsPremium();
   const [open, setOpen] = useState(false);
   const [slotIdx, setSlotIdx] = useState<number | null>(null);
   const [pick, setPick] = useState<TonightCandidate | null>(null);
+
+  function openPicker() {
+    if (!isPremium) {
+      toast("Fonctionnalité Premium — voir les tarifs", "🔒");
+      router.push("/#tarifs");
+      return;
+    }
+    setOpen(true);
+  }
 
   const pool =
     slotIdx === null
@@ -73,7 +87,7 @@ export default function TonightPicker({
     <>
       <button
         className="glass card pressable"
-        onClick={() => setOpen(true)}
+        onClick={openPicker}
         style={{
           width: "100%",
           display: "flex",
@@ -88,7 +102,7 @@ export default function TonightPicker({
           color: "var(--accent)",
         }}
       >
-        🎲 Ce soir, je regarde quoi ?
+        🎲 Ce soir, je regarde quoi ? {!isPremium && "🔒"}
       </button>
 
       {open && (

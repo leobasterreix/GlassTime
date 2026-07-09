@@ -7,7 +7,7 @@ import { isNativeApp as detectNativeApp } from "@/lib/nativeApp";
 
 const TABS = [
   {
-    href: "/",
+    href: "/agenda",
     label: "Agenda",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -63,8 +63,7 @@ export default function TabBar() {
   return (
     <nav className="tabbar">
       {TABS.map((t) => {
-        const active =
-          t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
+        const active = pathname.startsWith(t.href);
         return (
           <Link key={t.href} href={t.href} className={active ? "active" : ""}>
             {t.icon}

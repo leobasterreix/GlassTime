@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminEmail } from "@/lib/admin";
 
-// Pages accessibles sans être connecté (connexion, auth callback, fichiers PWA)
+// Pages accessibles sans être connecté (vitrine, connexion, auth callback, fichiers PWA)
 const PUBLIC_PATHS = [
+  "/",
   "/login",
   "/auth/callback",
   "/manifest.json",
@@ -66,7 +68,9 @@ export async function middleware(request: NextRequest) {
   const {
     data: claims,
   } = await supabase.auth.getClaims();
-  const user = claims?.claims ? { id: claims.claims.sub } : null;
+  const user = claims?.claims
+    ? { id: claims.claims.sub, email: claims.claims.email as string | undefined }
+    : null;
 
   const { pathname } = request.nextUrl;
 
@@ -74,10 +78,11 @@ export async function middleware(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 
-  // Rediriger vers l'accueil si l'utilisateur est connecté et essaie d'aller sur /login
-  if (user && pathname === "/login") {
+  // Rediriger vers l'agenda si l'utilisateur est connecté et essaie d'aller sur /login
+  // ou sur la vitrine publique (il n'a plus besoin de la voir une fois connecté).
+  if (user && (pathname === "/login" || pathname === "/")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/agenda";
     return NextResponse.redirect(url);
   }
 
@@ -90,6 +95,22 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  // Espace admin : réservé aux emails listés dans ADMIN_EMAILS. À ce stade,
+  // un visiteur non connecté a déjà été redirigé vers /login ci-dessus (ces
+  // routes ne sont pas dans PUBLIC_PATHS) — il ne reste qu'à écarter un
+  // utilisateur connecté mais non admin.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    if (!isAdminEmail(user?.email)) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/agenda";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

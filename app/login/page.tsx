@@ -87,7 +87,7 @@ export default function LoginPage() {
         if (error) throw error;
         // Selon les réglages Supabase : session immédiate ou e-mail de confirmation
         if (data.session) {
-          window.location.href = "/";
+          window.location.href = "/agenda";
         } else {
           setNotice(
             "Compte créé ! Vérifiez votre boîte mail pour confirmer votre inscription."
@@ -100,7 +100,7 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        window.location.href = "/";
+        window.location.href = "/agenda";
       }
     } catch (err: unknown) {
       setError(translateError(err));
@@ -173,7 +173,7 @@ export default function LoginPage() {
               accessible librement pour le moment.
             </p>
             <a
-              href="/"
+              href="/agenda"
               className="btn btn-primary pressable"
               style={{ marginTop: 16, display: "inline-flex" }}
             >

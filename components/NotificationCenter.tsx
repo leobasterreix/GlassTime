@@ -13,7 +13,7 @@ export default function NotificationCenter() {
     useTrack();
   const [open, setOpen] = useState(false);
 
-  const isMainPage = pathname === "/" || pathname === "/discover" || pathname === "/profile";
+  const isMainPage = pathname === "/agenda" || pathname === "/discover" || pathname === "/profile";
   if (!isMainPage) return null;
 
   const unread = mounted ? notifications.filter((n) => !n.read).length : 0;
