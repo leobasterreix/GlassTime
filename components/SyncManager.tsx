@@ -96,15 +96,12 @@ export default function SyncManager() {
     let unsubStore = () => {};
     let applying = false;
 
-    async function pushState(userId: string, session: any) {
+    // Upsert de l'identité + de l'état public (visible des amis suivis) —
+    // exécuté pour tous les comptes, gratuits comme Premium, car il ne s'agit
+    // pas de synchronisation multi-appareils mais du profil social de base.
+    async function pushProfile(userId: string, session: any) {
       try {
-        syncStatus.set("syncing");
         const state = snapshot();
-        await supabase.from("user_states").upsert({
-          user_id: userId,
-          state,
-          updated_at: new Date().toISOString(),
-        });
 
         // Les caches ne sont plus dans le snapshot synchronisé : on les lit ici
         // directement depuis le store (en mémoire) pour construire les affiches
@@ -190,6 +187,22 @@ export default function SyncManager() {
           public_state: publicState,
           updated_at: new Date().toISOString(),
         });
+      } catch (err) {
+        console.error("Erreur de sauvegarde Supabase :", err);
+      }
+    }
+
+    // Synchronisation multi-appareils (table user_states) — fonctionnalité
+    // Premium : pousse l'état complet suivi/vu/aimé + le profil public.
+    async function pushUserState(userId: string, session: any) {
+      try {
+        syncStatus.set("syncing");
+        await supabase.from("user_states").upsert({
+          user_id: userId,
+          state: snapshot(),
+          updated_at: new Date().toISOString(),
+        });
+        await pushProfile(userId, session);
         syncStatus.set("synced");
       } catch (err) {
         console.error("Erreur de sauvegarde Supabase :", err);
@@ -206,6 +219,22 @@ export default function SyncManager() {
           const userId = session.user.id;
 
           try {
+            const { data: profileRow } = await supabase
+              .from("profiles")
+              .select("subscription_plan")
+              .eq("id", userId)
+              .maybeSingle();
+            const isPremium = profileRow?.subscription_plan === "premium";
+            useTrack.setState({ subscriptionPlan: isPremium ? "premium" : "free" });
+
+            if (!isPremium) {
+              // Pas de sync multi-appareils sur le plan Gratuit (l'état suivi/vu
+              // reste local à cet appareil) — on garde quand même l'identité et
+              // le profil public à jour pour les fonctionnalités communautaires.
+              void pushProfile(userId, session);
+              return;
+            }
+
             const { data, error } = await supabase
               .from("user_states")
               .select("state")
@@ -222,20 +251,22 @@ export default function SyncManager() {
               applying = true;
               useTrack.setState(server);
               applying = false;
-              void pushState(userId, session);
+              void pushUserState(userId, session);
             } else {
-              void pushState(userId, session);
+              void pushUserState(userId, session);
             }
 
             // S'abonner aux changements du store local
             unsubStore = useTrack.subscribe(() => {
               if (applying) return;
               clearTimeout(timer);
-              timer = setTimeout(() => pushState(userId, session), 1500);
+              timer = setTimeout(() => pushUserState(userId, session), 1500);
             });
           } catch (err) {
             console.error("Erreur de réconciliation initiale :", err);
           }
+        } else {
+          useTrack.setState({ subscriptionPlan: "free" });
         }
       }
     );

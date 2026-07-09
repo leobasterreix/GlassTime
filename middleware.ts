@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Pages accessibles sans être connecté (connexion, auth callback, fichiers PWA)
+// Pages accessibles sans être connecté (vitrine, connexion, auth callback, fichiers PWA)
 const PUBLIC_PATHS = [
+  "/",
   "/login",
   "/auth/callback",
   "/manifest.json",
@@ -74,10 +75,11 @@ export async function middleware(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 
-  // Rediriger vers l'accueil si l'utilisateur est connecté et essaie d'aller sur /login
-  if (user && pathname === "/login") {
+  // Rediriger vers l'agenda si l'utilisateur est connecté et essaie d'aller sur /login
+  // ou sur la vitrine publique (il n'a plus besoin de la voir une fois connecté).
+  if (user && (pathname === "/login" || pathname === "/")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/agenda";
     return NextResponse.redirect(url);
   }
 

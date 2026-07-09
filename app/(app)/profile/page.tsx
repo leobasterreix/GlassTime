@@ -532,6 +532,7 @@ export default function ProfilePage() {
     toggleMyPlatform,
     lastSeenActivityAt,
     setLastSeenActivityAt,
+    subscriptionPlan,
   } = useTrack();
   useHydrateLibrary();
 
@@ -1744,6 +1745,57 @@ export default function ProfilePage() {
         </>
       ) : activeTab === "settings" ? (
         <>
+          <h2 className="section-title">Mon abonnement</h2>
+          <div className="glass card" style={{ padding: 18, marginBottom: 20 }}>
+            {subscriptionPlan === "premium" ? (
+              <>
+                <div className="row" style={{ gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)" }}>
+                    ✨ Premium actif
+                  </span>
+                </div>
+                <p className="muted" style={{ fontSize: 13 }}>
+                  Merci pour votre soutien ! Gérez ou résiliez votre abonnement
+                  directement depuis votre espace client Lemon Squeezy (lien envoyé
+                  par e-mail à la confirmation de paiement).
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="row" style={{ gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>Plan Gratuit</span>
+                </div>
+                <p className="muted" style={{ fontSize: 13, marginBottom: 14 }}>
+                  Passez Premium pour suivre séries et livres en illimité, synchroniser
+                  tous vos appareils et débloquer le picker « Ce soir, je regarde quoi ? ».
+                </p>
+                {(() => {
+                  const buyUrl = process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUY_URL;
+                  if (!buyUrl) {
+                    return (
+                      <p className="tiny" style={{ color: "var(--text-3)" }}>
+                        L'abonnement Premium n'est pas encore disponible à l'achat.
+                      </p>
+                    );
+                  }
+                  const params = new URLSearchParams({
+                    "checkout[email]": userInfo?.email || "",
+                    "checkout[custom][user_id]": userInfo?.id || "",
+                  });
+                  return (
+                    <a
+                      href={`${buyUrl}?${params.toString()}`}
+                      className="btn btn-primary pressable"
+                      style={{ width: "100%" }}
+                    >
+                      ✨ Passer Premium — 3,99€/mois
+                    </a>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+
           <h2 className="section-title">Préférences</h2>
           <div className="stack" style={{ marginBottom: 20 }}>
             <button
