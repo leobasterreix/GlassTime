@@ -36,6 +36,15 @@ export default function AdminDashboard() {
       .catch(() => setError("Erreur de chargement"));
   }, []);
 
+  // Ordre au chargement initial, stable pendant la recherche : sert de base
+  // au délai du stagger, pour que retaper dans le champ ne rejoue pas
+  // l'animation d'apparition (elle ne doit jouer qu'une fois, pas à chaque frappe).
+  const rowDelay = useMemo(() => {
+    const map = new Map<string, number>();
+    (users ?? []).forEach((u, i) => map.set(u.id, i));
+    return map;
+  }, [users]);
+
   const filtered = useMemo(() => {
     if (!users) return null;
     const q = query.trim().toLowerCase();
@@ -100,8 +109,14 @@ export default function AdminDashboard() {
             <Link
               key={u.id}
               href={`/admin/users/${u.id}`}
-              className="glass card pressable"
-              style={{ padding: 14, display: "flex", alignItems: "center", gap: 12 }}
+              className="glass card pressable admin-row-in"
+              style={{
+                padding: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                animationDelay: `${Math.min(rowDelay.get(u.id) ?? 0, 10) * 30}ms`,
+              }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>
