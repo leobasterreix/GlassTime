@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 // Reçoit les événements d'abonnement de Lemon Squeezy (subscription_created,
 // subscription_updated, subscription_cancelled, subscription_expired,
@@ -41,17 +41,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) {
     console.error("Supabase non configuré côté serveur pour le webhook Lemon Squeezy");
     return NextResponse.json({ error: "Supabase non configuré" }, { status: 500 });
   }
-
-  // Clé service-role : seule autorisée par le trigger protect_subscription_columns
-  // (voir supabase/migrations/20260709_subscription_plan.sql) à modifier le
-  // statut d'abonnement — ce webhook n'a pas de session utilisateur.
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
   const isActive = ["on_trial", "active"].includes(sub?.status);
 

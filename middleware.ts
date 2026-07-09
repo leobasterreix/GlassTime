@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminEmail } from "@/lib/admin";
 
 // Pages accessibles sans être connecté (vitrine, connexion, auth callback, fichiers PWA)
 const PUBLIC_PATHS = [
@@ -67,7 +68,9 @@ export async function middleware(request: NextRequest) {
   const {
     data: claims,
   } = await supabase.auth.getClaims();
-  const user = claims?.claims ? { id: claims.claims.sub } : null;
+  const user = claims?.claims
+    ? { id: claims.claims.sub, email: claims.claims.email as string | undefined }
+    : null;
 
   const { pathname } = request.nextUrl;
 
@@ -92,6 +95,22 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  // Espace admin : réservé aux emails listés dans ADMIN_EMAILS. À ce stade,
+  // un visiteur non connecté a déjà été redirigé vers /login ci-dessus (ces
+  // routes ne sont pas dans PUBLIC_PATHS) — il ne reste qu'à écarter un
+  // utilisateur connecté mais non admin.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    if (!isAdminEmail(user?.email)) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/agenda";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
