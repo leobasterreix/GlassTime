@@ -791,6 +791,21 @@ input {
   border-color: rgba(139, 92, 246, 0.15);
 }
 
+/* Statut Premium (admin) — distinct du vert "série en cours" : reprend
+   l'indigo de l'accent, la même couleur associée à Premium sur la vitrine
+   et le profil, pour que le code couleur reste cohérent dans toute l'app. */
+.badge-pill.status-premium {
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.badge-pill.status-danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 20%, transparent);
+}
+
 .poster-banner {
   position: absolute;
   left: 0;

@@ -56,20 +56,26 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {stats && (
-        <div className="row" style={{ gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-          {[
-            { label: "Comptes", value: stats.total },
-            { label: "Premium", value: stats.premium },
-            { label: "Inscriptions 30j", value: stats.signups30d },
-          ].map((s) => (
-            <div key={s.label} className="glass card" style={{ flex: "1 1 140px", padding: 18, textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 800 }}>{s.value}</div>
-              <div className="tiny" style={{ color: "var(--text-2)" }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="row" style={{ gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        {stats
+          ? [
+              { label: "Comptes", value: stats.total },
+              { label: "Premium", value: stats.premium },
+              { label: "Inscriptions 30j", value: stats.signups30d },
+            ].map((s) => (
+              <div key={s.label} className="glass card" style={{ flex: "1 1 140px", padding: 18, textAlign: "center" }}>
+                <div style={{ fontSize: 26, fontWeight: 800 }}>{s.value}</div>
+                <div className="tiny" style={{ color: "var(--text-2)" }}>{s.label}</div>
+              </div>
+            ))
+          : !error &&
+            [0, 1, 2].map((i) => (
+              <div key={i} className="glass card" style={{ flex: "1 1 140px", padding: 18 }}>
+                <div className="skeleton" style={{ height: 26, width: 40, margin: "0 auto 8px", borderRadius: 6 }} />
+                <div className="skeleton skeleton-line" style={{ width: "80%", margin: "0 auto" }} />
+              </div>
+            ))}
+      </div>
 
       <input
         className="field"
@@ -80,7 +86,14 @@ export default function AdminDashboard() {
       />
 
       {!users && !error ? (
-        <p className="muted">Chargement…</p>
+        <div className="stack" style={{ gap: 8 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="glass card" style={{ padding: 14 }}>
+              <div className="skeleton skeleton-line" style={{ width: "45%", marginBottom: 8 }} />
+              <div className="skeleton skeleton-line" style={{ width: "70%", marginBottom: 0 }} />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="stack" style={{ gap: 8 }}>
           {filtered?.map((u) => (
@@ -98,14 +111,10 @@ export default function AdminDashboard() {
                   {u.email} · inscrit le {new Date(u.createdAt).toLocaleDateString("fr-FR")}
                 </div>
               </div>
-              <span className={`badge-pill${u.subscriptionPlan === "premium" ? " status-ongoing" : ""}`}>
+              <span className={`badge-pill${u.subscriptionPlan === "premium" ? " status-premium" : ""}`}>
                 {u.subscriptionPlan === "premium" ? "Premium" : "Gratuit"}
               </span>
-              {u.banned && (
-                <span className="badge-pill" style={{ background: "var(--danger)", color: "#fff" }}>
-                  Suspendu
-                </span>
-              )}
+              {u.banned && <span className="badge-pill status-danger">Suspendu</span>}
             </Link>
           ))}
           {filtered?.length === 0 && <p className="muted">Aucun compte ne correspond.</p>}
