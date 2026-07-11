@@ -109,7 +109,7 @@ export default function AdminDashboard() {
             <Link
               key={u.id}
               href={`/admin/users/${u.id}`}
-              className="glass card pressable admin-row-in"
+              className="glass card pressable stagger-item-in"
               style={{
                 padding: 14,
                 display: "flex",

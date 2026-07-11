@@ -393,6 +393,7 @@ export default function BookDetailPage({
                 <button
                   key={i}
                   type="button"
+                  className="pressable"
                   onClick={() => setFormRating(i + 1)}
                   style={{
                     background: "none",

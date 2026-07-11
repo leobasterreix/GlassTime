@@ -74,10 +74,10 @@ export default function SwipeableRow({
     const x = dragXRef.current;
     if (x >= THRESHOLD && onSwipeRight) {
        setRemoving("right");
-       setTimeout(() => onSwipeRight(), 100);
+       setTimeout(() => onSwipeRight(), 120); // matche .swipe-out-right (transition 0.12s)
      } else if (x <= -THRESHOLD && onSwipeLeft) {
        setRemoving("left");
-       setTimeout(() => onSwipeLeft(), 100);
+       setTimeout(() => onSwipeLeft(), 120); // matche .swipe-out-left (transition 0.12s)
     } else {
       setDrag(0);
     }

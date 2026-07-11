@@ -193,12 +193,14 @@ input {
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease, opacity 0.3s ease;
 }
 
-.glass:hover {
-  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
-  box-shadow: var(--shadow-card), 0 0 20px color-mix(in srgb, var(--accent) 5%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .glass:hover {
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    box-shadow: var(--shadow-card), 0 0 20px color-mix(in srgb, var(--accent) 5%, transparent);
+  }
 }
 
 .glass-strong {
@@ -214,8 +216,10 @@ input {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, filter 0.2s ease;
 }
 
-.pressable:hover {
-  transform: translateY(-2px) scale(1.01);
+@media (hover: hover) and (pointer: fine) {
+  .pressable:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
 }
 
 .pressable:active {
@@ -355,13 +359,15 @@ input {
   background: var(--surface-2);
   border: 1px solid var(--hairline);
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.chip:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  background: var(--surface);
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    background: var(--surface);
+  }
 }
 
 .chip.active {
@@ -398,12 +404,14 @@ input {
   color: var(--text);
   background: var(--surface-2);
   border: 1px solid var(--hairline);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn:hover {
-  background: var(--surface);
-  border-color: var(--text-3);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: var(--surface);
+    border-color: var(--text-3);
+  }
 }
 
 .btn-primary {
@@ -413,10 +421,12 @@ input {
   box-shadow: 0 4px 14px var(--accent-wash);
 }
 
-.btn-primary:hover {
-  background: var(--accent-ink);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px var(--accent-wash);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: var(--accent-ink);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px var(--accent-wash);
+  }
 }
 
 .btn-success {
@@ -441,10 +451,12 @@ input {
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.check:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  transform: scale(1.05);
+@media (hover: hover) and (pointer: fine) {
+  .check:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.05);
+  }
 }
 
 .check:active {
@@ -491,7 +503,7 @@ input {
   height: 100%;
   border-radius: 99px;
   background: linear-gradient(90deg, var(--accent), var(--accent-ink));
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ===== Affiches (posters) style premium ===== */
@@ -511,9 +523,11 @@ input {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
 
-.poster:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: var(--shadow-poster), 0 12px 30px rgba(0, 0, 0, 0.2);
+@media (hover: hover) and (pointer: fine) {
+  .poster:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-poster), 0 12px 30px rgba(0, 0, 0, 0.2);
+  }
 }
 
 .poster::after {
@@ -617,11 +631,17 @@ input {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-2);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.segmented button:hover {
-  color: var(--text);
+.segmented button:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .segmented button:hover {
+    color: var(--text);
+  }
 }
 
 .segmented button.active {
@@ -737,11 +757,18 @@ input {
   color: var(--text-3);
   font-size: 10px;
   font-weight: 600;
-  transition: color 0.2s, background 0.2s;
+  transition: color 0.2s, background 0.2s, transform 0.15s;
 }
 
-.tabbar a:hover {
-  color: var(--text-2);
+.tabbar a:active {
+  background: var(--track);
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tabbar a:hover {
+    color: var(--text-2);
+  }
 }
 
 .tabbar a svg {
@@ -905,7 +932,7 @@ details.season[open] .chevron {
   background: var(--surface);
   border: 1px solid var(--hairline);
   color: var(--text-3);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fav-btn svg {
@@ -913,9 +940,11 @@ details.season[open] .chevron {
   height: 17px;
 }
 
-.fav-btn:hover {
-  transform: scale(1.05);
-  border-color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .fav-btn:hover {
+    transform: scale(1.05);
+    border-color: var(--accent);
+  }
 }
 
 .fav-btn:active {
@@ -1021,13 +1050,15 @@ details.season[open] .chevron {
   background: var(--surface-2);
   border: 1px solid var(--hairline);
   color: inherit;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-a.provider-pill:hover {
-  background-color: var(--surface);
-  border-color: var(--accent);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  a.provider-pill:hover {
+    background-color: var(--surface);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
 }
 
 .provider-pill.owned {
@@ -1048,12 +1079,18 @@ a.provider-pill:hover {
   height: 28px;
   border-radius: 50%;
   border: 1px solid var(--hairline);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.accent-swatch:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 10px var(--accent-wash);
+.accent-swatch:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .accent-swatch:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--accent-wash);
+  }
 }
 
 .accent-picker {
@@ -1928,44 +1965,94 @@ a.provider-pill:hover {
   margin-top: 20px;
 }
 
-/* ===== Admin — micro-animations (entrée modale, apparition de liste) ===== */
+/* ===== Micro-animations partagées (entrée modale, apparition de liste) =====
+   Utilisées par l'admin, la modale d'avis épisode (show/[id]), le picker
+   TonightPicker, et les listes de upcoming/discover/collection. */
 
-@keyframes admin-scrim-in {
+@keyframes modal-scrim-in {
   from {
     opacity: 0;
   }
 }
 
-@keyframes admin-modal-in {
+@keyframes modal-card-in {
   from {
     opacity: 0;
     transform: scale(0.95);
   }
 }
 
-.admin-modal-scrim {
-  animation: admin-scrim-in 160ms ease-out both;
+.modal-scrim-in {
+  animation: modal-scrim-in 160ms ease-out both;
 }
 
-.admin-modal-card {
-  animation: admin-modal-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+.modal-card-in {
+  animation: modal-card-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
-@keyframes admin-row-in {
+@keyframes stagger-item-in {
   from {
     opacity: 0;
     transform: translateY(6px);
   }
 }
 
-.admin-row-in {
-  animation: admin-row-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+.stagger-item-in {
+  animation: stagger-item-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes field-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.field-error-in {
+  animation: field-error-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-up 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+.toast.toast-leaving {
+  animation: toast-out 180ms ease-in forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-modal-scrim,
-  .admin-modal-card,
-  .admin-row-in {
+  .modal-scrim-in,
+  .modal-card-in,
+  .stagger-item-in,
+  .field-error-in,
+  .animate-fade-in,
+  .toast.toast-leaving,
+  .page,
+  .pressable,
+  .poster,
+  .check.checked,
+  .toast,
+  .swipe-content {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .skeleton::after {
     animation: none;
+    opacity: 0.6;
   }
 }

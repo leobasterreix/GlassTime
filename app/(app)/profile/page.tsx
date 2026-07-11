@@ -2074,8 +2074,19 @@ export default function ProfilePage() {
               🔒 Se déconnecter
             </button>
             <button
-              className="glass card pressable"
-              style={{ width: "100%", textAlign: "center", color: "var(--danger)", fontWeight: 700 }}
+              className="pressable"
+              style={{
+                width: "100%",
+                textAlign: "center",
+                color: "var(--danger)",
+                fontWeight: 600,
+                fontSize: 13,
+                background: "none",
+                border: "none",
+                padding: "12px 0",
+                marginTop: 24,
+                borderTop: "1px solid var(--hairline)",
+              }}
               onClick={() => {
                 if (confirm("Effacer toutes vos données de suivi ? Cette action est irréversible.")) {
                   clearAll();
@@ -2417,6 +2428,7 @@ export default function ProfilePage() {
                     />
                     <button
                       type="button"
+                      className="pressable"
                       onClick={() => setShowEditPassword(!showEditPassword)}
                       style={{
                         position: "absolute",
@@ -2464,6 +2476,7 @@ export default function ProfilePage() {
                         />
                         <button
                           type="button"
+                          className="pressable"
                           onClick={() => setShowEditConfirmPassword(!showEditConfirmPassword)}
                           style={{
                             position: "absolute",
@@ -2509,6 +2522,7 @@ export default function ProfilePage() {
                         />
                         <button
                           type="button"
+                          className="pressable"
                           onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                           style={{
                             position: "absolute",
@@ -2544,12 +2558,12 @@ export default function ProfilePage() {
               </div>
 
               {editError && (
-                <p style={{ color: "var(--danger)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
+                <p className="field-error-in" style={{ color: "var(--danger)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
                   ⚠️ {editError}
                 </p>
               )}
               {editSuccess && (
-                <p style={{ color: "var(--accent)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
+                <p className="field-error-in" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
                   ✅ {editSuccess}
                 </p>
               )}

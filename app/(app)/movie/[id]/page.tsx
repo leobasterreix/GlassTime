@@ -340,6 +340,7 @@ export default function MoviePage() {
                 <button
                   key={star}
                   type="button"
+                  className="pressable"
                   onClick={() => setFormRating(star)}
                   style={{
                     background: "none",

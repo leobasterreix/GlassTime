@@ -150,7 +150,7 @@ export default function CollectionPage() {
     <main className="page">
       <button
         className="chip pressable"
-        onClick={() => router.back()}
+        onClick={() => (window.history.length > 1 ? router.back() : router.push("/agenda"))}
         style={{ marginBottom: 16 }}
       >
         ← Retour
@@ -188,8 +188,13 @@ export default function CollectionPage() {
         </div>
       ) : (
         <div className="grid-posters">
-          {items.map(({ id, href, item, caption }) => (
-            <Link key={id} href={href} className="pressable">
+          {items.map(({ id, href, item, caption }, i) => (
+            <Link
+              key={id}
+              href={href}
+              className="pressable stagger-item-in"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+            >
               <Poster item={item} />
               {caption && (
                 <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>

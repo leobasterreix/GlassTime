@@ -8,7 +8,7 @@ export default function Toaster() {
   return (
     <div className="toaster" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className="toast glass-strong glass">
+        <div key={t.id} className={`toast glass-strong glass${t.leaving ? " toast-leaving" : ""}`}>
           <span className="toast-emoji">{t.emoji}</span>
           <span>{t.message}</span>
         </div>

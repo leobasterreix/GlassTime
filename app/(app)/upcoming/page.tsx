@@ -103,9 +103,15 @@ export default function UpcomingPage() {
         </div>
       ) : (
         <div className="stack">
-          {visible.map((item) =>
-            item.kind === "ep" ? (
-              <Link key={item.key} href={`/show/${item.show.id}`} className="glass agenda-card pressable">
+          {visible.map((item, i) => {
+            const delay = { animationDelay: `${Math.min(i, 8) * 40}ms` };
+            return item.kind === "ep" ? (
+              <Link
+                key={item.key}
+                href={`/show/${item.show.id}`}
+                className="glass agenda-card pressable stagger-item-in"
+                style={delay}
+              >
                 <Poster
                   item={{ ...item.show, status: effectiveShowStatus(item.show, showStatus[item.show.id]) }}
                   mini
@@ -119,7 +125,12 @@ export default function UpcomingPage() {
                 <span className="badge-pill">{fmtRelativeWithTime(item.date)}</span>
               </Link>
             ) : (
-              <Link key={item.key} href={`/movie/${item.movie.id}`} className="glass agenda-card pressable">
+              <Link
+                key={item.key}
+                href={`/movie/${item.movie.id}`}
+                className="glass agenda-card pressable stagger-item-in"
+                style={delay}
+              >
                 <Poster item={{ ...item.movie, status: movieStatus(true, false) }} mini />
                 <div className="agenda-body">
                   <div style={{ fontWeight: 700, fontSize: 15.5 }}>{item.movie.title}</div>
@@ -127,8 +138,8 @@ export default function UpcomingPage() {
                 </div>
                 <span className="badge-pill">{fmtRelative(item.date)}</span>
               </Link>
-            )
-          )}
+            );
+          })}
           {hasMore && <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />}
         </div>
       )}

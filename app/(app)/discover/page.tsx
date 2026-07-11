@@ -592,10 +592,14 @@ function DiscoverContent() {
             </div>
           ) : (
             <div className="grid-posters">
-              {showResults.map((s) => {
+              {showResults.map((s, i) => {
                 const isFollowed = mounted && followed.includes(s.id);
                 return (
-                  <div key={s.id} style={{ position: "relative" }}>
+                  <div
+                    key={s.id}
+                    className="stagger-item-in"
+                    style={{ position: "relative", animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                  >
                     <Link href={`/show/${s.id}`} className="pressable" style={{ display: "block" }}>
                       <Poster item={{ ...s, status: showBandStatus(s) }} />
                     </Link>
@@ -667,7 +671,7 @@ function DiscoverContent() {
             </div>
           ) : (
             <div className="stack stack-wide">
-              {movieResults.map((m) => {
+              {movieResults.map((m, i) => {
                 const inList = mounted && movieWatchlist.includes(m.id);
                 const seen = mounted && moviesWatched.includes(m.id);
                 const meta = [
@@ -678,7 +682,11 @@ function DiscoverContent() {
                   .filter(Boolean)
                   .join(" · ");
                 return (
-                  <div key={m.id} className="glass card row">
+                  <div
+                    key={m.id}
+                    className="glass card row stagger-item-in"
+                    style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                  >
                     <Link href={`/movie/${m.id}`} style={{ display: "flex", flexShrink: 0 }}>
                       <Poster item={{ ...m, status: movieStatus(inList, seen) }} mini />
                     </Link>
@@ -782,7 +790,7 @@ function DiscoverContent() {
             </div>
           ) : (
             <div className="stack stack-wide">
-              {filteredBookResults.map((b) => {
+              {filteredBookResults.map((b, i) => {
                 const inList = mounted && booksWatchlist.includes(b.id);
                 const read = mounted && booksRead.includes(b.id);
                 const meta = [
@@ -794,7 +802,11 @@ function DiscoverContent() {
                   .filter(Boolean)
                   .join(" · ");
                 return (
-                  <div key={b.id} className="glass card row">
+                  <div
+                    key={b.id}
+                    className="glass card row stagger-item-in"
+                    style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                  >
                     <Link href={`/book/${b.id}`} style={{ display: "flex", flexShrink: 0 }}>
                       <Poster item={{ ...b, status: bookStatus(inList, read) }} mini />
                     </Link>

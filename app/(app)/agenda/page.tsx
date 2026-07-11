@@ -977,7 +977,15 @@ export default function AgendaPage() {
                                     </button>
                                   </div>
                                   <div style={{ height: 6, background: "var(--hairline)", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
-                                    <div style={{ height: "100%", width: `${percent}%`, background: "var(--accent)", borderRadius: 3 }} />
+                                    <div
+                                      style={{
+                                        height: "100%",
+                                        width: `${percent}%`,
+                                        background: "var(--accent)",
+                                        borderRadius: 3,
+                                        transition: "width 0.28s cubic-bezier(0.16, 1, 0.3, 1)",
+                                      }}
+                                    />
                                   </div>
                                 </div>
                               )}

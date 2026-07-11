@@ -107,6 +107,7 @@ export default function TonightPicker({
 
       {open && (
         <div
+          className="modal-scrim-in"
           onClick={close}
           style={{
             position: "fixed",
@@ -122,7 +123,7 @@ export default function TonightPicker({
           }}
         >
           <div
-            className="glass-strong"
+            className="glass-strong modal-card-in"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",

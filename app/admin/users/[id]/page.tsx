@@ -220,12 +220,12 @@ export default function AdminUserDetail() {
 
       {confirmDelete && (
         <div
-          className="notif-scrim admin-modal-scrim"
+          className="notif-scrim modal-scrim-in"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 100 }}
           onClick={() => !pending && setConfirmDelete(false)}
         >
           <div
-            className="glass card stack admin-modal-card"
+            className="glass card stack modal-card-in"
             style={{ width: "100%", maxWidth: 400, padding: 22, gap: 14, zIndex: 101 }}
             onClick={(e) => e.stopPropagation()}
           >

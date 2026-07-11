@@ -246,6 +246,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
+                  className="pressable"
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: "absolute",
@@ -290,6 +291,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
+                    className="pressable"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     style={{
                       position: "absolute",
@@ -339,12 +341,12 @@ export default function LoginPage() {
               </label>
 
               {error && (
-                <p style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
+                <p className="field-error-in" style={{ color: "var(--danger)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
                   {error}
                 </p>
               )}
               {notice && (
-                <p style={{ color: "var(--accent-ink)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
+                <p className="field-error-in" style={{ color: "var(--accent-ink)", fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
                   {notice}
                 </p>
               )}

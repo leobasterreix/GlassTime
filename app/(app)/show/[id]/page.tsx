@@ -123,6 +123,17 @@ export default function ShowPage() {
     loadFriends();
   }, []);
 
+  // Ferme la modale d'avis épisode sur Escape (wayfinding : toujours un
+  // moyen évident de sortir, y compris au clavier).
+  useEffect(() => {
+    if (!activeReviewEp) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setActiveReviewEp(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeReviewEp]);
+
   function openEpisodeReviewModal(ep: Episode) {
     if (!show) return;
     const key = `${show.id}:${ep.s}:${ep.e}`;
@@ -306,6 +317,9 @@ export default function ShowPage() {
             style={{ flex: 1 }}
             disabled={!hasSeasons}
             onClick={() => {
+              if (allSeen && !window.confirm(`Marquer toute la série "${show.title}" comme non vue ? Ça efface votre progression.`)) {
+                return;
+              }
               setEpisodes(
                 show.id,
                 aired.map(({ s, e }) => ({ s, e })),
@@ -329,6 +343,7 @@ export default function ShowPage() {
               <button
                 key={s.value}
                 className={currentStatus === s.value ? "active" : ""}
+                style={s.value === "dropped" ? { color: "var(--danger)" } : undefined}
                 onClick={() => {
                   setShowStatus(show.id, s.value);
                   toast(
@@ -559,6 +574,7 @@ export default function ShowPage() {
                 <button
                   key={star}
                   type="button"
+                  className="pressable"
                   onClick={() => setFormRating(star)}
                   style={{
                     background: "none",
@@ -734,8 +750,19 @@ export default function ShowPage() {
       )}
 
       {activeReviewEp && show && (
-        <div className="notif-scrim" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 100 }} onClick={() => setActiveReviewEp(null)}>
-          <div className="glass card stack" style={{ width: "100%", maxWidth: 500, padding: 20, gap: 16, zIndex: 101, maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="notif-scrim modal-scrim-in"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 100 }}
+          onClick={() => setActiveReviewEp(null)}
+        >
+          <div
+            className="glass card stack modal-card-in"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Avis pour l'épisode ${activeReviewEp.e}`}
+            style={{ width: "100%", maxWidth: 500, padding: 20, gap: 16, zIndex: 101, maxHeight: "90vh", overflowY: "auto" }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="row" style={{ justifyContent: "space-between" }}>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 800 }}>Avis Épisode</h3>
@@ -797,6 +824,7 @@ export default function ShowPage() {
                   <button
                     key={star}
                     type="button"
+                    className="pressable"
                     onClick={() => setReviewRating(star)}
                     style={{
                       background: "none",
