@@ -72,6 +72,7 @@
   --radius: 14px;
   --radius-sm: 8px;
   --tab-h: 76px;
+  --sidebar-w: 240px;
 
   /* Alias de compatibilité */
   --glass-bg: var(--surface);
@@ -130,6 +131,13 @@ input {
 }
 
 /* ===== Structure ===== */
+
+/* Décale le contenu quand la sidebar desktop est visible (≥1024px, voir
+ * media query plus bas) : .page continue de se centrer normalement, mais
+ * dans l'espace restant à droite de la sidebar plutôt que sur tout le viewport. */
+.app-shell {
+  padding-left: 0;
+}
 
 .page {
   max-width: 520px;
@@ -584,6 +592,8 @@ input {
   padding: 4px 18px 12px;
   margin: 0 -18px;
   scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
 }
 
 .hscroll::-webkit-scrollbar {
@@ -777,6 +787,71 @@ input {
 }
 
 .tabbar a.active {
+  color: var(--accent);
+  background: var(--accent-wash);
+}
+
+/* ===== Sidebar (nav desktop, ≥1024px — voir @media plus bas) ===== */
+
+.sidebar {
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px 14px;
+  background: var(--tab-bg);
+  border-right: 1px solid var(--tab-border);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  z-index: 50;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  padding: 6px 10px 22px;
+}
+
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.sidebar a:active {
+  background: var(--track);
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar a:hover {
+    color: var(--text);
+    background: var(--track);
+  }
+}
+
+.sidebar a svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar a.active {
   color: var(--accent);
   background: var(--accent-wash);
 }
@@ -998,6 +1073,8 @@ details.season[open] .chevron {
   padding: 4px 18px 12px;
   margin: 0 -18px;
   scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
 }
 
 .cast-row::-webkit-scrollbar {
@@ -1282,6 +1359,20 @@ details.season[open] .chevron {
 
   .grid-stats.badges {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Une tab bar flottante en bas lit comme une app mobile à cette largeur :
+   * on bascule vers une nav latérale, pattern desktop classique. */
+  .tabbar {
+    display: none;
+  }
+
+  .sidebar {
+    display: flex;
+  }
+
+  .app-shell {
+    padding-left: var(--sidebar-w);
   }
 }
 

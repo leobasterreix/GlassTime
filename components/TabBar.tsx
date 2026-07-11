@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isNativeApp as detectNativeApp } from "@/lib/nativeApp";
+import { Tv } from "lucide-react";
 
 const TABS = [
   {
@@ -61,16 +62,37 @@ export default function TabBar() {
 
   if (pathname === "/login" || isNativeApp) return null;
   return (
-    <nav className="tabbar">
-      {TABS.map((t) => {
-        const active = pathname.startsWith(t.href);
-        return (
-          <Link key={t.href} href={t.href} className={active ? "active" : ""}>
-            {t.icon}
-            <span>{t.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <nav className="tabbar">
+        {TABS.map((t) => {
+          const active = pathname.startsWith(t.href);
+          return (
+            <Link key={t.href} href={t.href} className={active ? "active" : ""}>
+              {t.icon}
+              <span>{t.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Même nav, présentée en colonne fixe à gauche à partir de 1024px
+       * (voir app/globals.css) : au-delà d'une certaine largeur, une tab bar
+       * flottante en bas lit comme une app mobile plutôt qu'un produit desktop. */}
+      <nav className="sidebar">
+        <div className="sidebar-logo">
+          <span className="mk-logo-mark"><Tv size={16} color="#fff" /></span>
+          GlassTime
+        </div>
+        {TABS.map((t) => {
+          const active = pathname.startsWith(t.href);
+          return (
+            <Link key={t.href} href={t.href} className={active ? "active" : ""}>
+              {t.icon}
+              <span>{t.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

@@ -7,7 +7,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SyncManager />
-      <SwipeNav>{children}</SwipeNav>
+      <div className="app-shell">
+        <SwipeNav>{children}</SwipeNav>
+      </div>
       <NotificationCenter />
       <TabBar />
     </>
