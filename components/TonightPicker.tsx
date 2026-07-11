@@ -48,8 +48,11 @@ export default function TonightPicker({
 
   function openPicker() {
     if (!isPremium) {
-      toast("Fonctionnalité Premium — voir les tarifs", "🔒");
-      router.push("/#tarifs");
+      // Pas "/#tarifs" : un utilisateur connecté qui atterrit sur "/" en est
+      // immédiatement rebasculé vers /agenda par le middleware, sans jamais
+      // voir les tarifs. On l'envoie plutôt vers son propre profil.
+      toast("Fonctionnalité Premium — voir votre abonnement", "🔒");
+      router.push("/profile?tab=settings");
       return;
     }
     setOpen(true);
@@ -165,7 +168,7 @@ export default function TonightPicker({
             </div>
 
             <p className="tiny" style={{ marginBottom: 10, color: "var(--text-3)" }}>
-              Combien de temps as-tu devant toi ?
+              Combien de temps avez-vous devant vous ?
             </p>
             <div className="row" style={{ flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
               {SLOTS.map((slot, i) => (

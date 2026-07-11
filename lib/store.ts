@@ -529,10 +529,17 @@ export const useTrack = create<TrackState>()(
         }),
 
       toggleMovieWatchlist: (id) =>
-        set((st) => ({
-          movieWatchlist: toggleIn(st.movieWatchlist, id),
-          updatedAt: Date.now(),
-        })),
+        set((st) => {
+          const adding = !st.movieWatchlist.includes(id);
+          if (adding && st.subscriptionPlan !== "premium" && st.movieWatchlist.length >= FREE_FOLLOW_LIMIT) {
+            toast(`Passez Premium pour suivre plus de ${FREE_FOLLOW_LIMIT} films`, "🔒");
+            return {};
+          }
+          return {
+            movieWatchlist: toggleIn(st.movieWatchlist, id),
+            updatedAt: Date.now(),
+          };
+        }),
 
       toggleMovieWatched: (id) =>
         set((st) => {

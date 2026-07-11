@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookX } from "lucide-react";
 import Poster from "@/components/Poster";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -18,6 +18,7 @@ export default function BookDetailPage({
 }) {
   const params = use(paramsPromise);
   const id = params.id;
+  const router = useRouter();
 
   const mounted = useMounted();
   const {
@@ -41,7 +42,7 @@ export default function BookDetailPage({
   const [siteReviews, setSiteReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
-  const [formRating, setFormRating] = useState<number>(10);
+  const [formRating, setFormRating] = useState<number>(5);
   const [formContent, setFormContent] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -155,9 +156,12 @@ export default function BookDetailPage({
   if (!mounted) {
     return (
       <main className="page">
-        <Link href="/books" className="btn btn-outline pressable back-btn">
+        <button
+          className="btn btn-outline pressable back-btn"
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/discover"))}
+        >
           ← Retour
-        </Link>
+        </button>
       </main>
     );
   }
@@ -167,9 +171,12 @@ export default function BookDetailPage({
   if (notFound) {
     return (
       <main className="page">
-        <Link href="/books" className="btn btn-outline pressable back-btn">
+        <button
+          className="btn btn-outline pressable back-btn"
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/discover"))}
+        >
           ← Retour
-        </Link>
+        </button>
         <div className="glass empty">
           <BookX className="big" size={40} strokeWidth={1.5} />
           <h2>Livre introuvable</h2>
@@ -182,9 +189,12 @@ export default function BookDetailPage({
   if (!book) {
     return (
       <main className="page">
-        <Link href="/books" className="btn btn-outline pressable back-btn">
+        <button
+          className="btn btn-outline pressable back-btn"
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/discover"))}
+        >
           ← Retour
-        </Link>
+        </button>
         <div className="glass empty">
           <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
           <p className="muted">Chargement des informations du livre...</p>
@@ -213,9 +223,12 @@ export default function BookDetailPage({
 
   return (
     <main className="page" style={{ paddingBottom: 100 }}>
-      <Link href="/books" className="btn btn-outline pressable back-btn">
+      <button
+        className="btn btn-outline pressable back-btn"
+        onClick={() => (window.history.length > 1 ? router.back() : router.push("/discover"))}
+      >
         ← Retour
-      </Link>
+      </button>
 
       {/* Hero Banner */}
       <div className="glass show-hero" style={{ marginTop: 14, marginBottom: 20 }}>
@@ -386,11 +399,11 @@ export default function BookDetailPage({
             <div className="row" style={{ gap: 4 }}>
               <span className="muted">Note :</span>
               <span style={{ fontWeight: 700, color: "var(--text)", fontSize: 14 }}>
-                {formRating} / 10
+                {formRating} / 5
               </span>
             </div>
             <div className="row" style={{ gap: 2 }}>
-              {Array.from({ length: 10 }, (_, i) => (
+              {Array.from({ length: 5 }, (_, i) => (
                 <button
                   key={i}
                   type="button"
@@ -491,7 +504,7 @@ export default function BookDetailPage({
 
                 {r.rating && (
                   <span className="badge-pill" style={{ color: "#ffb800", borderColor: "rgba(255, 184, 0, 0.25)", background: "rgba(255, 184, 0, 0.08)" }}>
-                    ★ {r.rating}/10
+                    ★ {r.rating}/5
                   </span>
                 )}
               </div>

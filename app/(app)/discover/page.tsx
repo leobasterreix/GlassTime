@@ -300,7 +300,7 @@ function DiscoverContent() {
 
   function togglePlatformFilter() {
     if (myPlatforms.length === 0) {
-      toast("Choisis d'abord tes plateformes dans Profil → Préférences", "📡");
+      toast("Choisissez d'abord vos plateformes dans Profil → Préférences", "📡");
       return;
     }
     setOnMyPlatforms((v) => !v);

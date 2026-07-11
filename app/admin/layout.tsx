@@ -13,9 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ← Retour à l'app
         </Link>
       </nav>
-      <main className="page" style={{ maxWidth: 760 }}>
-        {children}
-      </main>
+      <main className="admin-main">{children}</main>
     </>
   );
 }

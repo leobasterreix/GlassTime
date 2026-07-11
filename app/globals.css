@@ -1596,6 +1596,16 @@ details.season[open] .chevron {
   padding: 0 24px;
 }
 
+/* Contenu de l'espace admin — même famille "desktop" que .mk (nav pleine
+   largeur), pas .page (mobile-first, pensé pour la TabBar absente ici). */
+.admin-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  min-height: 100dvh;
+  animation: page-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .mk-nav {
   position: sticky;
   top: 0;

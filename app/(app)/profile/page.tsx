@@ -475,7 +475,7 @@ function YearlyGoalsCard({
         <Target size={30} style={{ marginBottom: 6 }} />
         <div style={{ fontWeight: 800, marginBottom: 4 }}>Aucun objectif {year}</div>
         <p className="tiny" style={{ marginBottom: 14 }}>
-          Fixe-toi un cap pour l&apos;année — épisodes, films ou livres — et suis ta progression ici.
+          Fixez-vous un cap pour l&apos;année — épisodes, films ou livres — et suivez votre progression ici.
         </p>
         <button className="btn btn-primary pressable" onClick={openEdit}>
           Définir mes objectifs
@@ -924,6 +924,16 @@ export default function ProfilePage() {
   }
 
   const [activeTab, setActiveTab] = useState<"stats" | "settings" | "community">("stats");
+
+  // Permet un lien direct vers un onglet (ex. depuis le picker Premium
+  // verrouillé, qui renvoie ici plutôt que vers la vitrine publique — un
+  // utilisateur déjà connecté en serait immédiatement rebasculé par le
+  // middleware avant même de voir les tarifs).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "settings" || tab === "community") setActiveTab(tab);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -1526,7 +1536,7 @@ export default function ProfilePage() {
               </div>
               <div className="tiny" style={{ marginTop: 2 }}>
                 {streaks.current > 0
-                  ? "Marque quelque chose chaque jour pour garder ta flamme."
+                  ? "Marquez quelque chose chaque jour pour garder votre flamme."
                   : "Marque un épisode, un film ou un livre pour lancer une streak."}
                 {streaks.best > 1 && ` Record : ${streaks.best} jours.`}
               </div>
@@ -1829,8 +1839,9 @@ export default function ProfilePage() {
                   <span style={{ fontSize: 15, fontWeight: 800 }}>Plan Gratuit</span>
                 </div>
                 <p className="muted" style={{ fontSize: 13, marginBottom: 14 }}>
-                  Passez Premium pour suivre séries et livres en illimité, synchroniser
-                  tous vos appareils et débloquer le picker « Ce soir, je regarde quoi ? ».
+                  Passez Premium pour suivre séries, films et livres en illimité,
+                  synchroniser tous vos appareils, débloquer des statistiques avancées
+                  et le picker « Ce soir, je regarde quoi ? ».
                 </p>
                 {(() => {
                   const buyUrl = process.env.NEXT_PUBLIC_LEMONSQUEEZY_BUY_URL;
@@ -1992,8 +2003,8 @@ export default function ProfilePage() {
             <div className="glass card stack" style={{ gap: 10 }}>
               <span style={{ fontSize: 14, fontWeight: 700 }}>Avatar</span>
               <p className="tiny">
-                Ton emoji d&apos;avatar, même sans compte.
-                {userInfo?.avatar ? " L'avatar de ton compte reste prioritaire." : ""}
+                Votre emoji d&apos;avatar, même sans compte.
+                {userInfo?.avatar ? " L'avatar de votre compte reste prioritaire." : ""}
               </p>
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                 {["🍿", "📺", "🎬", "📚", "🎭", "🎮", "🚀", "🌙", "⭐", "🔥", "🦊", "🐼", "🐱", "🦄", "👾", "🤖"].map((e) => {
@@ -2089,9 +2100,11 @@ export default function ProfilePage() {
                 <div className="tiny">
                   {syncOn === null
                     ? "Vérification…"
-                    : syncOn
+                    : syncOn && subscriptionPlan === "premium"
                       ? "Active — vos données sont synchronisées via Supabase"
-                      : "Inactive — données locales uniquement"}
+                      : syncOn
+                        ? "Réservée au Premium — données locales à cet appareil pour l'instant"
+                        : "Inactive — données locales uniquement"}
                 </div>
               </div>
             </div>
