@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { Calendar, Clapperboard, FolderOpen, Heart, Library, Tv, type LucideIcon } from "lucide-react";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useMounted, useTrack } from "@/lib/store";
@@ -16,11 +17,11 @@ import {
 type CollectionType = "shows" | "movies" | "books" | "favorites";
 type Segment = "todo" | "done";
 
-const TITLES: Record<CollectionType, string> = {
-  shows: "📺 Mes séries",
-  movies: "🎬 Mes films",
-  books: "📚 Mes livres",
-  favorites: "❤️ Mes favoris",
+const TITLES: Record<CollectionType, { label: string; Icon: LucideIcon }> = {
+  shows: { label: "Mes séries", Icon: Tv },
+  movies: { label: "Mes films", Icon: Clapperboard },
+  books: { label: "Mes livres", Icon: Library },
+  favorites: { label: "Mes favoris", Icon: Heart },
 };
 
 export default function CollectionPage() {
@@ -29,6 +30,7 @@ export default function CollectionPage() {
   const type = (["shows", "movies", "books", "favorites"].includes(params.type)
     ? params.type
     : "shows") as CollectionType;
+  const { label: titleLabel, Icon: TitleIcon } = TITLES[type];
   const mounted = useMounted();
   const {
     followed,
@@ -51,7 +53,9 @@ export default function CollectionPage() {
   if (!mounted) {
     return (
       <main className="page">
-        <h1 className="page-title">{TITLES[type]}</h1>
+        <h1 className="page-title" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <TitleIcon size={22} /> {titleLabel}
+        </h1>
       </main>
     );
   }
@@ -59,7 +63,7 @@ export default function CollectionPage() {
   let items: {
     id: number | string;
     href: string;
-    caption?: string;
+    caption?: React.ReactNode;
     item: { title: string; poster?: string | null; status?: DisplayStatus };
   }[] = [];
   let segments: { todo: string; done: string } | null = null;
@@ -103,9 +107,11 @@ export default function CollectionPage() {
         href: `/book/${b.id}`,
         item: { ...b, status: bookStatus(segment === "todo", segment === "done") },
         caption:
-          segment === "done" && booksReadDates[b.id]
-            ? `📅 ${booksReadDates[b.id]}`
-            : undefined,
+          segment === "done" && booksReadDates[b.id] ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Calendar size={11} /> {booksReadDates[b.id]}
+            </span>
+          ) : undefined,
       }));
   } else {
     // Favoris : mélange séries, films et livres, chacun avec sa propre route
@@ -117,7 +123,11 @@ export default function CollectionPage() {
           id: `show-${s.id}`,
           href: `/show/${s.id}`,
           item: { ...s, status: effectiveShowStatus(s, showStatus[s.id]) },
-          caption: "📺 Série",
+          caption: (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Tv size={11} /> Série
+            </span>
+          ),
         })),
       ...favoriteMovies
         .map((id) => movieCache[id])
@@ -129,7 +139,11 @@ export default function CollectionPage() {
             ...m,
             status: movieStatus(movieWatchlist.includes(m.id), moviesWatched.includes(m.id)),
           },
-          caption: "🎬 Film",
+          caption: (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Clapperboard size={11} /> Film
+            </span>
+          ),
         })),
       ...favoriteBooks
         .map((id) => bookCache[id])
@@ -141,7 +155,11 @@ export default function CollectionPage() {
             ...b,
             status: bookStatus(booksWatchlist.includes(b.id), booksRead.includes(b.id)),
           },
-          caption: "📚 Livre",
+          caption: (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Library size={11} /> Livre
+            </span>
+          ),
         })),
     ];
   }
@@ -155,8 +173,8 @@ export default function CollectionPage() {
       >
         ← Retour
       </button>
-      <h1 className="page-title" style={{ fontSize: 26 }}>
-        {TITLES[type]}
+      <h1 className="page-title" style={{ fontSize: 26, display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <TitleIcon size={22} /> {titleLabel}
       </h1>
       <p className="page-sub">{items.length} élément{items.length > 1 ? "s" : ""}</p>
 
@@ -179,7 +197,11 @@ export default function CollectionPage() {
 
       {items.length === 0 ? (
         <div className="glass empty">
-          <div className="big">{type === "favorites" ? "❤️" : "🗂️"}</div>
+          {type === "favorites" ? (
+            <Heart className="big" size={40} strokeWidth={1.5} />
+          ) : (
+            <FolderOpen className="big" size={40} strokeWidth={1.5} />
+          )}
           <p className="muted">
             {type === "favorites"
               ? "Aucun favori pour le moment. Le cœur sur une fiche l'ajoute ici."

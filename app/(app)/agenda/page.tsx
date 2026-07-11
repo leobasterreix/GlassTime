@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Clapperboard, Flag, History, Library, Tv } from "lucide-react";
 import Poster from "@/components/Poster";
 import SwipeableRow from "@/components/SwipeableRow";
 import TonightPicker, { type TonightCandidate } from "@/components/TonightPicker";
@@ -275,10 +276,14 @@ export default function AgendaPage() {
     if (count === 0) return null;
     return (
       <div style={{ textAlign: "center", marginBottom: 14 }}>
-        <button className="chip" onClick={toggleHistoryVisible}>
-          {historyVisible
-            ? "▾ Masquer l'historique"
-            : `🕰️ Afficher l'historique (${count})`}
+        <button className="chip" onClick={toggleHistoryVisible} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {historyVisible ? (
+            "▾ Masquer l'historique"
+          ) : (
+            <>
+              <History size={14} /> Afficher l'historique ({count})
+            </>
+          )}
         </button>
       </div>
     );
@@ -336,7 +341,9 @@ export default function AgendaPage() {
           <Poster item={card.movie} mini />
           <div className="agenda-body">
             <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.movie.title}</div>
-            <div className="muted" style={{ marginTop: 2 }}>🎬 Film vu</div>
+            <div className="muted" style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+              <Clapperboard size={13} /> Film vu
+            </div>
           </div>
           {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
           <button
@@ -374,7 +381,9 @@ export default function AgendaPage() {
         <Poster item={card.book} mini />
         <div className="agenda-body">
           <div style={{ fontWeight: 700, fontSize: 15.5 }}>{card.book.title}</div>
-          <div className="muted" style={{ marginTop: 2 }}>📚 Livre lu</div>
+          <div className="muted" style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+            <Library size={13} /> Livre lu
+          </div>
         </div>
         {card.date && <span className="badge-pill">{fmtRelativeOrDateWithTime(card.date)}</span>}
         <button
@@ -553,14 +562,14 @@ export default function AgendaPage() {
 
         {/* Sélecteur de Catégorie : Séries | Films | Livres */}
         <div className="glass segmented" style={{ marginBottom: 0 }}>
-          <button className={category === "series" ? "active" : ""} onClick={() => setCategory("series")}>
-            Séries 📺
+          <button className={category === "series" ? "active" : ""} onClick={() => setCategory("series")} style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+            Séries <Tv size={14} />
           </button>
-          <button className={category === "movies" ? "active" : ""} onClick={() => setCategory("movies")}>
-            Films 🎬
+          <button className={category === "movies" ? "active" : ""} onClick={() => setCategory("movies")} style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+            Films <Clapperboard size={14} />
           </button>
-          <button className={category === "books" ? "active" : ""} onClick={() => setCategory("books")}>
-            Livres 📚
+          <button className={category === "books" ? "active" : ""} onClick={() => setCategory("books")} style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+            Livres <Library size={14} />
           </button>
         </div>
       </div>
@@ -574,7 +583,7 @@ export default function AgendaPage() {
       {/* États vides spécifiques par catégorie */}
       {category === "series" && followed.length === 0 && (
         <div className="glass empty">
-          <div className="big">📺</div>
+          <Tv className="big" size={40} strokeWidth={1.5} />
           <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucune série suivie</h2>
           <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
             Ajoutez vos séries préférées pour suivre les épisodes à voir et les prochaines diffusions.
@@ -592,7 +601,7 @@ export default function AgendaPage() {
 
       {category === "movies" && movieWatchlist.length === 0 && (
         <div className="glass empty">
-          <div className="big">🎬</div>
+          <Clapperboard className="big" size={40} strokeWidth={1.5} />
           <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucun film à voir</h2>
           <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
             Créez votre watchlist et retrouvez ici vos films à voir et les prochaines sorties.
@@ -610,7 +619,7 @@ export default function AgendaPage() {
 
       {category === "books" && booksWatchlist.length === 0 && (
         <div className="glass empty">
-          <div className="big">📚</div>
+          <Library className="big" size={40} strokeWidth={1.5} />
           <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Aucun livre à lire</h2>
           <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
             Ajoutez des livres à votre liste pour suivre votre progression de lecture.
@@ -717,7 +726,7 @@ export default function AgendaPage() {
                         onTap={() => router.push(`/show/${show.id}`)}
                         onSwipeRight={() => markEpisodeWatched(show, next)}
                         onSwipeLeft={() => dropShow(show)}
-                        leftIcon="🏳️"
+                        leftIcon={<Flag size={20} />}
                       >
                         <div className="glass agenda-card pressable">
                           <Poster
@@ -795,7 +804,9 @@ export default function AgendaPage() {
                         <Poster item={{ ...movie, status: movieStatus(true, false) }} mini />
                         <div className="agenda-body">
                           <div style={{ fontWeight: 700, fontSize: 15.5 }}>{movie.title}</div>
-                          <div className="muted" style={{ marginTop: 2 }}>🎬 Film à voir</div>
+                          <div className="muted" style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                            <Clapperboard size={13} /> Film à voir
+                          </div>
                         </div>
                         <button
                           className="check"
@@ -858,7 +869,9 @@ export default function AgendaPage() {
                                 <Poster item={{ ...book, status: bookStatus(true, false) }} mini />
                                 <div className="agenda-body" style={{ flex: 1 }}>
                                   <div style={{ fontWeight: 700, fontSize: 15.5, lineHeight: 1.2 }}>{book.title}</div>
-                                  <div className="muted" style={{ marginTop: 2, fontSize: 13 }}>📚 Livre à lire</div>
+                                  <div className="muted" style={{ marginTop: 2, fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>
+                                    <Library size={13} /> Livre à lire
+                                  </div>
                                 </div>
                                 <button
                                   className="check"

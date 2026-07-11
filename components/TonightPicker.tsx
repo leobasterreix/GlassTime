@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Clapperboard, Clock, Dices, Lock, Sunset, Tv, X, Zap } from "lucide-react";
 import { useIsPremium } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import type { Episode, Movie, Show } from "@/lib/types";
@@ -15,10 +16,10 @@ export type TonightCandidate =
 /** Créneaux de temps disponibles. Les bornes sont volontairement larges
  * (30 min → 40) : un épisode de 38 min doit rentrer dans « ≈ 30 min ». */
 const SLOTS = [
-  { label: "≈ 30 min", emoji: "⚡", max: 40 },
-  { label: "≈ 1 h", emoji: "🌗", max: 75 },
-  { label: "Soirée", emoji: "🌙", max: 240 },
-  { label: "Peu importe", emoji: "🎲", max: Infinity },
+  { label: "≈ 30 min", Icon: Zap, max: 40 },
+  { label: "≈ 1 h", Icon: Clock, max: 75 },
+  { label: "Soirée", Icon: Sunset, max: 240 },
+  { label: "Peu importe", Icon: Dices, max: Infinity },
 ];
 
 function pickRandom(
@@ -102,7 +103,7 @@ export default function TonightPicker({
           color: "var(--accent)",
         }}
       >
-        🎲 Ce soir, je regarde quoi ? {!isPremium && "🔒"}
+        <Dices size={17} /> Ce soir, je regarde quoi ? {!isPremium && <Lock size={14} />}
       </button>
 
       {open && (
@@ -138,8 +139,8 @@ export default function TonightPicker({
               className="row"
               style={{ justifyContent: "space-between", marginBottom: 14 }}
             >
-              <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>
-                🎲 Ce soir, je regarde quoi ?
+              <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <Dices size={18} /> Ce soir, je regarde quoi ?
               </h2>
               <button
                 onClick={close}
@@ -154,9 +155,12 @@ export default function TonightPicker({
                   fontSize: 15,
                   cursor: "pointer",
                   color: "var(--text-2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -169,8 +173,9 @@ export default function TonightPicker({
                   key={slot.label}
                   className={`chip ${slotIdx === i ? "active" : ""}`}
                   onClick={() => choose(i)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
-                  {slot.emoji} {slot.label}
+                  <slot.Icon size={13} /> {slot.label}
                 </button>
               ))}
             </div>
@@ -213,7 +218,7 @@ export default function TonightPicker({
                         background: "var(--track)",
                       }}
                     >
-                      {pick.kind === "show" ? "📺" : "🎬"}
+                      {pick.kind === "show" ? <Tv size={26} /> : <Clapperboard size={26} />}
                     </div>
                   )}
                   <div style={{ minWidth: 0 }}>
@@ -230,10 +235,10 @@ export default function TonightPicker({
                 <div className="row" style={{ gap: 10, marginTop: 14 }}>
                   <button
                     className="btn pressable"
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                     onClick={() => setPick(pickRandom(pool, pick.key))}
                   >
-                    🎲 Une autre
+                    <Dices size={15} /> Une autre
                   </button>
                   <Link
                     href={href}

@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Bell, BellOff, Clapperboard, Heart, Library, Tv } from "lucide-react";
 import Poster from "@/components/Poster";
 import { useMounted } from "@/lib/store";
 import { toast } from "@/lib/toast";
@@ -204,7 +205,15 @@ export default function FriendProfilePage() {
             color: isFollowing ? "var(--text-2)" : "var(--accent)",
           }}
         >
-          {isFollowing ? "🔕 Se désabonner" : "🔔 S'abonner"}
+          {isFollowing ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <BellOff size={13} /> Se désabonner
+            </span>
+          ) : (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Bell size={13} /> S'abonner
+            </span>
+          )}
         </button>
       </div>
 
@@ -213,7 +222,9 @@ export default function FriendProfilePage() {
         {/* Favoris */}
         {favoriteItems.length > 0 && (
           <div>
-            <h2 className="section-title">❤️ Favoris ({favoriteItems.length})</h2>
+            <h2 className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Heart size={14} /> Favoris ({favoriteItems.length})
+            </h2>
             <div className="hscroll">
               {favoriteItems.map(({ key, item }) => (
                 <div key={key} style={{ opacity: 0.9 }}>
@@ -226,7 +237,9 @@ export default function FriendProfilePage() {
 
         {/* Séries suivies */}
         <div>
-          <h2 className="section-title">📺 Séries suivies ({shows.length})</h2>
+          <h2 className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Tv size={14} /> Séries suivies ({shows.length})
+          </h2>
           {shows.length > 0 ? (
             <div className="hscroll">
               {shows.map((s: any) => (
@@ -242,7 +255,9 @@ export default function FriendProfilePage() {
 
         {/* Films vus */}
         <div>
-          <h2 className="section-title">🎬 Films vus ({movies.length})</h2>
+          <h2 className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Clapperboard size={14} /> Films vus ({movies.length})
+          </h2>
           {movies.length > 0 ? (
             <div className="hscroll">
               {movies.map((m: any) => (
@@ -258,7 +273,9 @@ export default function FriendProfilePage() {
 
         {/* Livres lus */}
         <div>
-          <h2 className="section-title">📚 Livres lus ({books.length})</h2>
+          <h2 className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Library size={14} /> Livres lus ({books.length})
+          </h2>
           {books.length > 0 ? (
             <div className="hscroll">
               {books.map((b: any) => (

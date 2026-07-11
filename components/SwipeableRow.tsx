@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Check, Trash2 } from "lucide-react";
 
 const THRESHOLD = 88;
 const TAP_SLOP = 6;
@@ -10,15 +11,15 @@ export default function SwipeableRow({
   onTap,
   onSwipeRight,
   onSwipeLeft,
-  rightIcon = "✓",
-  leftIcon = "🗑",
+  rightIcon = <Check size={20} />,
+  leftIcon = <Trash2 size={20} />,
 }: {
   children: React.ReactNode;
   onTap?: () => void;
   onSwipeRight?: () => void;
   onSwipeLeft?: () => void;
-  rightIcon?: string;
-  leftIcon?: string;
+  rightIcon?: React.ReactNode;
+  leftIcon?: React.ReactNode;
 }) {
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);

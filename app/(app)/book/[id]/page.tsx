@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { BookX } from "lucide-react";
 import Poster from "@/components/Poster";
 import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet, useHydrateLibrary } from "@/lib/client";
@@ -170,7 +171,7 @@ export default function BookDetailPage({
           ← Retour
         </Link>
         <div className="glass empty">
-          <div className="big">🕵️</div>
+          <BookX className="big" size={40} strokeWidth={1.5} />
           <h2>Livre introuvable</h2>
           <p className="muted">Désolé, nous n'avons pas pu trouver ce livre.</p>
         </div>

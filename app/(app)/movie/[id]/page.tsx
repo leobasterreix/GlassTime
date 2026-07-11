@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Calendar, Drama, Eye, FileQuestion, Loader2 } from "lucide-react";
 import Poster from "@/components/Poster";
 import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet } from "@/lib/client";
@@ -134,7 +135,11 @@ export default function MoviePage() {
           ← Retour
         </button>
         <div className="glass empty">
-          <div className="big">{notFound ? "🫥" : "⏳"}</div>
+          {notFound ? (
+            <FileQuestion className="big" size={40} strokeWidth={1.5} />
+          ) : (
+            <Loader2 className="big" size={40} strokeWidth={1.5} style={{ animation: "spin 1s linear infinite" }} />
+          )}
           <p className="muted">
             {notFound ? "Film introuvable." : "Chargement…"}
           </p>
@@ -230,13 +235,19 @@ export default function MoviePage() {
                 );
               }}
             >
-              {seen ? "✓ Vu" : "👁 Vu"}
+              {seen ? (
+                "✓ Vu"
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Eye size={15} /> Vu
+                </span>
+              )}
             </button>
           </div>
 
           {seen && seenDate && (
-            <p className="tiny" style={{ marginTop: 10 }}>
-              📅 Vu le{" "}
+            <p className="tiny" style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 4 }}>
+              <Calendar size={12} /> Vu le{" "}
               {new Date(seenDate).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "long",
@@ -289,7 +300,7 @@ export default function MoviePage() {
                 {c.photo ? (
                   <img className="cast-photo" src={c.photo} alt={c.name} loading="lazy" />
                 ) : (
-                  <div className="cast-photo">🎭</div>
+                  <div className="cast-photo"><Drama size={20} /></div>
                 )}
                 <div className="name">{c.name}</div>
                 {c.character && <div className="role">{c.character}</div>}

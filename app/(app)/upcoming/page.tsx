@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { Clapperboard, Telescope } from "lucide-react";
 import Poster from "@/components/Poster";
 import { useHydrateLibrary } from "@/lib/client";
 import { useIncremental } from "@/lib/useIncremental";
@@ -87,7 +88,7 @@ export default function UpcomingPage() {
 
       {items.length === 0 ? (
         <div className="glass empty">
-          <div className="big">🔭</div>
+          <Telescope className="big" size={40} strokeWidth={1.5} />
           <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Rien à l'horizon</h2>
           <p className="muted" style={{ marginBottom: 20, maxWidth: 320, marginInline: "auto", lineHeight: 1.5 }}>
             Les prochains épisodes de vos séries et les sorties de vos films à voir
@@ -134,7 +135,9 @@ export default function UpcomingPage() {
                 <Poster item={{ ...item.movie, status: movieStatus(true, false) }} mini />
                 <div className="agenda-body">
                   <div style={{ fontWeight: 700, fontSize: 15.5 }}>{item.movie.title}</div>
-                  <div className="muted" style={{ marginTop: 2 }}>🎬 Sortie du film</div>
+                  <div className="muted" style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Clapperboard size={13} /> Sortie du film
+                  </div>
                 </div>
                 <span className="badge-pill">{fmtRelative(item.date)}</span>
               </Link>

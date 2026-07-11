@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, Clapperboard, Eye, Flame, Library, Radio, Search, Sparkles, Tv } from "lucide-react";
 import Poster from "@/components/Poster";
 
 // html5-qrcode est une dépendance lourde (moteur de décodage QR/EAN) : on ne
@@ -308,10 +309,10 @@ function DiscoverContent() {
   const platformChip = (
     <button
       className={`chip pressable${platformActive ? " active" : ""}`}
-      style={{ width: "auto", minWidth: "auto" }}
+      style={{ width: "auto", minWidth: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
       onClick={togglePlatformFilter}
     >
-      📡 Sur mes plateformes
+      <Radio size={13} /> Sur mes plateformes
     </button>
   );
 
@@ -392,20 +393,23 @@ function DiscoverContent() {
           <button
             className={type === "shows" ? "active" : ""}
             onClick={() => handleTypeChange("shows")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            Séries 📺
+            Séries <Tv size={14} />
           </button>
           <button
             className={type === "movies" ? "active" : ""}
             onClick={() => handleTypeChange("movies")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            Films 🎬
+            Films <Clapperboard size={14} />
           </button>
           <button
             className={type === "books" ? "active" : ""}
             onClick={() => handleTypeChange("books")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            Livres 📚
+            Livres <Library size={14} />
           </button>
         </div>
 
@@ -524,7 +528,7 @@ function DiscoverContent() {
         <>
           {!searching && showRecs.length > 0 && (
             <>
-              <h2 className="section-title">✨ Pour vous</h2>
+              <h2 className="section-title"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Sparkles size={15} /> Pour vous</span></h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
                 {showRecs.map((s) => {
                   const isFollowed = mounted && followed.includes(s.id);
@@ -550,7 +554,7 @@ function DiscoverContent() {
 
           {!searching && showResults && showResults.length > 0 && (
             <>
-              <h2 className="section-title">🔥 Tendances</h2>
+              <h2 className="section-title"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={15} /> Tendances</span></h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
                 {showResults.slice(0, 10).map((s) => {
                   const isFollowed = mounted && followed.includes(s.id);
@@ -575,7 +579,10 @@ function DiscoverContent() {
           )}
 
           <h2 className="section-title">
-            {platformActive && !q ? "📡 Sur mes plateformes" : searching ? "Résultats" : "Séries populaires"}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              {platformActive && !q && <Radio size={13} />}
+              {platformActive && !q ? "Sur mes plateformes" : searching ? "Résultats" : "Séries populaires"}
+            </span>
             {showResults && <small>{showResults.length}</small>}
           </h2>
 
@@ -587,7 +594,7 @@ function DiscoverContent() {
             </div>
           ) : showResults.length === 0 ? (
             <div className="glass empty">
-              <div className="big">🔍</div>
+              <Search className="big" size={40} strokeWidth={1.5} />
               <p className="muted">Aucune série ne correspond à votre recherche.</p>
             </div>
           ) : (
@@ -624,7 +631,7 @@ function DiscoverContent() {
         <>
           {!searching && movieRecs.length > 0 && (
             <>
-              <h2 className="section-title">✨ Pour vous</h2>
+              <h2 className="section-title"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Sparkles size={15} /> Pour vous</span></h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
                 {movieRecs.map((m) => {
                   const inList = mounted && movieWatchlist.includes(m.id);
@@ -654,7 +661,10 @@ function DiscoverContent() {
           )}
 
           <h2 className="section-title">
-            {platformActive && !q ? "📡 Sur mes plateformes" : searching ? "Résultats" : "Films populaires"}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              {platformActive && !q && <Radio size={13} />}
+              {platformActive && !q ? "Sur mes plateformes" : searching ? "Résultats" : "Films populaires"}
+            </span>
             {movieResults && <small>{movieResults.length}</small>}
           </h2>
 
@@ -666,7 +676,7 @@ function DiscoverContent() {
             </div>
           ) : movieResults.length === 0 ? (
             <div className="glass empty">
-              <div className="big">🎬</div>
+              <Clapperboard className="big" size={40} strokeWidth={1.5} />
               <p className="muted">Aucun film ne correspond à votre recherche.</p>
             </div>
           ) : (
@@ -730,7 +740,7 @@ function DiscoverContent() {
                           seen ? toggleMovieWatched(m.id) : markMovieWatched(m)
                         }
                       >
-                        👁
+                        <Eye size={16} />
                       </button>
                     </div>
                   </div>
@@ -746,7 +756,7 @@ function DiscoverContent() {
         <>
           {!browsingBooks && bookRecs.length > 0 && (
             <>
-              <h2 className="section-title">✨ Pour vous</h2>
+              <h2 className="section-title"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Sparkles size={15} /> Pour vous</span></h2>
               <div className="hscroll" style={{ marginBottom: 20 }}>
                 {bookRecs.map(bookPosterRow)}
               </div>
@@ -755,7 +765,7 @@ function DiscoverContent() {
 
           {!browsingBooks && (
             <>
-              <h2 className="section-title">🔥 Tendances</h2>
+              <h2 className="section-title"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={15} /> Tendances</span></h2>
               {bookTrending === null ? (
                 <div className="hscroll" style={{ marginBottom: 20 }}>
                   {Array.from({ length: 4 }, (_, i) => (
@@ -777,7 +787,7 @@ function DiscoverContent() {
 
           {filteredBookResults === null ? (
             <div className="glass empty">
-              <div className="big">📚</div>
+              <Library className="big" size={40} strokeWidth={1.5} />
               <p className="muted">
                 Recherchez un titre, un auteur, un ISBN, ou choisissez une année —
                 ou scannez un code-barres.
@@ -785,7 +795,7 @@ function DiscoverContent() {
             </div>
           ) : filteredBookResults.length === 0 ? (
             <div className="glass empty">
-              <div className="big">🔍</div>
+              <Search className="big" size={40} strokeWidth={1.5} />
               <p className="muted">Aucun livre ne correspond à votre recherche.</p>
             </div>
           ) : (
@@ -850,7 +860,7 @@ function DiscoverContent() {
                           read ? toggleBookRead(b.id) : markBookRead(b)
                         }
                       >
-                        📖
+                        <BookOpen size={16} />
                       </button>
                     </div>
                   </div>

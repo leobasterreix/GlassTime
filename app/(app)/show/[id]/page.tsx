@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AlertTriangle, Drama, FileQuestion, MessageCircle } from "lucide-react";
 import Poster from "@/components/Poster";
 import FavoriteButton from "@/components/FavoriteButton";
 import { apiGet, followShow } from "@/lib/client";
@@ -207,7 +208,7 @@ export default function ShowPage() {
         </button>
         {notFound ? (
           <div className="glass empty">
-            <div className="big">🫥</div>
+            <FileQuestion className="big" size={40} strokeWidth={1.5} />
             <p className="muted">Série introuvable.</p>
           </div>
         ) : (
@@ -415,7 +416,7 @@ export default function ShowPage() {
                 {c.photo ? (
                   <img className="cast-photo" src={c.photo} alt={c.name} loading="lazy" />
                 ) : (
-                  <div className="cast-photo">🎭</div>
+                  <div className="cast-photo"><Drama size={20} /></div>
                 )}
                 <div className="name">{c.name}</div>
                 {c.character && <div className="role">{c.character}</div>}
@@ -537,7 +538,7 @@ export default function ShowPage() {
                             title="Laisser un avis ou émotion"
                             onClick={() => openEpisodeReviewModal(ep)}
                           >
-                            {episodeReviews[`${show.id}:${ep.s}:${ep.e}`]?.emotion || "💬"}
+                            {episodeReviews[`${show.id}:${ep.s}:${ep.e}`]?.emotion || <MessageCircle size={16} />}
                           </button>
                         )}
                         <button
@@ -872,7 +873,9 @@ export default function ShowPage() {
                 onChange={(e) => setReviewSpoiler(e.target.checked)}
                 style={{ width: 16, height: 16, cursor: "pointer" }}
               />
-              <span>Cet avis contient des spoilers ⚠️</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                Cet avis contient des spoilers <AlertTriangle size={14} />
+              </span>
             </label>
 
             {/* Bouton de sauvegarde */}
@@ -955,7 +958,9 @@ export default function ShowPage() {
                                 textAlign: "center"
                               }}
                             >
-                              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)" }}>⚠️ Cet avis contient un spoiler</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                <AlertTriangle size={13} /> Cet avis contient un spoiler
+                              </span>
                               <button
                                 className="chip pressable active"
                                 style={{ fontSize: 11, padding: "2px 8px" }}

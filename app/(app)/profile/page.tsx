@@ -2,6 +2,37 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  BellOff,
+  Calendar,
+  CalendarDays,
+  CheckCircle2,
+  Clapperboard,
+  Cloud,
+  Crown,
+  Download,
+  FileSpreadsheet,
+  Flame,
+  Heart,
+  Library,
+  LogOut,
+  Moon,
+  PartyPopper,
+  Pencil,
+  Search,
+  Settings,
+  Sparkles,
+  Sun,
+  Target,
+  Tv,
+  Upload,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import Poster from "@/components/Poster";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useHydrateLibrary, apiGet } from "@/lib/client";
@@ -348,10 +379,10 @@ function DonutInteractive({ donutSlices }: { donutSlices: DonutSlice[] }) {
 
 type GoalKind = "episodes" | "movies" | "books";
 
-const GOAL_DEFS: { kind: GoalKind; emoji: string; label: string }[] = [
-  { kind: "episodes", emoji: "📺", label: "Épisodes" },
-  { kind: "movies", emoji: "🎬", label: "Films" },
-  { kind: "books", emoji: "📚", label: "Livres" },
+const GOAL_DEFS: { kind: GoalKind; Icon: LucideIcon; label: string }[] = [
+  { kind: "episodes", Icon: Tv, label: "Épisodes" },
+  { kind: "movies", Icon: Clapperboard, label: "Films" },
+  { kind: "books", Icon: Library, label: "Livres" },
 ];
 
 /** Objectifs annuels façon défi lecture Goodreads : cible par catégorie,
@@ -403,8 +434,8 @@ function YearlyGoalsCard({
         <span style={{ fontSize: 14, fontWeight: 700 }}>Mes objectifs {year}</span>
         {GOAL_DEFS.map((g) => (
           <div key={g.kind} className="row" style={{ justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 13.5 }}>
-              {g.emoji} {g.label} sur l&apos;année
+            <span style={{ fontSize: 13.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <g.Icon size={14} /> {g.label} sur l&apos;année
             </span>
             <input
               type="number"
@@ -441,7 +472,7 @@ function YearlyGoalsCard({
   if (active.length === 0) {
     return (
       <div className="glass card" style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 30, marginBottom: 6 }}>🎯</div>
+        <Target size={30} style={{ marginBottom: 6 }} />
         <div style={{ fontWeight: 800, marginBottom: 4 }}>Aucun objectif {year}</div>
         <p className="tiny" style={{ marginBottom: 14 }}>
           Fixe-toi un cap pour l&apos;année — épisodes, films ou livres — et suis ta progression ici.
@@ -457,8 +488,8 @@ function YearlyGoalsCard({
     <div className="glass card stack" style={{ gap: 14 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>Mes objectifs {year}</span>
-        <button className="tiny pressable" style={{ fontWeight: 700, color: "var(--accent)" }} onClick={openEdit}>
-          ✏️ Modifier
+        <button className="tiny pressable" style={{ fontWeight: 700, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4 }} onClick={openEdit}>
+          <Pencil size={12} /> Modifier
         </button>
       </div>
       {active.map((g) => {
@@ -470,8 +501,8 @@ function YearlyGoalsCard({
         return (
           <div key={g.kind}>
             <div className="row" style={{ justifyContent: "space-between", marginBottom: 5 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>
-                {g.emoji} {g.label}
+              <span style={{ fontSize: 13.5, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <g.Icon size={14} /> {g.label}
               </span>
               <span className="tiny" style={{ fontWeight: 700 }}>
                 {count} / {goal}
@@ -480,10 +511,14 @@ function YearlyGoalsCard({
             <div className="progress">
               <div style={{ width: `${pct}%` }} />
             </div>
-            <div className="tiny" style={{ marginTop: 4, color: reached ? "var(--accent)" : "var(--text-3)" }}>
-              {reached
-                ? "🎉 Objectif atteint, bravo !"
-                : `À ce rythme : ~${projected} d'ici fin ${year}`}
+            <div className="tiny" style={{ marginTop: 4, color: reached ? "var(--accent)" : "var(--text-3)", display: "flex", alignItems: "center", gap: 4 }}>
+              {reached ? (
+                <>
+                  <PartyPopper size={12} /> Objectif atteint, bravo !
+                </>
+              ) : (
+                `À ce rythme : ~${projected} d'ici fin ${year}`
+              )}
             </div>
           </div>
         );
@@ -1405,9 +1440,12 @@ export default function ProfilePage() {
                 background: "var(--accent-wash)",
                 borderColor: "var(--accent)",
                 color: "var(--accent)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              ✏️ Modifier
+              <Pencil size={12} /> Modifier
             </button>
           )}
         </div>
@@ -1416,21 +1454,23 @@ export default function ProfilePage() {
           <button
             className={activeTab === "stats" ? "active" : ""}
             onClick={() => setActiveTab("stats")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            📊 Stats
+            <BarChart3 size={14} /> Stats
           </button>
           <button
             className={activeTab === "settings" ? "active" : ""}
             onClick={() => setActiveTab("settings")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            ⚙️ Préférences
+            <Settings size={14} /> Préférences
           </button>
           <button
             className={activeTab === "community" ? "active" : ""}
             onClick={() => setActiveTab("community")}
-            style={{ position: "relative" }}
+            style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}
           >
-            👥 Communauté
+            <Users size={14} /> Communauté
             {hasNewFriendActivity && (
               <span
                 aria-hidden
@@ -1472,9 +1512,12 @@ export default function ProfilePage() {
                 : {}),
             }}
           >
-            <span style={{ fontSize: 34, filter: streaks.current > 0 ? "none" : "grayscale(1)", opacity: streaks.current > 0 ? 1 : 0.6 }}>
-              🔥
-            </span>
+            <Flame
+              size={34}
+              style={{ filter: streaks.current > 0 ? "none" : "grayscale(1)", opacity: streaks.current > 0 ? 1 : 0.6 }}
+              color={streaks.current > 0 ? "#f97316" : "currentColor"}
+              fill={streaks.current > 0 ? "#f97316" : "none"}
+            />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 17, fontWeight: 800 }}>
                 {streaks.current > 0
@@ -1491,7 +1534,11 @@ export default function ProfilePage() {
           </div>
 
           {/* Objectifs annuels */}
-          <h2 className="section-title">Objectifs 🎯</h2>
+          <h2 className="section-title">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Target size={14} /> Objectifs
+            </span>
+          </h2>
           <YearlyGoalsCard
             counts={yearCounts}
             goals={yearlyGoals ?? { episodes: null, movies: null, books: null }}
@@ -1499,13 +1546,21 @@ export default function ProfilePage() {
           />
 
           {/* Heatmap d'activité — interactive */}
-          <h2 className="section-title">Calendrier d'activité 🗓️</h2>
+          <h2 className="section-title">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <CalendarDays size={14} /> Calendrier d'activité
+            </span>
+          </h2>
           <HeatmapInteractive heatmapColumns={heatmapColumns} watchedLog={watchedLog} />
 
           {/* Genres favoris */}
           {totalGenreCount > 0 && (
             <>
-              <h2 className="section-title">Genres favoris 📊</h2>
+              <h2 className="section-title">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <BarChart3 size={14} /> Genres favoris
+                </span>
+              </h2>
               <DonutInteractive donutSlices={donutSlices} />
             </>
           )}
@@ -1546,7 +1601,7 @@ export default function ProfilePage() {
               <div className="grid-stats badges">
                 {mostWatched && (
                   <div className="glass card row" style={{ gap: 10 }}>
-                    <span style={{ fontSize: 24 }}>👑</span>
+                    <Crown size={24} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>
                         {mostWatched.show.title}
@@ -1559,7 +1614,7 @@ export default function ProfilePage() {
                 )}
                 {bestDay && (
                   <div className="glass card row" style={{ gap: 10 }}>
-                    <span style={{ fontSize: 24 }}>⚡</span>
+                    <Zap size={24} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>
                         {bestDay[1]} marquages en un jour
@@ -1582,7 +1637,9 @@ export default function ProfilePage() {
           {favoriteItems.length > 0 && (
             <>
               <h2 className="section-title">
-                ❤️ Mes favoris{" "}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Heart size={14} /> Mes favoris
+                </span>
                 <Link href="/collection/favorites" className="tiny" style={{ fontWeight: 700 }}>
                   Voir tout · {favoriteItems.length} →
                 </Link>
@@ -1601,7 +1658,9 @@ export default function ProfilePage() {
           {myShows.length > 0 && (
             <>
               <h2 className="section-title">
-                📺 Mes séries{" "}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Tv size={14} /> Mes séries
+                </span>
                 <Link href="/collection/shows" className="tiny" style={{ fontWeight: 700 }}>
                   Voir tout · {myShows.length} →
                 </Link>
@@ -1620,7 +1679,9 @@ export default function ProfilePage() {
           {(moviesToWatch.length > 0 || moviesSeen.length > 0) && (
             <>
               <h2 className="section-title">
-                🎬 Mes films{" "}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Clapperboard size={14} /> Mes films
+                </span>
                 <Link href="/collection/movies" className="tiny" style={{ fontWeight: 700 }}>
                   Voir tout · {moviesToWatch.length + moviesSeen.length} →
                 </Link>
@@ -1649,8 +1710,8 @@ export default function ProfilePage() {
                       <Link key={m.id} href={`/movie/${m.id}`} className="pressable">
                         <Poster item={{ ...m, status: movieStatus(false, true) }} />
                         {moviesWatchedDates[m.id] && (
-                          <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
-                            📅 {formatDateRead(moviesWatchedDates[m.id])}
+                          <div className="tiny" style={{ marginTop: 5, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                            <Calendar size={11} /> {formatDateRead(moviesWatchedDates[m.id])}
                           </div>
                         )}
                       </Link>
@@ -1665,7 +1726,9 @@ export default function ProfilePage() {
           {(booksToRead.length > 0 || booksDone.length > 0) && (
             <>
               <h2 className="section-title">
-                📚 Mes livres{" "}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Library size={14} /> Mes livres
+                </span>
                 <Link href="/collection/books" className="tiny" style={{ fontWeight: 700 }}>
                   Voir tout · {booksToRead.length + booksDone.length} →
                 </Link>
@@ -1694,8 +1757,8 @@ export default function ProfilePage() {
                       <Link key={b.id} href={`/book/${b.id}`} className="pressable">
                         <Poster item={{ ...b, status: bookStatus(false, true) }} />
                         {booksReadDates[b.id] && (
-                          <div className="tiny" style={{ marginTop: 5, textAlign: "center" }}>
-                            📅 {formatDateRead(booksReadDates[b.id])}
+                          <div className="tiny" style={{ marginTop: 5, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                            <Calendar size={11} /> {formatDateRead(booksReadDates[b.id])}
                           </div>
                         )}
                       </Link>
@@ -1750,8 +1813,8 @@ export default function ProfilePage() {
             {subscriptionPlan === "premium" ? (
               <>
                 <div className="row" style={{ gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)" }}>
-                    ✨ Premium actif
+                  <span style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Sparkles size={15} /> Premium actif
                   </span>
                 </div>
                 <p className="muted" style={{ fontSize: 13 }}>
@@ -1786,9 +1849,9 @@ export default function ProfilePage() {
                     <a
                       href={`${buyUrl}?${params.toString()}`}
                       className="btn btn-primary pressable"
-                      style={{ width: "100%" }}
+                      style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                     >
-                      ✨ Passer Premium — 3,99€/mois
+                      <Sparkles size={15} /> Passer Premium — 3,99€/mois
                     </a>
                   );
                 })()}
@@ -1811,11 +1874,19 @@ export default function ProfilePage() {
               }}
               onClick={toggleTheme}
             >
-              {theme === "system"
-                ? "⚙️ Thème : Système"
-                : theme === "light"
-                  ? "☀️ Thème : Clair"
-                  : "🌙 Thème : Sombre"}
+              {theme === "system" ? (
+                <>
+                  <Settings size={16} /> Thème : Système
+                </>
+              ) : theme === "light" ? (
+                <>
+                  <Sun size={16} /> Thème : Clair
+                </>
+              ) : (
+                <>
+                  <Moon size={16} /> Thème : Sombre
+                </>
+              )}
             </button>
 
             {/* Couleur d'accent */}
@@ -1976,7 +2047,7 @@ export default function ProfilePage() {
             {notificationsSupported() && (
               <button
                 className="glass card pressable"
-                style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+                style={{ width: "100%", textAlign: "center", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 onClick={async () => {
                   if (notifsOn) {
                     disableNotifications();
@@ -1994,9 +2065,15 @@ export default function ProfilePage() {
                   }
                 }}
               >
-                {notifsOn
-                  ? "🔔 Notifications de sortie : activées"
-                  : "🔕 Notifications de sortie : désactivées"}
+                {notifsOn ? (
+                  <>
+                    <Bell size={15} /> Notifications de sortie : activées
+                  </>
+                ) : (
+                  <>
+                    <BellOff size={15} /> Notifications de sortie : désactivées
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -2004,7 +2081,7 @@ export default function ProfilePage() {
           <h2 className="section-title">Données</h2>
           <div className="stack">
             <div className="glass card row" style={{ gap: 10 }}>
-              <span style={{ fontSize: 20 }}>☁️</span>
+              <Cloud size={20} />
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>
                   Synchronisation multi-appareils
@@ -2021,17 +2098,17 @@ export default function ProfilePage() {
             <div className="row">
               <button
                 className="glass card pressable"
-                style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
+                style={{ flex: 1, textAlign: "center", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 onClick={exportData}
               >
-                💾 Exporter
+                <Download size={15} /> Exporter
               </button>
               <button
                 className="glass card pressable"
-                style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
+                style={{ flex: 1, textAlign: "center", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 onClick={() => importInputRef.current?.click()}
               >
-                📥 Importer
+                <Upload size={15} /> Importer
               </button>
               <input
                 ref={importInputRef}
@@ -2047,10 +2124,10 @@ export default function ProfilePage() {
             </div>
             <button
               className="glass card pressable"
-              style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+              style={{ width: "100%", textAlign: "center", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               onClick={() => csvInputRef.current?.click()}
             >
-              📊 Importer un CSV TV Time
+              <FileSpreadsheet size={15} /> Importer un CSV TV Time
             </button>
             <input
               ref={csvInputRef}
@@ -2065,13 +2142,13 @@ export default function ProfilePage() {
             />
             <button
               className="glass card pressable"
-              style={{ width: "100%", textAlign: "center", fontWeight: 700 }}
+              style={{ width: "100%", textAlign: "center", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               onClick={async () => {
                 await supabase.auth.signOut();
                 window.location.href = "/login";
               }}
             >
-              🔒 Se déconnecter
+              <LogOut size={15} /> Se déconnecter
             </button>
             <button
               className="pressable"
@@ -2102,7 +2179,11 @@ export default function ProfilePage() {
           {/* Flux d'activité des amis */}
           <div>
             <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <h2 className="section-title" style={{ marginBottom: 0 }}>Flux d'activité des amis 👥</h2>
+              <h2 className="section-title" style={{ marginBottom: 0 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Users size={14} /> Flux d'activité des amis
+                </span>
+              </h2>
               <button
                 className="tiny pressable"
                 style={{ fontWeight: 700 }}
@@ -2127,8 +2208,8 @@ export default function ProfilePage() {
 
           {/* Communauté */}
           <div className="glass card stack" style={{ gap: 14, padding: 20 }}>
-            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)" }}>
-              🔍 RECHERCHER UN AMI
+            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6 }}>
+              <Search size={12} /> RECHERCHER UN AMI
             </h2>
             <form onSubmit={handleSearch} className="row" style={{ gap: 8 }}>
               <input
@@ -2176,12 +2257,23 @@ export default function ProfilePage() {
                             fontSize: 12,
                             fontWeight: 700,
                             margin: 0,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
                             background: isFollowing ? "transparent" : "var(--accent-wash)",
                             borderColor: isFollowing ? "var(--hairline)" : "var(--accent)",
                             color: isFollowing ? "var(--text-2)" : "var(--accent)",
                           }}
                         >
-                          {isFollowing ? "🔕 Se désabonner" : "🔔 S'abonner"}
+                          {isFollowing ? (
+                            <>
+                              <BellOff size={13} /> Se désabonner
+                            </>
+                          ) : (
+                            <>
+                              <Bell size={13} /> S'abonner
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -2195,8 +2287,8 @@ export default function ProfilePage() {
 
           {/* 2. Abonnements (les personnes qu'il suit) */}
           <div className="glass card stack" style={{ gap: 14, padding: 20 }}>
-            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)" }}>
-              👥 MES ABONNEMENTS ({myFollows.length})
+            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6 }}>
+              <Users size={12} /> MES ABONNEMENTS ({myFollows.length})
             </h2>
             {socialLoading ? (
               <p className="tiny" style={{ textAlign: "center" }}>Chargement des abonnements...</p>
@@ -2227,11 +2319,14 @@ export default function ProfilePage() {
                         fontSize: 12,
                         fontWeight: 700,
                         margin: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
                         borderColor: "var(--hairline)",
                         color: "var(--text-2)",
                       }}
                     >
-                      🔕 Se désabonner
+                      <BellOff size={13} /> Se désabonner
                     </button>
                   </div>
                 ))}
@@ -2243,8 +2338,8 @@ export default function ProfilePage() {
 
           {/* 3. Abonnés (les personnes qui le suivent) */}
           <div className="glass card stack" style={{ gap: 14, padding: 20 }}>
-            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)" }}>
-              👥 MES ABONNÉS ({myFollowers.length})
+            <h2 className="tiny" style={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6 }}>
+              <Users size={12} /> MES ABONNÉS ({myFollowers.length})
             </h2>
             {socialLoading ? (
               <p className="tiny" style={{ textAlign: "center" }}>Chargement des abonnés...</p>
@@ -2277,12 +2372,23 @@ export default function ProfilePage() {
                           fontSize: 12,
                           fontWeight: 700,
                           margin: 0,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
                           background: isFollowing ? "transparent" : "var(--accent-wash)",
                           borderColor: isFollowing ? "var(--hairline)" : "var(--accent)",
                           color: isFollowing ? "var(--text-2)" : "var(--accent)",
                         }}
                       >
-                        {isFollowing ? "🔕 Se désabonner" : "🔔 S'abonner"}
+                        {isFollowing ? (
+                            <>
+                              <BellOff size={13} /> Se désabonner
+                            </>
+                          ) : (
+                            <>
+                              <Bell size={13} /> S'abonner
+                            </>
+                          )}
                       </button>
                     </div>
                   );
@@ -2558,13 +2664,13 @@ export default function ProfilePage() {
               </div>
 
               {editError && (
-                <p className="field-error-in" style={{ color: "var(--danger)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
-                  ⚠️ {editError}
+                <p className="field-error-in" style={{ color: "var(--danger)", fontSize: 13, fontWeight: 700, margin: "4px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                  <AlertTriangle size={14} /> {editError}
                 </p>
               )}
               {editSuccess && (
-                <p className="field-error-in" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 700, margin: "4px 0" }}>
-                  ✅ {editSuccess}
+                <p className="field-error-in" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 700, margin: "4px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                  <CheckCircle2 size={14} /> {editSuccess}
                 </p>
               )}
 

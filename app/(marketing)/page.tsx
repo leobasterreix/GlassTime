@@ -1,23 +1,24 @@
 import Link from "next/link";
+import { BarChart3, CalendarDays, Cloud, Dices, Popcorn, Tv } from "lucide-react";
 
 const FEATURES = [
   {
-    icon: "🗓️",
+    Icon: CalendarDays,
     title: "Agenda unifié",
     text: "Toutes vos diffusions séries, sorties films et livres à lire au même endroit, jour par jour.",
   },
   {
-    icon: "📊",
+    Icon: BarChart3,
     title: "Statistiques & heatmap",
     text: "Temps de visionnage, genres favoris, séries terminées : suivez votre activité comme sur GitHub.",
   },
   {
-    icon: "☁️",
+    Icon: Cloud,
     title: "Sync multi-appareils",
     text: "Commencez sur votre téléphone, continuez sur votre tablette — tout se retrouve à jour partout.",
   },
   {
-    icon: "🎲",
+    Icon: Dices,
     title: "Ce soir, je regarde quoi ?",
     text: "Un picker qui propose un épisode ou un film selon le temps que vous avez devant vous.",
   },
@@ -68,7 +69,7 @@ export default function MarketingPage() {
     <>
       <nav className="mk-nav">
         <div className="mk-logo">
-          <span className="mk-logo-mark">📺</span>
+          <span className="mk-logo-mark"><Tv size={16} color="#fff" /></span>
           GlassTime
         </div>
         <Link href="/login" className="btn btn-primary">
@@ -79,7 +80,9 @@ export default function MarketingPage() {
       <main>
         <section className="mk mk-hero">
           <div>
-            <span className="mk-eyebrow">🍿 Séries · Films · Livres</span>
+            <span className="mk-eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Popcorn size={13} /> Séries · Films · Livres
+            </span>
             <h1 className="mk-headline">
               Ne perdez plus jamais <span className="accent">le fil</span> de ce que vous regardez
             </h1>
@@ -135,7 +138,9 @@ export default function MarketingPage() {
           <div className="mk-feature-grid">
             {FEATURES.map((f) => (
               <div key={f.title} className="glass card mk-feature-card">
-                <div className="mk-feature-icon">{f.icon}</div>
+                <div className="mk-feature-icon">
+                  <f.Icon size={20} />
+                </div>
                 <h3>{f.title}</h3>
                 <p>{f.text}</p>
               </div>

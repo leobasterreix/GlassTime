@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Bell } from "lucide-react";
 import { useMounted, useTrack } from "@/lib/store";
 import { fmtRelativeOrDate } from "@/lib/utils";
+import { EMOJI_ICONS } from "@/lib/toastIcons";
 
 export default function NotificationCenter() {
   const pathname = usePathname();
@@ -47,19 +49,22 @@ export default function NotificationCenter() {
 
             {notifications.length === 0 ? (
               <div className="empty" style={{ padding: "24px 16px" }}>
-                <div className="big">🔔</div>
+                <Bell className="big" size={40} strokeWidth={1.5} />
                 <p className="muted">Rien de nouveau pour le moment.</p>
               </div>
             ) : (
               <>
                 <div className="stack" style={{ maxHeight: "60vh", overflowY: "auto", padding: "0 10px 10px" }}>
                   {notifications.map((n) => {
+                    const NotifIcon = EMOJI_ICONS[n.emoji];
                     const content = (
                       <div
                         className="row"
                         style={{ gap: 10, padding: "10px 8px", alignItems: "flex-start" }}
                       >
-                        <span style={{ fontSize: 19 }}>{n.emoji}</span>
+                        <span style={{ fontSize: 19, display: "flex" }}>
+                          {NotifIcon ? <NotifIcon size={19} /> : n.emoji}
+                        </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 14, fontWeight: n.read ? 500 : 700 }}>
                             {n.message}

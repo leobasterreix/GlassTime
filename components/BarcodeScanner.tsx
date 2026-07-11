@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Focus, ZoomIn } from "lucide-react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { apiGet } from "@/lib/client";
 import type { Book } from "@/lib/types";
@@ -230,8 +231,8 @@ export default function BarcodeScanner({ onClose, onSuccess }: Props) {
             className="row"
             style={{ gap: 10, width: "100%", maxWidth: 360, marginBottom: 12 }}
           >
-            <span style={{ fontSize: 17 }} aria-hidden>
-              {adjust.kind === "focus" ? "🔍" : "🔎"}
+            <span style={{ display: "flex" }} aria-hidden>
+              {adjust.kind === "focus" ? <Focus size={17} /> : <ZoomIn size={17} />}
             </span>
             <div style={{ flex: 1 }}>
               <div className="tiny" style={{ marginBottom: 4 }}>
